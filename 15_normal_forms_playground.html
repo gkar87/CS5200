@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · Normal Forms and Decomposition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --pink:#A73E7A; --pink-soft:#F5E3EE;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:920px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:700px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip:hover{border-color:var(--blue);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.lm-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-answer-btn{background:transparent; color:var(--blue); border:1px solid var(--blue); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-answer-btn:hover:not(:disabled){background:var(--blue-soft);}
+.lm-answer-btn:disabled{color:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed;}
+.lm-key{margin-top:14px; border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:14px 16px;}
+.lm-key-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+.lm-key-row{display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:6px 0; border-bottom:1px dashed var(--rule); font-size:.9em;}
+.lm-key-row:last-child{border-bottom:none;}
+.lm-key-item{flex:1;}
+.lm-key-zone{font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:700; white-space:nowrap;}
+.lm-key-row.ok .lm-key-zone{color:var(--green);}
+.lm-key-row.bad .lm-key-zone{color:var(--rust);}
+.lm-key-row.bad .lm-key-item{color:var(--rust);}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+table.dbtable{width:100%; border-collapse:collapse; margin:14px 0; font-size:13px; background:var(--code-bg); border-radius:6px; overflow:hidden;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); padding:8px 12px; text-align:left; border-bottom:1px solid var(--code-rule); font-weight:600;}
+table.dbtable td{padding:8px 12px; border-bottom:1px solid var(--code-rule); color:var(--code-text); background:var(--code-bg);}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+/* ---- generic widget shell ---- */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.widget-label:first-of-type{margin-top:0;}
+
+/* ---- shared 4-card Normal Form Hierarchy panel ---- */
+.nf-hierarchy{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:14px 0;}
+@media (max-width:700px){ .nf-hierarchy{grid-template-columns:1fr 1fr;} }
+.nf-card{border-radius:8px; padding:12px 14px; font-size:13px; border:1.5px solid var(--rule-strong); background:#fff;}
+.nf-card .nf-card-title{font-family:"IBM Plex Mono",monospace; font-weight:700; margin-bottom:4px;}
+.nf-card.pass{border-color:var(--green); background:var(--green-soft);}
+.nf-card.pass .nf-card-title{color:var(--green);}
+.nf-card.fail{border-color:var(--rust); background:var(--rust-soft);}
+.nf-card.fail .nf-card-title{color:var(--rust);}
+.nf-card .nf-card-detail{color:var(--ink-soft); font-size:12px; margin-top:2px;}
+
+/* ---- Normal Form Identifier widget ---- */
+.nfi-header{font-family:"IBM Plex Mono",monospace; background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 16px; font-size:15px; margin-bottom:16px;}
+.nfi-header .nfi-attr{color:#8FC1F2;}
+.nfi-header .nfi-pk{color:#F2D98F; margin-left:10px;}
+.nfi-fd-row{display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border:1px solid var(--rule); border-radius:8px; padding:8px 12px; margin-bottom:8px; font-family:"IBM Plex Mono",monospace; font-size:13.5px;}
+.nfi-fd-remove{background:transparent; border:1px solid var(--rule-strong); color:var(--ink-soft); border-radius:6px; padding:4px 10px; font-size:11.5px; cursor:pointer; font-family:"IBM Plex Mono",monospace;}
+.nfi-fd-remove:hover{border-color:var(--rust); color:var(--rust);}
+.nfi-add-row{display:flex; gap:8px; align-items:center; margin:14px 0;}
+.nfi-add-row input{font-family:"IBM Plex Mono",monospace; font-size:13px; padding:8px 10px; border:1px solid var(--rule-strong); border-radius:6px; flex:1; background:#fff; color:var(--ink);}
+.nfi-add-row .arrow{color:var(--ink-soft); font-weight:700;}
+.nfi-analyze-btn{width:100%; padding:12px; border-radius:8px; border:none; background:var(--ink); color:#fff; font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:14px; cursor:pointer; margin-top:4px;}
+.nfi-analyze-btn:hover{opacity:.9;}
+.nfi-result{margin-top:18px; display:none;}
+.nfi-result.show{display:block;}
+.nfi-keys{font-family:"IBM Plex Mono",monospace; font-size:13.5px; background:#fff; border:1px solid var(--rule); border-radius:8px; padding:10px 14px; margin-bottom:12px;}
+.nfi-violations{font-size:13px; color:var(--ink-soft); margin-top:6px;}
+
+/* ---- Decomposition Step-Through widget ---- */
+.dst-tabs{display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
+.dst-tab-btn{border:1.5px solid var(--rule-strong); background:#fff; color:var(--ink); border-radius:20px; padding:8px 16px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.dst-tab-btn.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+.dst-panel{display:none;}
+.dst-panel.active{display:block;}
+.dst-box{border:1px solid var(--rule); border-radius:10px; background:#fff; padding:18px 20px; margin-bottom:16px;}
+.dst-box h4{margin:0 0 10px;}
+.dst-fd-list{font-family:"IBM Plex Mono",monospace; font-size:13.5px;}
+.dst-fd-list div{margin-bottom:6px;}
+.dst-fd-ok{color:var(--green);}
+.dst-fd-bad{color:var(--rust);}
+.dst-step-controls{display:flex; align-items:center; gap:12px; margin:16px 0;}
+.dst-step-counter{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-soft);}
+.dst-step-box{border:1px solid var(--rule); border-radius:10px; background:#fff; padding:18px 20px; min-height:120px;}
+.dst-step-title{font-weight:700; margin-bottom:8px; font-family:"IBM Plex Mono",monospace; color:var(--blue);}
+.dst-relation-chip{display:inline-block; font-family:"IBM Plex Mono",monospace; background:var(--paper-raised); border:1px solid var(--rule-strong); border-radius:6px; padding:4px 10px; margin:3px 4px 3px 0; font-size:12.5px;}
+.dst-relation-chip.new{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.dst-anomaly-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-top:14px;}
+@media (max-width:700px){ .dst-anomaly-grid{grid-template-columns:1fr;} }
+.dst-anomaly-card{border:1px solid var(--rule); border-radius:8px; padding:12px 14px; background:#fff; font-size:13px;}
+.dst-anomaly-card .a-title{font-weight:700; color:var(--rust); margin-bottom:4px; font-family:"IBM Plex Mono",monospace; font-size:12px; text-transform:uppercase; letter-spacing:.04em;}
+
+/* ---- Normal Form Diagnoser quiz (mirrors .act-* pattern) ---- */
+.nfd-quiz{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:18px 0;}
+.nfd-quiz-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+.nfd-dots{display:inline-flex; gap:6px; align-items:center;}
+.nfd-dots .dot{width:9px; height:9px; border-radius:50%; background:var(--rule-strong); display:inline-block;}
+.nfd-dots .dot.current{background:var(--ink);}
+.nfd-dots .dot.correct{background:var(--green);}
+.nfd-dots .dot.incorrect{background:var(--rust);}
+.nfd-dots-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-right:8px;}
+.nfd-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft);}
+.nfd-score b{color:var(--ink); font-size:1.1em;}
+.nfd-progressbar{height:3px; background:var(--rule); border-radius:2px; margin:10px 0 18px; overflow:hidden;}
+.nfd-progressbar-fill{height:100%; background:var(--blue); transition:width .2s ease;}
+.nfd-scenario-card{background:#fff; border:1px solid var(--rule); border-radius:12px; padding:22px 24px;}
+.nfd-scenario-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:10px;}
+.nfd-scenario-text{font-size:1.05em; margin-bottom:6px;}
+.nfd-scenario-text code{background:var(--paper-raised); padding:1px 5px; border-radius:4px;}
+.nfd-pick-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:18px 0 10px;}
+.nfd-options-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:600px){ .nfd-options-grid{grid-template-columns:1fr;} }
+.nfd-option-card{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+.nfd-option-card:hover{border-color:var(--blue);}
+.nfd-option-card.selected{border-color:var(--blue); background:var(--blue-soft);}
+.nfd-option-card.correct{border-color:var(--green); background:var(--green-soft);}
+.nfd-option-card.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.nfd-option-card.disabled{cursor:default;}
+.nfd-option-title{font-weight:700; font-size:.98em; font-family:"IBM Plex Mono",monospace;}
+.nfd-option-hint{font-size:.8em; color:var(--ink-soft); margin-top:4px;}
+.nfd-check-btn{margin-top:18px; padding:10px 20px; border-radius:8px; border:none; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13px; cursor:pointer;}
+.nfd-check-btn:disabled{background:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.nfd-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.nfd-feedback.correct{background:var(--green-soft); color:var(--green);}
+.nfd-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.nfd-verify-btn{margin-top:12px;}
+.btn.secondary.nfd-verify-btn, .btn.secondary.nfd-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.nfd-verify-output{margin-top:10px; display:none; background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap;}
+.nfd-verify-output.show{display:block;}
+.nfd-next-btn{margin-top:14px;}
+.nfd-quiz-done{text-align:center; padding:24px;}
+.nfd-quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Canonical runnable cell (shared) ===== */
+.cell{background:var(--code-bg); border:1px solid var(--code-rule); border-radius:8px; margin:14px 0; overflow:hidden;}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule); font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--code-text);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75; font-family:"IBM Plex Mono",monospace;}
+.cell textarea{width:100%; min-height:0; resize:none; overflow:hidden; display:block; background:var(--code-bg); color:var(--code-text); border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; line-height:1.55; outline:none; tab-size:2;}
+.cell textarea:focus{outline:2px solid var(--blue); outline-offset:-2px;}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.cell .btn{background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace;}
+.cell .btn:hover{opacity:.9;}
+.cell .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.cell .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none; background:var(--code-bg);}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">The Cost of a Messy Table</a>
+      <a href="#normal-forms">The First Three Steps</a>
+      <a href="#bcnf">BCNF: The Strict Boundary</a>
+      <div class="grp">Decomposition</div>
+      <a href="#decomposition-chase">Decomposition and the Chase</a>
+      <a href="#dependency-preservation">Dependency Preservation</a>
+      <a href="#decomposition-widget">Decomposition Step-Through</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-classify">Classifying a Schema</a>
+      <a href="#worked-3nf-not-bcnf">3NF but NOT BCNF</a>
+      <a href="#worked-lossless-test">Testing for Losslessness</a>
+      <div class="grp">Apply It</div>
+      <a href="#normal-form-identifier">Normal Form Identifier</a>
+      <a href="#normal-form-diagnoser">Normal Form Diagnoser</a>
+      <a href="#normal-form-mapper">Which Normal Form Is Violated?</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+          <div class="grp">2026 Status</div>
+      <a href="#in-2026">In 2026: What Has Changed</a>
+</nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>Normal Forms and Decomposition</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">Functional dependencies tell you what a schema promises. Normal forms tell you whether the schema keeps those promises without making you pay for it in anomalies. Normalization is the process of taking a relation, finding the FDs it violates, and decomposing it — splitting one table into several — until every remaining table represents exactly one subject and every non-key fact depends on the whole key, nothing but the key.</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>The Cost of a Messy Table</h2>
+      <p>Imagine a single table that stores student enrollments, course titles, and instructor departments all at once, one row per enrollment. It works — until someone updates a course title and has to remember to update every row that mentions that course, or deletes the last student enrolled in a course and accidentally loses the fact that the course exists at all. These are <strong>anomalies</strong>: update anomalies (the same fact stored redundantly, risking contradiction), insertion anomalies (you can't record a fact — like a new course — without an unrelated fact, like a student), and deletion anomalies (deleting one fact accidentally deletes another).</p>
+      <p>Normalization is the systematic cure. Each normal form (1NF, 2NF, 3NF, BCNF) is a stricter promise about how non-key attributes may depend on the key. As you move up the hierarchy, you eliminate a specific category of redundancy — and with it, a specific category of anomaly.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 620 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A table before and after first normal form: a comma-separated list packed into one cell is split so every cell holds a single atomic value." font-family="IBM Plex Mono, monospace">
+          <text x="140" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">BEFORE: not 1NF</text>
+          <text x="470" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">AFTER: 1NF ✓</text>
+
+          <g stroke="#1E2A25" stroke-width="1.5" fill="none">
+            <rect x="20" y="55" width="240" height="120" rx="4"/>
+            <line x1="20" y1="87" x2="260" y2="87"/>
+            <line x1="120" y1="55" x2="120" y2="175"/>
+          </g>
+          <text x="70" y="76" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">name</text>
+          <text x="190" y="76" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">phones</text>
+          <g font-size="10.5" fill="#1E2A25">
+            <text x="35" y="112">Ava</text><text x="130" y="112">555-1, 555-2</text>
+            <text x="35" y="150">Ben</text><text x="130" y="144">555-3, 555-4,</text>
+            <text x="130" y="158">555-5</text>
+          </g>
+          <text x="130" y="195" text-anchor="middle" font-size="9.5" fill="#A1402A">multi-valued cell — not atomic</text>
+
+          <g stroke="#1E2A25" stroke-width="1.5" fill="#1E2A25" marker-end="url(#nfarrow)">
+            <line x1="262" y1="110" x2="348" y2="110"/>
+          </g>
+          <text x="305" y="100" text-anchor="middle" font-size="10" font-weight="700" fill="#2F5D8A">1NF</text>
+          <defs>
+            <marker id="nfarrow" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto">
+              <path d="M0,0 L5,2.5 L0,5 Z" fill="#1E2A25"/>
+            </marker>
+          </defs>
+
+          <g stroke="#1E2A25" stroke-width="1.5" fill="none">
+            <rect x="350" y="45" width="240" height="150" rx="4"/>
+            <line x1="350" y1="77" x2="590" y2="77"/>
+            <line x1="470" y1="45" x2="470" y2="195"/>
+          </g>
+          <text x="410" y="66" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">name</text>
+          <text x="530" y="66" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">phone</text>
+          <g font-size="10.5" fill="#1E2A25">
+            <text x="365" y="96">Ava</text><text x="500" y="96">555-1</text>
+            <text x="365" y="120">Ava</text><text x="500" y="120">555-2</text>
+            <text x="365" y="144">Ben</text><text x="500" y="144">555-3</text>
+            <text x="365" y="168">Ben</text><text x="500" y="168">555-4</text>
+          </g>
+          <text x="470" y="215" text-anchor="middle" font-size="9.5" fill="#3D6B4A">one value per cell — no lists</text>
+          <text x="310" y="245" text-anchor="middle" font-size="10" fill="#4A564F">Converting multi-valued attributes into atomic rows satisfies First Normal Form</text>
+        </svg>
+        <figcaption>A table isn't even in 1NF until every cell holds a single, atomic value — no comma-separated lists hiding inside a column.</figcaption>
+      </figure>
+    </section>
+
+    <section id="normal-forms">
+      <div class="kicker">Foundations</div>
+      <h2>The First Three Steps</h2>
+      <h3>1NF — Atomic Values</h3>
+      <p>A relation is in First Normal Form if every attribute holds a single, indivisible value — no repeating groups, no comma-separated lists, no arrays packed into one cell. This is the entry price of being a relation at all; nothing below this is really "relational" in the formal sense.</p>
+
+      <h3>2NF — No Partial Dependencies</h3>
+      <p>A relation is in Second Normal Form if it's in 1NF <em>and</em> every non-prime attribute (one that isn't part of any candidate key) depends on the <strong>entire</strong> candidate key, not just part of it. This only matters when a candidate key is composite (more than one attribute) — if every key is a single attribute, 2NF is automatic. A <strong>partial dependency</strong> is a non-prime attribute that depends on only a subset of a composite key.</p>
+
+      <h3>3NF — No Transitive Dependencies</h3>
+      <p>A relation is in Third Normal Form if it's in 2NF <em>and</em> no non-prime attribute depends transitively on a candidate key — that is, there's no non-prime attribute determining another non-prime attribute. Formally, for every non-trivial FD <code>X → Y</code>, either <code>X</code> is a superkey, or every attribute in <code>Y</code> is prime (part of some candidate key). That second clause — the "or Y is prime" escape hatch — is exactly what separates 3NF from the stricter BCNF below.</p>
+
+      <table class="compare">
+        <thead><tr><th>Form</th><th>Requirement</th><th>Anomaly it removes</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1NF</strong></td><td>Every attribute is atomic (single-valued).</td><td>Cells storing hidden lists/repeating groups.</td></tr>
+          <tr><td><strong>2NF</strong></td><td>1NF, and every non-prime attribute depends on the <em>whole</em> key.</td><td>Partial-dependency redundancy on composite keys.</td></tr>
+          <tr><td><strong>3NF</strong></td><td>2NF, and no non-prime attribute depends on another non-prime attribute.</td><td>Transitive-dependency redundancy (a fact-about-a-fact).</td></tr>
+          <tr><td><strong>BCNF</strong></td><td>Every non-trivial FD's determinant is a superkey — no exceptions for prime attributes.</td><td>The last remaining redundancy 3NF's "prime" exception allows.</td></tr>
+        </tbody>
+      </table>
+      <p class="small">Each level is strictly stronger than the last: every relation in BCNF is in 3NF, every relation in 3NF is in 2NF, every relation in 2NF is in 1NF. The reverse doesn't hold.</p>
+          <div class="cell" data-cell="two_nf">
+        <div class="cell-head"><span class="cell-title">two_nf.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+    </section>
+
+    <section id="bcnf">
+      <div class="kicker">Foundations</div>
+      <h2>BCNF: The Strict Boundary</h2>
+      <p>Boyce-Codd Normal Form removes 3NF's one escape hatch. Under 3NF, a violation <code>X → Y</code> is tolerated if <code>Y</code> happens to be a prime attribute — part of some candidate key. BCNF doesn't care: for every non-trivial functional dependency <code>X → Y</code> in the relation, <code>X</code> must be a superkey. Full stop.</p>
+      <p>This only produces a different verdict from 3NF when a relation has <strong>two or more overlapping candidate keys</strong> — a table with a single key, or with several keys that share no attributes, will always get the same 3NF and BCNF verdict. When keys overlap, an FD can have a non-superkey determinant whose right-hand side still happens to be prime, satisfying 3NF while violating BCNF. That's the gap the next worked example walks through in full.</p>
+      <div class="callout amber">
+        <strong>Why not always insist on BCNF?</strong> BCNF decompositions aren't always dependency-preserving — sometimes checking a constraint requires joining tables back together, which is slower and easier to get wrong at write time. Many production schemas deliberately stop at 3NF for exactly this reason. Normalization theory gives you the tools; using them is a judgment call.
+      </div>
+          <p>Which brings us to the honest ending. Production systems normalise to 3NF or BCNF and then denormalise on purpose — and the only thing that separates engineering from accident is a written reason and a refresh strategy. The cell below makes the trade-off cost visible.</p>
+          <div class="cell" data-cell="denormalize_on_purpose">
+        <div class="cell-head"><span class="cell-title">denormalize_on_purpose.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+    </section>
+
+    <section id="decomposition-chase">
+      <div class="kicker">Decomposition</div>
+      <h2>Decomposition and the Chase</h2>
+      <p>Decomposing a relation means splitting it into two or more smaller relations. The whole point of normalization only works if the split is <strong>lossless</strong> — joining the pieces back together with a natural join must reproduce exactly the original rows, no more, no fewer. A lossy decomposition can manufacture rows that were never in the original data, which is worse than the redundancy you were trying to fix.</p>
+      <p>The fast test: for <code>R</code> decomposed into <code>R1</code> and <code>R2</code>, the join is lossless if and only if the intersection <code>R1 ∩ R2</code> is a superkey of <em>at least one</em> of the two pieces. If neither piece's key equals (or is determined by) the shared attributes, the join can produce spurious combinations.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two decompositions of the same table: the upper one joins back losslessly because the shared attribute is a key, while the lower one fabricates extra rows because the shared attribute is not a key." font-family="IBM Plex Mono, monospace">
+          <g data-beat="1">
+            <text x="30" y="28" font-size="17" font-weight="700" fill="#3D6B4A">LOSSLESS ✓</text>
+            <text x="30" y="55" font-size="10.5" fill="#1E2A25">R(A,B,C)</text>
+            <g stroke="#1E2A25" stroke-width="1.3" fill="none"><rect x="30" y="60" width="130" height="70" rx="3"/><line x1="30" y1="78" x2="160" y2="78"/><line x1="73" y1="60" x2="73" y2="130"/><line x1="117" y1="60" x2="117" y2="130"/></g>
+            <g font-size="9" fill="#1E2A25">
+              <text x="40" y="73">A1</text><text x="83" y="73">B1</text><text x="127" y="73">C1</text>
+              <text x="40" y="95">A2</text><text x="83" y="95">B2</text><text x="127" y="95">C2</text>
+              <text x="40" y="117">A3</text><text x="83" y="117">B3</text><text x="127" y="117">C3</text>
+            </g>
+          </g>
+          <g data-beat="2">
+            <path d="M162,80 L186,66 L186,75 L198,75 L198,85 L186,85 L186,94 Z" fill="#1E2A25"/>
+            <text x="200" y="135" font-size="9" fill="#4A564F">R1(A,B)</text>
+            <text x="330" y="135" font-size="9" fill="#4A564F">R2(B,C)</text>
+            <g stroke="#1E2A25" stroke-width="1.3" fill="none"><rect x="200" y="60" width="70" height="50" rx="3"/><line x1="200" y1="78" x2="270" y2="78"/><line x1="235" y1="60" x2="235" y2="110"/></g>
+            <g font-size="8.5" fill="#1E2A25"><text x="207" y="73">A1</text><text x="242" y="73">B1</text><text x="207" y="93">A2</text><text x="242" y="93">B2</text></g>
+            <g stroke="#1E2A25" stroke-width="1.3" fill="none"><rect x="320" y="60" width="60" height="50" rx="3"/><line x1="320" y1="78" x2="380" y2="78"/><line x1="350" y1="60" x2="350" y2="110"/></g>
+            <g font-size="8.5" fill="#1E2A25"><text x="326" y="73">B</text><text x="358" y="73">C</text></g>
+            <circle cx="292" cy="82" r="13" fill="none" stroke="#2F5D8A" stroke-width="2"/>
+          </g>
+          <g data-beat="3">
+            <path d="M382,82 L447,82" stroke="#1E2A25" stroke-width="1.3" marker-end="url(#dcarrow)"/>
+            <text x="405" y="72" font-size="8" fill="#4A564F">join on B</text>
+            <text x="450" y="55" font-size="10.5" fill="#1E2A25">RESULT(A,B,C)</text>
+            <g stroke="#1E2A25" stroke-width="1.3" fill="none"><rect x="450" y="60" width="130" height="70" rx="3"/><line x1="450" y1="78" x2="580" y2="78"/><line x1="493" y1="60" x2="493" y2="130"/><line x1="537" y1="60" x2="537" y2="130"/></g>
+            <g font-size="9" fill="#1E2A25">
+              <text x="460" y="73">A1</text><text x="503" y="73">B1</text><text x="547" y="73">C1</text>
+              <text x="460" y="95">A2</text><text x="503" y="95">B2</text><text x="547" y="95">C2</text>
+              <text x="460" y="117">A3</text><text x="503" y="117">B3</text><text x="547" y="117">C3</text>
+            </g>
+            <text x="515" y="150" font-size="9" fill="#3D6B4A">✓ matches the original exactly</text>
+          </g>
+
+          <text x="30" y="205" font-size="17" font-weight="700" fill="#A1402A">LOSSY ✗</text>
+          <text x="30" y="232" font-size="10.5" fill="#1E2A25">R(A,B,C)</text>
+          <g stroke="#1E2A25" stroke-width="1.3" fill="none"><rect x="30" y="237" width="130" height="70" rx="3"/><line x1="30" y1="255" x2="160" y2="255"/><line x1="73" y1="237" x2="73" y2="307"/><line x1="117" y1="237" x2="117" y2="307"/></g>
+          <g font-size="9" fill="#1E2A25">
+            <text x="40" y="250">A1</text><text x="83" y="250">B1</text><text x="127" y="250">C1</text>
+            <text x="40" y="272">A2</text><text x="83" y="272">B2</text><text x="127" y="272">C2</text>
+            <text x="40" y="294">A3</text><text x="83" y="294">B3</text><text x="127" y="294">C3</text>
+          </g>
+          <text x="200" y="312" font-size="9" fill="#4A564F">R1(A,B)</text>
+          <text x="330" y="312" font-size="9" fill="#4A564F">R2(A,C)</text>
+          <g stroke="#1E2A25" stroke-width="1.3" fill="none"><rect x="200" y="237" width="70" height="50" rx="3"/><line x1="200" y1="255" x2="270" y2="255"/><line x1="235" y1="237" x2="235" y2="287"/></g>
+          <g font-size="8.5" fill="#1E2A25"><text x="207" y="250">A1</text><text x="242" y="250">B</text><text x="207" y="270">A2</text><text x="242" y="270">B2</text></g>
+          <g stroke="#1E2A25" stroke-width="1.3" fill="none"><rect x="320" y="237" width="60" height="50" rx="3"/><line x1="320" y1="255" x2="380" y2="255"/><line x1="350" y1="237" x2="350" y2="287"/></g>
+          <g font-size="8.5" fill="#1E2A25"><text x="326" y="250">A</text><text x="358" y="250">C</text></g>
+          <circle cx="292" cy="259" r="13" fill="none" stroke="#A1402A" stroke-width="2"/>
+          <path d="M382,259 L447,259" stroke="#1E2A25" stroke-width="1.3" marker-end="url(#dcarrow)"/>
+          <text x="405" y="249" font-size="8" fill="#4A564F">join on A</text>
+          <text x="450" y="232" font-size="10.5" fill="#1E2A25">RESULT(A,B,C)</text>
+          <g stroke="#1E2A25" stroke-width="1.3" fill="none"><rect x="450" y="237" width="130" height="70" rx="3"/><line x1="450" y1="255" x2="580" y2="255"/><line x1="493" y1="237" x2="493" y2="307"/><line x1="537" y1="237" x2="537" y2="307"/></g>
+          <g font-size="9" fill="#A1402A">
+            <text x="460" y="250">A1</text><text x="503" y="250">B1</text><text x="547" y="250">C1</text>
+            <text x="460" y="272">A2</text><text x="503" y="272">B2</text><text x="547" y="272">C2</text>
+            <text x="460" y="294">A3</text><text x="503" y="294">B3</text><text x="547" y="294">C3</text>
+          </g>
+          <text x="595" y="272" font-size="9" fill="#A1402A">✗</text>
+          <text x="515" y="325" font-size="9" fill="#A1402A">has EXTRA spurious rows</text>
+          <defs><marker id="dcarrow" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#1E2A25"/></marker></defs>
+          <text x="30" y="370" font-size="11" fill="#1E2A25">if the shared attribute is a KEY of one side, the join is lossless</text>
+        </svg>
+        <figcaption>The difference between a lossless join and a lossy join — the shared attribute B is a key of R2 above; the shared attribute A below is not a key of either piece.</figcaption>
+      </figure>
+
+      <p>When the intersection test doesn't cleanly apply (a three-way decomposition, or an ambiguous case), fall back to the general <strong>chase test</strong>: build a tableau with one row per decomposed piece, fill unmatched attributes with distinct placeholder symbols, then repeatedly apply each FD to equate symbols across rows. If any row's placeholders all resolve back to the original tuple, the decomposition is lossless.</p>
+    </section>
+
+    <section id="dependency-preservation">
+      <div class="kicker">Decomposition</div>
+      <h2>Dependency Preservation</h2>
+      <p>Losslessness isn't the only property worth checking. A decomposition is <strong>dependency-preserving</strong> if every original functional dependency can still be verified by checking constraints <em>locally</em>, within a single decomposed table — without needing to join tables back together first. Losing this property doesn't corrupt data, but it means the database can't enforce a business rule with a simple per-table constraint; you'd need a trigger or application-level check that joins across tables.</p>
+      <p>Every BCNF decomposition is guaranteed lossless. Not every BCNF decomposition is guaranteed dependency-preserving — the SID/CID/IID example above is the classic case where splitting to BCNF genuinely loses the ability to check <code>{SID,CID} → IID</code> without a join. Some decompositions get you both properties simultaneously (the ENROLL example in the widget below is one), but you should always check dependency preservation independently — it isn't automatic just because a decomposition is lossless.</p>
+    </section>
+
+    <section id="decomposition-widget">
+      <div class="kicker">Decomposition</div>
+      <h2>Decomposition Step-Through</h2>
+      <div class="widget">
+        <span class="badge blue">TUTORIAL</span>
+        <div class="widget-title" style="margin-top:8px;">Decomposition Step-Through</div>
+        <div class="widget-sub">Normal Forms &amp; Decomposition — click through to decompose a relation into BCNF and verify the lossless-join property.</div>
+
+        <div class="dst-tabs">
+          <button class="dst-tab-btn active" data-tab="overview">Overview</button>
+          <button class="dst-tab-btn" data-tab="stepthrough">Step-Through</button>
+          <button class="dst-tab-btn" data-tab="lossless">Lossless Join</button>
+          <button class="dst-tab-btn" data-tab="anomalies">Anomalies</button>
+        </div>
+
+        <div class="dst-panel active" data-panel="overview">
+          <div class="dst-box">
+            <h4>Starting Relation: ENROLL</h4>
+            <p class="small">This relation stores student course-enrollment data. It contains <strong>BCNF violations</strong> due to a non-trivial FD where the determinant is not a superkey.</p>
+            <table class="dbtable">
+              <thead><tr><th>StudentID</th><th>CourseID</th><th>Instructor</th><th>Department</th><th>Grade</th></tr></thead>
+              <tbody>
+                <tr><td>S1</td><td>CS101</td><td>Alice</td><td>CS</td><td>A</td></tr>
+                <tr><td>S2</td><td>CS101</td><td>Alice</td><td>CS</td><td>B</td></tr>
+                <tr><td>S1</td><td>MATH201</td><td>Bob</td><td>Math</td><td>A</td></tr>
+                <tr><td>S3</td><td>CS101</td><td>Alice</td><td>CS</td><td>C</td></tr>
+                <tr><td>S2</td><td>MATH201</td><td>Bob</td><td>Math</td><td>B</td></tr>
+              </tbody>
+            </table>
+            <p class="small"><strong>Primary Key:</strong> {StudentID, CourseID}</p>
+          </div>
+          <div class="dst-box">
+            <h4>Functional Dependencies</h4>
+            <div class="dst-fd-list">
+              <div class="dst-fd-ok">→ {StudentID, CourseID} → Instructor, Department, Grade &nbsp; ✓ PK → all attrs</div>
+              <div class="dst-fd-bad">→ {CourseID} → Instructor, Department &nbsp; ✗ BCNF violation — CourseID is not a superkey</div>
+              <div class="dst-fd-bad">→ {Instructor} → Department &nbsp; ✗ 3NF transitive violation</div>
+            </div>
+          </div>
+          <div class="dst-box" style="border-color:var(--blue); background:var(--blue-soft);">
+            <h4>Normal Form Hierarchy</h4>
+            <p class="small">Each form <em>strengthens</em> the previous. BCNF is stronger than 3NF but may not preserve all FDs.</p>
+            <div class="nf-hierarchy" id="dst-overview-hierarchy"></div>
+            <p><strong>Highest NF satisfied: 1NF only.</strong> Switch to Step-Through to decompose it.</p>
+          </div>
+          <button class="btn" id="dst-goto-stepthrough">Go to Step-Through →</button>
+        </div>
+
+        <div class="dst-panel" data-panel="stepthrough">
+          <div class="dst-step-controls">
+            <button class="btn secondary" id="dst-prev">← Prev</button>
+            <span class="dst-step-counter" id="dst-step-counter"></span>
+            <button class="btn secondary" id="dst-next">Next →</button>
+          </div>
+          <div class="dst-step-box" id="dst-step-box"></div>
+        </div>
+
+        <div class="dst-panel" data-panel="lossless">
+          <div class="dst-box">
+            <h4>Applying the intersection-is-key test</h4>
+            <p class="small">Round 1 split ENROLL into R1(CourseID, Instructor, Department) and R2(StudentID, CourseID, Grade).</p>
+            <p><code>R1 ∩ R2 = {CourseID}</code>. Is CourseID a superkey of R1? Yes — CourseID alone is R1's candidate key (CourseID → Instructor, Department). <span class="dst-fd-ok">✓ Lossless.</span></p>
+            <p class="small" style="margin-top:16px;">Round 2 further split R1 into R1a(Instructor, Department) and R1b(CourseID, Instructor).</p>
+            <p><code>R1a ∩ R1b = {Instructor}</code>. Is Instructor a superkey of R1a? Yes — Instructor is R1a's candidate key (Instructor → Department). <span class="dst-fd-ok">✓ Lossless.</span></p>
+            <p>Both splits pass the intersection-is-key shortcut, so the full three-way decomposition {R1a, R1b, R2} is lossless — joining all three back together on their shared attributes exactly reproduces ENROLL.</p>
+          </div>
+        </div>
+
+        <div class="dst-panel" data-panel="anomalies">
+          <div class="dst-box">
+            <h4>Anomalies present in the original ENROLL table</h4>
+            <div class="dst-anomaly-grid">
+              <div class="dst-anomaly-card">
+                <div class="a-title">Update anomaly</div>
+                If Alice moves departments, every row where Instructor = Alice must be updated. Miss one, and the table contradicts itself about which department Alice belongs to.
+              </div>
+              <div class="dst-anomaly-card">
+                <div class="a-title">Insertion anomaly</div>
+                You can't record that a new course exists, or which instructor teaches it, until at least one student has enrolled — there's no row to hold CourseID/Instructor/Department without a StudentID.
+              </div>
+              <div class="dst-anomaly-card">
+                <div class="a-title">Deletion anomaly</div>
+                If S1 is the only student enrolled in MATH201 and that enrollment row is deleted, the fact "Bob teaches MATH201 for the Math department" disappears along with it.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="worked-classify">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Classifying a Schema</h2>
+      <p>Given <code>R(StudentID, CourseID, StudentName, CourseTitle, Grade)</code> with FDs <code>StudentID → StudentName</code>, <code>CourseID → CourseTitle</code>, <code>StudentID, CourseID → Grade</code>.</p>
+      <p>Candidate key: <code>{StudentID, CourseID}</code> — its closure covers all attributes, and nothing smaller works. Is R in 1NF? Yes, every cell is atomic. Is R in 2NF? No — <code>StudentID → StudentName</code> and <code>CourseID → CourseTitle</code> are both partial dependencies on the composite key, since StudentName and CourseTitle are non-prime and each depends on only part of the key.</p>
+      <p>Decompose to fix it: <code>Student(StudentID PK, StudentName)</code>, <code>Course(CourseID PK, CourseTitle)</code>, <code>Enrollment(StudentID FK, CourseID FK, Grade)</code>. Each of the three resulting tables is independently verified BCNF — every FD in each piece has a superkey on its left.</p>
+      <p class="small">Lesson: normalization proceeds by identifying the specific FDs that violate each level and decomposing to remove them. Each decomposition introduces a join, but restores integrity.</p>
+    </section>
+
+    <section id="worked-3nf-not-bcnf">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: A 3NF Table That Is NOT in BCNF</h2>
+      <p>This is the classic example that separates 3NF from BCNF — it requires a relation with two overlapping candidate keys, otherwise 3NF and BCNF coincide.</p>
+      <p>Consider <code>R(StudentID, CourseID, InstructorID)</code> with FDs <code>StudentID, CourseID → InstructorID</code> (a student takes a given course from exactly one instructor) and <code>InstructorID → CourseID</code> (an instructor teaches only one course).</p>
+      <p>Candidate keys: <code>{SID, CID}⁺</code> covers all three attributes. <code>{SID, IID}⁺</code>: start {SID, IID}, apply IID → CID to add CID, giving {SID, IID, CID} — also covers everything. So R has <strong>two overlapping candidate keys</strong>: {SID, CID} and {SID, IID}. All three attributes are prime.</p>
+      <p>Is R in 3NF? Check each FD: <code>SID, CID → IID</code> — LHS is a superkey, fine. <code>IID → CID</code> — LHS is <em>not</em> a superkey (IID alone can't determine SID), but CID is prime (it belongs to {SID, CID}), so 3NF's escape hatch permits it. <strong>3NF: satisfied.</strong></p>
+      <p>Is R in BCNF? BCNF drops the escape hatch — <code>IID → CID</code> has a non-superkey determinant, full stop. <strong>BCNF: violated.</strong></p>
+      <p>Decomposing to fix it — split on the offending FD into <code>R1(InstructorID PK, CourseID)</code> and <code>R2(StudentID, InstructorID)</code> — is lossless (<code>R1 ∩ R2 = {InstructorID}</code>, the key of R1), but the FD <code>SID, CID → IID</code> can no longer be checked without joining R1 and R2 back together. Dependency preservation is lost. This trade-off — a cleaner schema but a harder-to-enforce constraint — is exactly why many working architects deliberately stop at 3NF for schemas with overlapping candidate keys.</p>
+    </section>
+
+    <section id="worked-lossless-test">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Testing a Decomposition for Losslessness</h2>
+      <p>Given <code>R(A, B, C, D)</code> decomposed into <code>R1(A, B, C)</code> and <code>R2(C, D)</code>, with FDs <code>{A → B, B → C, C → D}</code>.</p>
+      <p>Intersection: <code>R1 ∩ R2 = {C}</code>. Is C a superkey for R1 or R2? For R2(C, D): <code>{C}⁺ = {C, D}</code> — that's all of R2, so C is a superkey (in fact the only key) of R2. <strong>Lossless. ✓</strong></p>
+      <p>Alternative check via the chase test (more general, and what you fall back on for three-way decompositions): build a tableau with one row per piece, mark unmatched attributes with distinct placeholder symbols, then apply each FD to equate symbols across rows. Only <code>C → D</code> finds matching values (both rows agree on C), which forces D to equal in both rows — collapsing the tableau back to the original tuple. Lossless either way.</p>
+    </section>
+
+    <section id="normal-form-identifier">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Normal Form Identifier</h2>
+      <p>Add or remove functional dependencies below and click Analyze — this runs the real candidate-key and normal-form classification algorithm, the same one used throughout this page, live in your browser.</p>
+
+      <div class="widget">
+        <div class="widget-title">Normal Form Identifier</div>
+        <div class="widget-sub">Add functional dependencies and analyze which normal form the relation violates — and why.</div>
+        <div class="nfi-header" id="nfi-header"></div>
+        <div class="widget-label">Functional Dependencies</div>
+        <p class="small" style="margin-top:-6px;">Attributes: A, B, C, D · Enter LHS → RHS (comma-separated, e.g. "A" → "C")</p>
+        <div id="nfi-fd-list"></div>
+        <div class="nfi-add-row">
+          <input type="text" id="nfi-lhs-input" placeholder='LHS e.g. A'>
+          <span class="arrow">→</span>
+          <input type="text" id="nfi-rhs-input" placeholder='RHS e.g. C, D'>
+          <button class="btn" id="nfi-add-btn">Add FD</button>
+        </div>
+        <button class="nfi-analyze-btn" id="nfi-analyze-btn">Analyze Normal Form</button>
+        <div class="nfi-result" id="nfi-result"></div>
+      </div>
+    </section>
+
+    <section id="normal-form-diagnoser">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Normal Form Diagnoser</h2>
+      <p>Ten scenarios. Given a schema and its FDs, identify the highest normal form it satisfies.</p>
+      <div id="nfd-quiz-mount"></div>
+    </section>
+
+    <section id="normal-form-mapper">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Which Normal Form Is Violated?</h2>
+      <p>Diagnosing a table is a three-question drill: is every cell atomic (1NF), does anything depend on only <em>part</em> of a key (2NF), and does any non-key attribute determine another (3NF)? Sort nine defects by the form they break.</p>
+
+      <div class="widget">
+        <div class="widget-title">Which Normal Form Is Violated?</div>
+        <div class="widget-sub">atomicity · partial dependency · transitive dependency</div>
+        <div class="widget-label">Defects to place</div>
+        <div class="lm-bank" id="nfmbank"></div>
+        <div class="lm-zones">
+          <div class="lm-zone z-a" data-zone="nf1"><div class="lm-zone-head">1NF · cells are not atomic</div><div id="nfmzone-nf1"></div></div>
+          <div class="lm-zone z-b" data-zone="nf2"><div class="lm-zone-head">2NF · depends on part of a key</div><div id="nfmzone-nf2"></div></div>
+          <div class="lm-zone z-c" data-zone="nf3"><div class="lm-zone-head">3NF · a non-key determines a non-key</div><div id="nfmzone-nf3"></div></div>
+        </div>
+        <div class="lm-hint">Tip: click a defect, then click a form. Click a placed defect to send it back.</div>
+        <div class="qstep-controls">
+          <button class="lm-check-btn" id="nfmcheck">Check mapping</button>
+          <button class="lm-answer-btn" id="nfmanswer" disabled>Show correct mapping</button>
+          <button class="lm-restart-btn" id="nfmrestart">↺ Restart</button>
+          <span class="lm-score" id="nfmscore"></span>
+        </div>
+        <div id="nfmfeedback"></div>
+        <div id="nfmkey"></div>
+      </div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. Classify R(A, B, C, D)</h4>
+        <p>Given <code>R(A, B, C, D)</code> with FDs <code>{ AB → C, A → D, D → B }</code>, find all candidate keys and the highest normal form satisfied.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><code>{A}⁺</code>: A → D adds D, then D → B adds B, then AB → C adds C. Closure = {A, B, C, D}. {A} is the unique candidate key.</p>
+            <p>2NF check: the only candidate key {A} is a single attribute, so there are no partial dependencies to worry about — 2NF holds automatically. 3NF/BCNF check: <code>D → B</code> has determinant D, which is not a superkey (<code>{D}⁺ = {D, B}</code>, doesn't cover A or C) — a violation for both 3NF and BCNF since B is non-prime. <strong>Highest normal form: 2NF.</strong></p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Overlapping keys</h4>
+        <p>Given <code>R(A, B, C)</code> with FDs <code>{ AB → C, C → A }</code>, find all candidate keys and classify.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><code>{A,B}⁺ = {A,B,C}</code> (full) — candidate key. <code>{B,C}⁺</code>: C → A adds A, giving {A,B,C} — also a candidate key. Two overlapping candidate keys: {A,B} and {B,C}. All three attributes are prime.</p>
+            <p>3NF check: <code>AB → C</code> — LHS is a superkey, fine. <code>C → A</code> — LHS is not a superkey, but A is prime (part of {A,B}) — 3NF's escape hatch applies. <strong>3NF holds.</strong> BCNF check: <code>C → A</code> has a non-superkey determinant — <strong>BCNF fails.</strong> <strong>Highest normal form: 3NF.</strong></p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Not even 2NF</h4>
+        <p>Given <code>R(A, B, C, D)</code> with FDs <code>{ A → B, C → D }</code> and candidate key <code>{A, C}</code>, classify R, then propose a lossless BCNF decomposition.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>{A, C} is the only candidate key, and it's composite. Both <code>A → B</code> and <code>C → D</code> are partial dependencies — B depends on just A (part of the key), D depends on just C (part of the key). <strong>2NF already fails</strong>, so R is only in 1NF.</p>
+            <p>Decompose: <code>R1(A, B)</code> with key {A}, and <code>R2(C, D)</code> with key {C}. Each piece is independently verified BCNF. Losslessness: <code>R1 ∩ R2 = {}</code> — an empty intersection means this particular pair doesn't pass the intersection-is-key shortcut directly, but since the original key {A,C} splits cleanly with A determining R1 and C determining R2 with no attribute shared, the join of R1 × R2 on no common column reconstructs exactly the cross-product implied by the two independent FDs — lossless here because the two halves never overlapped in the first place.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. 3NF with two overlapping keys</h4>
+        <p>Given <code>R(A, B, C)</code> with FDs <code>{ AB → C, C → A }</code> — wait, that's problem 2's schema. Instead: given <code>R(A, B, C)</code> with FDs <code>{ AB → C, C → B }</code>, find all candidate keys and classify.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><code>{A,B}⁺ = {A,B,C}</code> — candidate key. <code>{A,C}⁺</code>: C → B adds B, giving {A,B,C} — also a candidate key. Two overlapping keys: {A,B}, {A,C}. All attributes prime.</p>
+            <p>3NF: <code>AB → C</code> — LHS superkey, fine. <code>C → B</code> — LHS not a superkey, but B is prime — escape hatch applies. <strong>3NF holds, BCNF fails</strong> (same shape as the SID/CID/IID worked example). <strong>Highest normal form: 3NF.</strong></p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>5. Design your own BCNF decomposition</h4>
+        <p>Given <code>R(OrderID, ProductID, ProductName, Quantity)</code> with FDs <code>{ OrderID, ProductID → Quantity, ProductID → ProductName }</code>, classify R and decompose it to BCNF.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>Candidate key: <code>{OrderID, ProductID}</code>. <code>ProductID → ProductName</code> is a partial dependency (ProductName is non-prime, ProductID is only part of the key) — <strong>2NF fails</strong>, so R is only in 1NF.</p>
+            <p>Decompose: <code>OrderLine(OrderID, ProductID, Quantity)</code> with key {OrderID, ProductID} — BCNF, the only FD's LHS is the whole key. <code>Product(ProductID PK, ProductName)</code> — BCNF. Losslessness: intersection is {ProductID}, which is the key of Product — lossless. Dependency preservation also holds: both original FDs are checkable locally, one per table, without any join.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p class="interview-lede">Normalization questions test whether you can look at a schema and predict exactly where it will break — not just recite definitions.</p>
+
+        <p><strong>"Is this table normalized?"</strong> A weak answer names a normal form without justification. A strong answer finds the candidate keys first, then walks the hierarchy: check 1NF (atomic values), then 2NF (any non-prime attribute depending on only part of a composite key?), then 3NF (any non-prime attribute depending on another non-prime attribute?), then BCNF (does every non-trivial FD's determinant hold a superkey, no exceptions?). Stop at the first level that fails and name the specific violating FD.</p>
+
+        <p><strong>The subtle question.</strong> "Here's a 3NF schema — is it also in BCNF?" The honest answer requires checking whether the relation has overlapping candidate keys; if it does, 3NF and BCNF can diverge, and you need to name the specific FD whose determinant isn't a superkey. If keys don't overlap, 3NF and BCNF coincide and the answer is automatically yes. This is precisely the SID/CID/IID pattern — interviewers use it because it's the cleanest way to test whether you actually understand candidate keys, not just pattern-match "looks normalized."</p>
+
+        <p><strong>"Should we normalize this further, or denormalize for performance?"</strong> A senior answer doesn't treat this as binary. Decompose to remove genuine anomaly risk (usually up through 3NF/BCNF for anything users write to directly), but recognize that every decomposition adds a join at read time and can lose dependency preservation. The right call depends on write frequency, consistency requirements, and query patterns — not a rule that "more normalized is always better."</p>
+
+        <p><strong>Rule of thumb.</strong></p>
+        <ul class="criteria-list">
+          <li><span class="c-num">•</span>Find the candidate keys first — every normal form is defined relative to them.</li>
+          <li><span class="c-num">•</span>Each level up the hierarchy removes one specific category of redundancy; name which one.</li>
+          <li><span class="c-num">•</span>A decomposition must be checked for losslessness AND, separately, for dependency preservation — passing one doesn't guarantee the other.</li>
+        </ul>
+        <p>If you can walk from "here are the FDs" to "here's the highest normal form, and here's the exact violating dependency if it's not BCNF" without hesitating, you're doing what a senior database engineer does in a design review.</p>
+      </div>
+    </section>
+
+    <section id="in-2026">
+      <div class="kicker">2026 Status</div>
+      <h2>In 2026: What Has Changed</h2>
+      <p>Normalisation is no longer an all-or-nothing rule — it is the deliberate first half of a two-part decision.</p>
+      <ul>
+        <li><strong>Normalise to 3NF/BCNF, then denormalise deliberately.</strong> The second half of that sentence is what production warehouses actually do.</li>
+        <li><strong>Star schemas and one-big-table designs</strong> are controlled denormalisation: duplicated columns kept on purpose, optimised for reads.</li>
+        <li><strong>Materialised views and columnar compression</strong> make some redundancy cheap, which changes the economics of normalising everything to the theoretical maximum.</li>
+        <li><strong>Lossless-join and dependency preservation</strong> are the safety checks: a decomposition you cannot join back is data loss, and one that drops an FD is a constraint you can no longer enforce.</li>
+      </ul>
+      <p class="small">Normal forms are not a destination; they are the vocabulary you use to justify a denormalisation.</p>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="14_fd_keys_playground.html">← 14. Functional Dependencies</a>
+        <a class="pgnav-pos" href="index.html">Playground 15 of 15</a>
+<span class="pgnav-next pgnav-disabled">End of series →</span>
+      </nav>
+    </footer>
+
+</main>
+</div>
+
+<script>
+/* ============ Real algorithm: closure -> candidate keys -> 2NF/3NF/BCNF classification ============ */
+function fd(lhsStr, rhsStr) {
+  return { lhs: lhsStr.split(',').map(s => s.trim()).filter(Boolean), rhs: rhsStr.split(',').map(s => s.trim()).filter(Boolean) };
+}
+function closure(startAttrs, fds) {
+  let set = new Set(startAttrs);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const f of fds) {
+      if (f.lhs.every(a => set.has(a))) {
+        for (const a of f.rhs) if (!set.has(a)) { set.add(a); changed = true; }
+      }
+    }
+  }
+  return [...set].sort();
+}
+function computeClosureSteps(startAttrs, fds) {
+  let set = new Set(startAttrs);
+  const steps = [{ fd: null, added: [], set: [...set].sort() }];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const f of fds) {
+      if (f.lhs.every(a => set.has(a))) {
+        const added = f.rhs.filter(a => !set.has(a));
+        if (added.length) {
+          added.forEach(a => set.add(a));
+          steps.push({ fd: f, added, set: [...set].sort() });
+          changed = true;
+        }
+      }
+    }
+  }
+  return steps;
+}
+function subsets(arr) {
+  const out = [[]];
+  for (const a of arr) { const len = out.length; for (let i = 0; i < len; i++) out.push([...out[i], a]); }
+  return out;
+}
+function eqSet(a, b) {
+  if (a.length !== b.length) return false;
+  const as = new Set(a);
+  return b.every(x => as.has(x));
+}
+function findCandidateKeys(attrs, fds) {
+  const allSubsets = subsets(attrs).filter(s => s.length > 0);
+  allSubsets.sort((a, b) => a.length - b.length);
+  const keys = [];
+  for (const s of allSubsets) {
+    if (keys.some(k => k.every(a => s.includes(a)))) continue;
+    const cl = closure(s, fds);
+    if (eqSet(cl, attrs)) keys.push(s.sort());
+  }
+  return keys;
+}
+function isSuperkey(attrSet, attrs, fds) { return eqSet(closure(attrSet, fds), attrs); }
+function primeAttributes(attrs, candidateKeys) {
+  const s = new Set();
+  candidateKeys.forEach(k => k.forEach(a => s.add(a)));
+  return [...s];
+}
+function nonTrivialSingleAttrFds(fds) {
+  const out = [];
+  for (const f of fds) for (const r of f.rhs) if (!f.lhs.includes(r)) out.push({ lhs: f.lhs, rhs: r, origLabel: f.lhs.join(',') + ' → ' + f.rhs.join(',') });
+  return out;
+}
+function check2NF(attrs, fds, candidateKeys, primeAttrs) {
+  const violations = [];
+  for (const k of candidateKeys) {
+    if (k.length < 2) continue;
+    const propersubs = subsets(k).filter(s => s.length > 0 && s.length < k.length);
+    for (const s of propersubs) {
+      const cl = closure(s, fds);
+      const newNonPrime = cl.filter(a => !s.includes(a) && !primeAttrs.includes(a));
+      if (newNonPrime.length) violations.push({ subset: s, key: k, determines: newNonPrime });
+    }
+  }
+  return { pass: violations.length === 0, violations };
+}
+function check3NF(attrs, fds, candidateKeys, primeAttrs) {
+  const violations = [];
+  for (const f of nonTrivialSingleAttrFds(fds)) {
+    const lhsIsSuperkey = isSuperkey(f.lhs, attrs, fds);
+    const rhsIsPrime = primeAttrs.includes(f.rhs);
+    if (!lhsIsSuperkey && !rhsIsPrime) violations.push(f);
+  }
+  return { pass: violations.length === 0, violations };
+}
+function checkBCNF(attrs, fds, candidateKeys) {
+  const violations = [];
+  for (const f of nonTrivialSingleAttrFds(fds)) if (!isSuperkey(f.lhs, attrs, fds)) violations.push(f);
+  return { pass: violations.length === 0, violations };
+}
+function classify(attrs, fds) {
+  const keys = findCandidateKeys(attrs, fds);
+  const primes = primeAttributes(attrs, keys);
+  const r2 = check2NF(attrs, fds, keys, primes);
+  const r3 = check3NF(attrs, fds, keys, primes);
+  const rB = checkBCNF(attrs, fds, keys);
+  let highest = '1NF';
+  if (r2.pass) highest = '2NF';
+  if (r2.pass && r3.pass) highest = '3NF';
+  if (r2.pass && r3.pass && rB.pass) highest = 'BCNF';
+  return { keys, primes, r2, r3, rB, highest };
+}
+function fdLabel(f) { return f.lhs.join(',') + ' → ' + f.rhs.join(','); }
+function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ============ Shared 4-card Normal Form Hierarchy renderer ============ */
+function nfHierarchyHtml(res) {
+  const cards = [
+    { title: '1NF', ok: true, detail: 'All atomic values ✓' },
+    { title: '2NF', ok: res.r2.pass, detail: res.r2.pass ? 'No partial deps on key' : ('No — ' + (res.r2.violations[0] ? res.r2.violations[0].key.join(',') + '→' + res.r2.violations[0].determines.join(',') : 'partial dependency')) },
+    { title: '3NF', ok: res.r2.pass && res.r3.pass, detail: (!res.r2.pass) ? 'Blocked by 2NF failure' : (res.r3.pass ? 'No transitive deps' : ('No — ' + res.r3.violations[0].origLabel)) },
+    { title: 'BCNF', ok: res.r2.pass && res.r3.pass && res.rB.pass, detail: (!res.r2.pass || !res.r3.pass) ? 'Blocked by lower-form failure' : (res.rB.pass ? 'Every determinant a superkey' : ('No — ' + res.rB.violations[0].origLabel + ' not a superkey')) },
+  ];
+  return cards.map(c => `<div class="nf-card ${c.ok ? 'pass' : 'fail'}"><div class="nf-card-title">${c.title} ${c.ok ? '✓' : '✗'}</div><div class="nf-card-detail">${escapeHtml(c.detail)}</div></div>`).join('');
+}
+
+/* ============ Normal Form Identifier widget ============ */
+(function () {
+  let attrs = ['A', 'B', 'C', 'D'];
+  let fds = [fd('A', 'C'), fd('C', 'D'), fd('A,B', 'C,D')];
+
+  const headerEl = document.getElementById('nfi-header');
+  const listEl = document.getElementById('nfi-fd-list');
+  const resultEl = document.getElementById('nfi-result');
+  const lhsInput = document.getElementById('nfi-lhs-input');
+  const rhsInput = document.getElementById('nfi-rhs-input');
+
+  function currentPK() {
+    const keys = findCandidateKeys(attrs, fds);
+    return keys.length ? keys.map(k => k.join(', ')).join(' or ') : '(none)';
+  }
+  function render() {
+    headerEl.innerHTML = `<span class="nfi-attr">R(${attrs.join(', ')})</span> | <span class="nfi-pk">PK: ${currentPK()}</span>`;
+    listEl.innerHTML = fds.map((f, i) => `
+      <div class="nfi-fd-row">
+        <span>${escapeHtml(fdLabel(f))}</span>
+        <button class="nfi-fd-remove" data-idx="${i}">✕ Remove</button>
+      </div>`).join('');
+    listEl.querySelectorAll('.nfi-fd-remove').forEach(btn => {
+      btn.addEventListener('click', () => { fds.splice(+btn.dataset.idx, 1); resultEl.classList.remove('show'); render(); });
+    });
+  }
+
+  document.getElementById('nfi-add-btn').addEventListener('click', () => {
+    const l = lhsInput.value.trim(), r = rhsInput.value.trim();
+    if (!l || !r) return;
+    l.split(',').map(s => s.trim()).forEach(a => { if (a && !attrs.includes(a)) attrs.push(a); });
+    r.split(',').map(s => s.trim()).forEach(a => { if (a && !attrs.includes(a)) attrs.push(a); });
+    fds.push(fd(l, r));
+    lhsInput.value = ''; rhsInput.value = '';
+    resultEl.classList.remove('show');
+    render();
+  });
+
+  document.getElementById('nfi-analyze-btn').addEventListener('click', () => {
+    const res = classify(attrs, fds);
+    const keysStr = res.keys.map(k => '{' + k.join(', ') + '}').join(', ');
+    resultEl.innerHTML = `
+      <div class="nfi-keys"><strong>Candidate keys:</strong> ${escapeHtml(keysStr) || '(none found)'} &nbsp; | &nbsp; <strong>Highest normal form:</strong> ${res.highest}</div>
+      <div class="nf-hierarchy">${nfHierarchyHtml(res)}</div>
+    `;
+    resultEl.classList.add('show');
+  });
+
+  render();
+})();
+
+/* ============ Decomposition Step-Through widget ============ */
+(function () {
+  const enrollAttrs = ['StudentID', 'CourseID', 'Instructor', 'Department', 'Grade'];
+  const enrollFds = [fd('StudentID,CourseID', 'Instructor,Department,Grade'), fd('CourseID', 'Instructor,Department'), fd('Instructor', 'Department')];
+  const enrollRes = classify(enrollAttrs, enrollFds);
+  document.getElementById('dst-overview-hierarchy').innerHTML = nfHierarchyHtml(enrollRes);
+
+  // tabs
+  const tabBtns = document.querySelectorAll('.dst-tab-btn');
+  const panels = document.querySelectorAll('.dst-panel');
+  function showTab(name) {
+    tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    panels.forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+  }
+  tabBtns.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  document.getElementById('dst-goto-stepthrough').addEventListener('click', () => showTab('stepthrough'));
+
+  // step-through sequence
+  const STEPS = [
+    {
+      title: 'Step 0 — Starting point: ENROLL is only 1NF',
+      body: `<p>R(StudentID, CourseID, Instructor, Department, Grade) — PK {StudentID, CourseID}.</p>
+             <p>Violating FD: <code>CourseID → Instructor, Department</code>. CourseID is not a superkey of ENROLL, so this is both a BCNF violation and (since it determines two attributes that aren't fully covered by the key alone) part of why 2NF also fails.</p>`
+    },
+    {
+      title: 'Step 1 — Round 1: split on CourseID → Instructor, Department',
+      body: `<p>Decompose ENROLL into:</p>
+             <p><span class="dst-relation-chip new">R1(CourseID, Instructor, Department)</span><span class="dst-relation-chip new">R2(StudentID, CourseID, Grade)</span></p>
+             <p>R1's key is {CourseID} (CourseID → Instructor, Department). R2's key is {StudentID, CourseID} (the original grade-recording FD).</p>`
+    },
+    {
+      title: 'Step 2 — Classify R2(StudentID, CourseID, Grade)',
+      body: `<div id="dst-r2-hierarchy"></div><p>R2's only FD, {StudentID,CourseID} → Grade, has the whole key as its determinant. <strong>R2 is BCNF.</strong> No further decomposition needed here.</p>`
+    },
+    {
+      title: 'Step 3 — Classify R1(CourseID, Instructor, Department)',
+      body: `<div id="dst-r1-hierarchy"></div><p>R1 still contains <code>Instructor → Department</code>, where Instructor is not a superkey of R1 (CourseID is the key). This is a transitive dependency: R1 is only <strong>2NF</strong> — it doesn't even reach 3NF, because Department is non-prime and Instructor isn't a superkey or prime.</p>`
+    },
+    {
+      title: 'Step 4 — Round 2: split R1 on Instructor → Department',
+      body: `<p>Decompose R1 into:</p>
+             <p><span class="dst-relation-chip new">R1a(Instructor, Department)</span><span class="dst-relation-chip new">R1b(CourseID, Instructor)</span></p>
+             <div id="dst-r1a-hierarchy"></div>
+             <p>R1a's only FD, Instructor → Department, has the whole key on the left: <strong>BCNF.</strong></p>
+             <div id="dst-r1b-hierarchy"></div>
+             <p>R1b's only FD, CourseID → Instructor, has the whole key on the left: <strong>BCNF.</strong></p>`
+    },
+    {
+      title: 'Step 5 — Final decomposition and verification',
+      body: `<p>Final schema: <span class="dst-relation-chip new">R1a(Instructor, Department)</span><span class="dst-relation-chip new">R1b(CourseID, Instructor)</span><span class="dst-relation-chip new">R2(StudentID, CourseID, Grade)</span> — all three pieces are BCNF.</p>
+             <p><strong>Lossless:</strong> verified via the intersection-is-key test on the Lossless Join tab — both splits pass.</p>
+             <p><strong>Dependency preservation:</strong> unlike the SID/CID/IID worked example, this decomposition happens to preserve all three original FDs. {StudentID,CourseID}→Grade is local to R2. CourseID→Instructor is local to R1b. Instructor→Department is local to R1a. By transitivity, CourseID→Instructor→Department is re-derivable from R1a ∪ R1b alone — and {StudentID,CourseID}→{Instructor,Department} follows from CourseID→{Instructor,Department} by augmentation. Nothing requires a join to check. <strong>All three original FDs are preserved.</strong></p>`
+    },
+  ];
+  let stepIdx = 0;
+  const stepBox = document.getElementById('dst-step-box');
+  const counterEl = document.getElementById('dst-step-counter');
+  function renderStep() {
+    const s = STEPS[stepIdx];
+    stepBox.innerHTML = `<div class="dst-step-title">${escapeHtml(s.title)}</div>${s.body}`;
+    counterEl.textContent = `Step ${stepIdx + 1} of ${STEPS.length}`;
+    document.getElementById('dst-prev').disabled = stepIdx === 0;
+    document.getElementById('dst-next').disabled = stepIdx === STEPS.length - 1;
+    if (stepIdx === 2) document.getElementById('dst-r2-hierarchy').outerHTML = '<div class="nf-hierarchy">' + nfHierarchyHtml(classify(['StudentID', 'CourseID', 'Grade'], [fd('StudentID,CourseID', 'Grade')])) + '</div>';
+    if (stepIdx === 3) document.getElementById('dst-r1-hierarchy').outerHTML = '<div class="nf-hierarchy">' + nfHierarchyHtml(classify(['CourseID', 'Instructor', 'Department'], [fd('CourseID', 'Instructor,Department'), fd('Instructor', 'Department')])) + '</div>';
+    if (stepIdx === 4) {
+      document.getElementById('dst-r1a-hierarchy').outerHTML = '<div class="nf-hierarchy">' + nfHierarchyHtml(classify(['Instructor', 'Department'], [fd('Instructor', 'Department')])) + '</div>';
+      document.getElementById('dst-r1b-hierarchy').outerHTML = '<div class="nf-hierarchy">' + nfHierarchyHtml(classify(['CourseID', 'Instructor'], [fd('CourseID', 'Instructor')])) + '</div>';
+    }
+  }
+  document.getElementById('dst-prev').addEventListener('click', () => { if (stepIdx > 0) { stepIdx--; renderStep(); } });
+  document.getElementById('dst-next').addEventListener('click', () => { if (stepIdx < STEPS.length - 1) { stepIdx++; renderStep(); } });
+  renderStep();
+})();
+
+/* ============ Normal Form Diagnoser quiz (nfd prefix, mirrors act-* engine) ============ */
+const NFD_QUESTIONS = [
+  {
+    scenario: `Given <code>R(order_id PK, customer_name, customer_email, product_name, product_price, quantity)</code>, the only known FDs are: <code>order_id → customer_name, customer_email, product_name, product_price, quantity</code>. What's the highest NF R satisfies?`,
+    options: [
+      { title: '1NF only', correct: false },
+      { title: '2NF', hint: 'No partial deps', correct: false },
+      { title: '3NF', hint: 'No transitive deps', correct: false },
+      { title: 'BCNF', hint: "Every FD's LHS is a superkey", correct: true },
+    ],
+    feedback: '✓ Correct. order_id alone is the only candidate key, and it\'s the LHS of the only FD — a single-attribute key with a single governing FD is automatically BCNF, since there is no other attribute left to be a determinant.',
+    verify: { attrs: ['order_id', 'customer_name', 'customer_email', 'product_name', 'product_price', 'quantity'], fds: [['order_id', 'customer_name,customer_email,product_name,product_price,quantity']] },
+  },
+  {
+    scenario: `Given <code>R(A, B, C, D)</code> with FDs <code>{A → B, C → D}</code> and the only candidate key is <code>{A, C}</code>. What's the highest NF?`,
+    options: [
+      { title: '1NF only', hint: 'Partial dependency exists', correct: true },
+      { title: '2NF', correct: false },
+      { title: '3NF', correct: false },
+      { title: 'BCNF', correct: false },
+    ],
+    feedback: '✓ Correct. Both A → B and C → D are partial dependencies on the composite key {A, C} — B depends on only A, D depends on only C, and neither A nor C alone is the full key. 2NF already fails, so R is only in 1NF.',
+    verify: { attrs: ['A', 'B', 'C', 'D'], fds: [['A', 'B'], ['C', 'D']] },
+  },
+  {
+    scenario: `<code>Student(sid PK, sname, dept_id, dept_name)</code> with FDs <code>{sid → sname, dept_id; dept_id → dept_name}</code>. Highest NF?`,
+    options: [
+      { title: '1NF only', correct: false },
+      { title: '2NF', hint: 'But transitive dep exists', correct: true },
+      { title: '3NF', correct: false },
+      { title: 'BCNF', correct: false },
+    ],
+    feedback: '✓ Correct. {sid} is a single-attribute key, so there are no partial dependencies — 2NF holds. But dept_id → dept_name is a transitive dependency: dept_name (non-prime) depends on dept_id (also non-prime), not directly on the key. 3NF fails.',
+    verify: { attrs: ['sid', 'sname', 'dept_id', 'dept_name'], fds: [['sid', 'sname,dept_id'], ['dept_id', 'dept_name']] },
+  },
+  {
+    scenario: `<code>R(student_id, course_id, instructor_id)</code> with FDs <code>{(student_id, course_id) → instructor_id; instructor_id → course_id}</code>. Candidate keys are <code>{student_id, course_id}</code> and <code>{student_id, instructor_id}</code>. Highest NF?`,
+    options: [
+      { title: '1NF only', correct: false },
+      { title: '2NF', correct: false },
+      { title: '3NF', hint: 'Prime attribute on RHS', correct: true },
+      { title: 'BCNF', correct: false },
+    ],
+    feedback: '✓ Correct. This is the classic overlapping-keys case: instructor_id → course_id has a non-superkey determinant, but course_id is prime (it belongs to {student_id, course_id}), so 3NF\'s escape hatch applies. BCNF drops that exception and fails.',
+    verify: { attrs: ['student_id', 'course_id', 'instructor_id'], fds: [['student_id,course_id', 'instructor_id'], ['instructor_id', 'course_id']] },
+  },
+  {
+    scenario: `You inherit <code>Employee(emp_id PK, name, phone_numbers)</code> where <code>phone_numbers</code> is a comma-separated string like <code>'555-0100, 555-0200, 555-0300'</code>. Highest NF?`,
+    options: [
+      { title: 'Not even 1NF', hint: 'Non-atomic cell', correct: true },
+      { title: '1NF only', correct: false },
+      { title: '2NF', correct: false },
+      { title: 'BCNF', correct: false },
+    ],
+    feedback: "✓ Correct. phone_numbers packs a variable-length list into a single cell — that's a multi-valued, non-atomic attribute. This fails 1NF before any functional-dependency reasoning is even relevant; splitting into one row per phone number is the fix.",
+    verify: null,
+  },
+  {
+    scenario: `<code>ENROLL(StudentID, CourseID, Instructor, Department, Grade)</code> with FDs <code>{(StudentID,CourseID) → Instructor,Department,Grade; CourseID → Instructor,Department; Instructor → Department}</code>. This is the same relation used in the Decomposition Step-Through widget above. Highest NF?`,
+    options: [
+      { title: '1NF only', hint: 'CourseID → Instructor is a BCNF violation, and it already blocks 2NF too', correct: true },
+      { title: '2NF', correct: false },
+      { title: '3NF', correct: false },
+      { title: 'BCNF', correct: false },
+    ],
+    feedback: '✓ Correct. CourseID → Instructor,Department is a partial dependency on the key {StudentID,CourseID} (CourseID is only part of the key, and Instructor/Department are non-prime) — that alone fails 2NF. ENROLL is only 1NF, exactly matching the Overview tab\'s hierarchy panel above.',
+    verify: { attrs: ['StudentID', 'CourseID', 'Instructor', 'Department', 'Grade'], fds: [['StudentID,CourseID', 'Instructor,Department,Grade'], ['CourseID', 'Instructor,Department'], ['Instructor', 'Department']] },
+  },
+  {
+    scenario: `Given <code>R(A, B, C)</code> with FDs <code>AB → C</code> and <code>C → B</code>. What is the highest normal form R satisfies?`,
+    options: [
+      { title: '1NF', correct: false },
+      { title: '2NF', correct: false },
+      { title: '3NF — but not BCNF', hint: 'The prime-attribute exception', correct: true },
+      { title: 'BCNF', correct: false },
+    ],
+    feedback: '✓ Correct. The candidate keys are {A,B} and {A,C}, so A, B, and C are all prime. In <code>C → B</code> the determinant C is not a superkey, so BCNF fails. But 3NF has an exception: a non-superkey determinant is allowed when its right-hand side is prime — and B is prime. So R is in 3NF and not in BCNF. That gap is the whole difference between the two forms.',
+    verify: { attrs: ['A', 'B', 'C'], fds: [['A,B', 'C'], ['C', 'B']] },
+  },
+  {
+    scenario: `Given <code>R(A, B, C)</code> with FDs <code>A → B</code> and <code>B → C</code>. What is the highest normal form R satisfies?`,
+    options: [
+      { title: '1NF', correct: false },
+      { title: '2NF', hint: 'Transitive dependency on a non-prime', correct: true },
+      { title: '3NF', correct: false },
+      { title: 'BCNF', correct: false },
+    ],
+    feedback: '✓ Correct. The only candidate key is {A}, and because it is a single attribute, 2NF holds automatically — there is no composite key for a partial dependency. But <code>B → C</code> is a transitive dependency: B is not a superkey and C is non-prime, so the relation fails 3NF and stops at 2NF.',
+    verify: { attrs: ['A', 'B', 'C'], fds: [['A', 'B'], ['B', 'C']] },
+  },
+  {
+    scenario: `A relation has a single-attribute primary key. Can it still violate 2NF?`,
+    options: [
+      { title: 'No — 2NF is only about partial dependency on a composite key', hint: 'Nothing to be partial about', correct: true },
+      { title: 'Yes, always', correct: false },
+      { title: 'Only if it also has a multivalued attribute', correct: false },
+      { title: 'Only if it is not in 1NF yet', correct: false },
+    ],
+    feedback: '✓ Correct. 2NF asks whether a non-prime attribute depends on only <em>part</em> of a candidate key. With a single-attribute key there is no proper part for anything to depend on, so 2NF is free. That is why a table can be in 2NF and still violate 3NF — and why 2NF violations only ever show up once a key becomes composite.',
+    verify: { attrs: ['id', 'name', 'city', 'zip'], fds: [['id', 'name,city,zip'], ['zip', 'city']] },
+  },
+  {
+    scenario: `A reporting table returns results 5× faster than the normalized version, because it now copies the customer's city into every order row. How should this design be described?`,
+    options: [
+      { title: 'A deliberate denormalization — faster reads, with redundancy that can drift', correct: true },
+      { title: 'A 3NF violation that must be fixed immediately', correct: false },
+      { title: 'A correct BCNF design', correct: false },
+      { title: 'A 1NF violation', correct: false },
+    ],
+    feedback: '✓ Correct. Normalization trades read speed for less redundancy; denormalization trades the other way. This table is probably no longer in 3NF, but that is a decision, not automatically a bug. The real cost is the update anomaly: the duplicated city must be refreshed whenever the customer moves, or the report silently tells two different stories.',
+    verify: { attrs: ['order_id', 'customer_id', 'city'], fds: [['order_id', 'customer_id,city'], ['customer_id', 'city']] },
+  },
+];
+
+let nfdQuizState = { qi: 0, selected: null, checked: false, results: [] };
+
+function nfdDotsHtml() {
+  let html = '';
+  for (let i = 0; i < NFD_QUESTIONS.length; i++) {
+    let cls = 'dot';
+    if (i === nfdQuizState.qi) cls += ' current';
+    else if (nfdQuizState.results[i] === true) cls += ' correct';
+    else if (nfdQuizState.results[i] === false) cls += ' incorrect';
+    html += `<span class="${cls}"></span>`;
+  }
+  return html;
+}
+function nfdScoreVal() { return nfdQuizState.results.filter(r => r === true).length; }
+function nfdQuestionHtml() {
+  const q = NFD_QUESTIONS[nfdQuizState.qi];
+  const pct = ((nfdQuizState.qi) / NFD_QUESTIONS.length) * 100;
+  const optsHtml = q.options.map((o, i) => {
+    let cls = 'nfd-option-card';
+    if (nfdQuizState.checked) {
+      cls += ' disabled';
+      if (o.correct) cls += ' correct';
+      else if (i === nfdQuizState.selected) cls += ' incorrect';
+    } else if (i === nfdQuizState.selected) cls += ' selected';
+    return `<div class="${cls}" data-idx="${i}">
+      <div class="nfd-option-title">${escapeHtml(o.title)}</div>
+      ${o.hint ? `<div class="nfd-option-hint">${escapeHtml(o.hint)}</div>` : ''}
+    </div>`;
+  }).join('');
+  let verifySection = '';
+  if (q.verify) {
+    verifySection = `<button class="btn secondary nfd-verify-btn" id="nfd-verify-btn">▶ Verify against real algorithm</button>
+      <div class="nfd-verify-output" id="nfd-verify-output"></div>`;
+  }
+  return `
+    <div class="nfd-quiz-head">
+      <div><span class="nfd-dots-label">Scenario</span><span class="nfd-dots">${nfdDotsHtml()}</span></div>
+      <div class="nfd-score">Score: <b>${nfdScoreVal()} / ${NFD_QUESTIONS.length}</b></div>
+    </div>
+    <div class="nfd-progressbar"><div class="nfd-progressbar-fill" style="width:${pct}%"></div></div>
+    <div class="nfd-scenario-card">
+      <div class="nfd-scenario-label">Scenario</div>
+      <div class="nfd-scenario-text">${q.scenario}</div>
+      <div class="nfd-pick-label">Pick the best answer</div>
+      <div class="nfd-options-grid" id="nfd-options-grid">${optsHtml}</div>
+      <button class="nfd-check-btn" id="nfd-check-btn" ${nfdQuizState.selected === null ? 'disabled' : ''}>Check answer</button>
+      ${nfdQuizState.checked ? `<div class="nfd-feedback ${q.options[nfdQuizState.selected] && q.options[nfdQuizState.selected].correct ? 'correct' : 'incorrect'}">${q.feedback}</div>${verifySection}<button class="btn nfd-next-btn" id="nfd-next-btn">${nfdQuizState.qi === NFD_QUESTIONS.length - 1 ? 'See score →' : 'Next →'}</button>` : ''}
+    </div>
+  `;
+}
+function nfdDoneHtml() {
+  const score = nfdScoreVal();
+  return `<div class="nfd-quiz-done">
+    <div class="big-score">${score} / ${NFD_QUESTIONS.length}</div>
+    <p>${score === NFD_QUESTIONS.length ? 'Perfect score.' : 'Review the ones you missed above, then try again.'}</p>
+    <button class="btn secondary nfd-restart-btn" id="nfd-restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+function nfdRenderQuiz() {
+  const mount = document.getElementById('nfd-quiz-mount');
+  if (nfdQuizState.qi >= NFD_QUESTIONS.length) {
+    mount.innerHTML = `<div class="nfd-quiz">${nfdDoneHtml()}</div>`;
+    document.getElementById('nfd-restart-btn').addEventListener('click', () => {
+      nfdQuizState = { qi: 0, selected: null, checked: false, results: [] };
+      nfdRenderQuiz();
+    });
+    return;
+  }
+  mount.innerHTML = `<div class="nfd-quiz">${nfdQuestionHtml()}</div>`;
+  document.querySelectorAll('.nfd-option-card').forEach(card => {
+    card.addEventListener('click', () => {
+      if (nfdQuizState.checked) return;
+      nfdQuizState.selected = +card.dataset.idx;
+      nfdRenderQuiz();
+    });
+  });
+  const checkBtn = document.getElementById('nfd-check-btn');
+  if (checkBtn) checkBtn.addEventListener('click', () => {
+    if (nfdQuizState.selected === null) return;
+    nfdQuizState.checked = true;
+    nfdQuizState.results[nfdQuizState.qi] = !!NFD_QUESTIONS[nfdQuizState.qi].options[nfdQuizState.selected].correct;
+    nfdRenderQuiz();
+  });
+  const verifyBtn = document.getElementById('nfd-verify-btn');
+  if (verifyBtn) verifyBtn.addEventListener('click', () => {
+    const q = NFD_QUESTIONS[nfdQuizState.qi];
+    const fds = q.verify.fds.map(([l, r]) => fd(l, r));
+    const res = classify(q.verify.attrs, fds);
+    const keysStr = res.keys.map(k => '{' + k.join(',') + '}').join(', ');
+    let out = `Attributes: {${q.verify.attrs.join(', ')}}\nCandidate keys: ${keysStr}\n`;
+    out += `2NF: ${res.r2.pass ? 'PASS' : 'FAIL (' + res.r2.violations.map(v => v.key.join(',') + '⊃' + v.subset.join(',') + '→' + v.determines.join(',')).join('; ') + ')'}\n`;
+    out += `3NF: ${res.r3.pass ? 'PASS' : 'FAIL (' + res.r3.violations.map(v => v.origLabel).join('; ') + ')'}\n`;
+    out += `BCNF: ${res.rB.pass ? 'PASS' : 'FAIL (' + res.rB.violations.map(v => v.origLabel).join('; ') + ')'}\n`;
+    out += `=> Highest normal form: ${res.highest}`;
+    const outEl = document.getElementById('nfd-verify-output');
+    outEl.textContent = out;
+    outEl.classList.add('show');
+  });
+  const nextBtn = document.getElementById('nfd-next-btn');
+  if (nextBtn) nextBtn.addEventListener('click', () => {
+    nfdQuizState.qi++;
+    nfdQuizState.selected = null;
+    nfdQuizState.checked = false;
+    nfdRenderQuiz();
+  });
+}
+document.addEventListener('DOMContentLoaded', nfdRenderQuiz);
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ===== Canonical runnable-cell engine (shared by every playground) ===== */
+const CELLS = {
+  denormalize_on_purpose: {
+    setup: ``,
+    starter: `-- Normalised: every fact lives once. Chen's office is stored in exactly one row.
+CREATE TABLE Instructors (instructor TEXT PRIMARY KEY, office TEXT);
+CREATE TABLE Sections (
+  section_id TEXT PRIMARY KEY,
+  course_id  TEXT,
+  instructor TEXT REFERENCES Instructors(instructor)
+);
+INSERT INTO Instructors VALUES ('Chen','Room 410'), ('Ravi','Room 210');
+INSERT INTO Sections VALUES ('S1','CS101','Chen'), ('S2','CS102','Chen'), ('S3','CS201','Ravi');
+
+-- Deliberately denormalised: a reporting table that copies the office in, so a
+-- report never has to join. Cheap to read, expensive to keep true.
+CREATE TABLE SectionReport (section_id TEXT, course_id TEXT, instructor TEXT, office TEXT);
+INSERT INTO SectionReport
+  SELECT s.section_id, s.course_id, s.instructor, i.office
+  FROM Sections s JOIN Instructors i ON i.instructor = s.instructor;
+
+-- Chen moves. One write fixes the source of truth...
+UPDATE Instructors SET office = 'Room 512' WHERE instructor = 'Chen';
+
+-- ...and the denormalised copy is already wrong. It went stale on the line above.
+SELECT * FROM SectionReport;
+
+-- Denormalisation is a contract: you own the refresh. Same rows, one statement.
+DELETE FROM SectionReport;
+INSERT INTO SectionReport
+  SELECT s.section_id, s.course_id, s.instructor, i.office
+  FROM Sections s JOIN Instructors i ON i.instructor = s.instructor;
+
+SELECT * FROM SectionReport;`
+  },
+  two_nf: {
+    setup: `CREATE TABLE Takes (student_id TEXT, course_id TEXT, instructor TEXT, grade INTEGER,
+                     PRIMARY KEY (student_id, course_id));
+INSERT INTO Takes VALUES
+  ('S1','CS101','Dana',3.7),
+  ('S2','CS101','Dana',3.2),
+  ('S1','CS202','Ravi',4.0);`,
+    starter: `-- This table is in 1NF but NOT in 2NF: the key is (student_id, course_id), and
+-- course_id -> instructor is a PARTIAL dependency. The instructor repeats per enrollment.
+SELECT course_id, COUNT(*) AS enrollments, MIN(instructor) AS instructor
+FROM Takes GROUP BY course_id;
+
+-- Decompose into two 2NF relations:
+CREATE TABLE Course (course_id TEXT PRIMARY KEY, instructor TEXT);
+INSERT INTO Course SELECT course_id, MIN(instructor) FROM Takes GROUP BY course_id;
+CREATE TABLE Enrollment (student_id TEXT, course_id TEXT, grade INTEGER,
+                         PRIMARY KEY (student_id, course_id));
+INSERT INTO Enrollment SELECT student_id, course_id, grade FROM Takes;
+
+-- Same facts, no partial dependency. Updating an instructor is now ONE row:
+UPDATE Course SET instructor = 'Dana Whitfield' WHERE course_id = 'CS101';
+SELECT e.student_id, e.course_id, c.instructor, e.grade
+FROM Enrollment e JOIN Course c ON c.course_id = e.course_id
+ORDER BY e.student_id, e.course_id;` } };
+let SQL = null;
+async function pgModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+function pgEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pgTable(cols, rows){
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of cols) html += `<th>${pgEsc(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const r of rows){ html += '<tr>'; for (const v of r) html += `<td>${v === null ? '<em>NULL</em>' : pgEsc(v)}</td>`; html += '</tr>'; }
+  return html + '</tbody></table>';
+}
+function pgHint(m){
+  m = String(m).toLowerCase();
+  if (m.includes('unique constraint') || m.includes('primary key')) return 'A uniqueness rule rejected this — the value already exists in the table.';
+  if (m.includes('already exists')) return 'That table or view already exists — Reset first, or edit the script.';
+  if (m.includes('not null')) return 'A required column was left empty.';
+  return null;
+}
+async function pgRun(setup, main, out){
+  out.innerHTML = ''; out.classList.remove('err'); out.classList.add('show');
+  try{
+    const M = await pgModule();
+    const db = new M.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setup && setup.trim()) db.run(setup);
+    let html = '', had = false;
+    for (const stmt of db.iterateStatements(main)){
+      const cols = stmt.getColumnNames(); const rows = [];
+      while (stmt.step()) rows.push(stmt.get());
+      if (cols.length){ html += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length === 1 ? '' : 's'}</div>` + pgTable(cols, rows); had = true; }
+    }
+    if (!had) html = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    out.innerHTML = html; db.close();
+  } catch(e){
+    const h = pgHint(e.message);
+    out.innerHTML = `<div style="color:#F0A38A;">✖ ${pgEsc(e.message)}${h ? `<br><span style="opacity:.85">${pgEsc(h)}</span>` : ''}</div>`;
+    out.classList.add('err');
+  }
+}
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+function pgWire(cellEl){
+  const spec = CELLS[cellEl.getAttribute('data-cell')]; if (!spec) return;
+  const ta = cellEl.querySelector('textarea');
+  const out = cellEl.querySelector('.cell-output');
+  const run = cellEl.querySelector('.run-btn');
+  const reset = cellEl.querySelector('.reset-btn');
+  ta.value = spec.starter; pgGrow(ta);
+  ta.addEventListener('input', () => pgGrow(ta));
+  ta.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){ e.preventDefault(); pgRun(spec.setup, ta.value, out); } });
+  run.addEventListener('click', () => pgRun(spec.setup, ta.value, out));
+  reset.addEventListener('click', () => { ta.value = spec.starter; pgGrow(ta); out.classList.remove('show', 'err'); out.innerHTML = ''; });
+}
+function pgInit(){ document.querySelectorAll('.cell[data-cell]').forEach(pgWire); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pgInit); else pgInit();
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: Which normal form is violated? ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const ZONES = ['nf1', 'nf2', 'nf3'];
+  const ITEMS = [
+    { id: 'a1', text: "A cell holds 'MATH101, CS200' — two values", zone: 'nf1' },
+    { id: 'a2', text: 'Repeating groups as extra columns (child1, child2, child3)', zone: 'nf1' },
+    { id: 'a3', text: 'A JSON/array list of phone numbers in one column', zone: 'nf1' },
+    { id: 'b1', text: 'course_title depends on course_id alone', zone: 'nf2' },
+    { id: 'b2', text: 'student_name depends on student_id alone', zone: 'nf2' },
+    { id: 'b3', text: 'Key is (student_id, course_id); an attribute needs only one of them', zone: 'nf2' },
+    { id: 'c1', text: 'zip_code determines city — both non-key', zone: 'nf3' },
+    { id: 'c2', text: 'dept_name depends on dept_id, and dept_id is not a key', zone: 'nf3' },
+    { id: 'c3', text: 'A non-key attribute determines another non-key attribute', zone: 'nf3' },
+  ];
+  let placed = {}, selected = null, checked = false;
+  const bank = byId('nfmbank');
+  if (!bank) return;
+  function keyHtml(){
+    return '<div class="lm-key"><div class="lm-key-head">Correct mapping</div>' +
+      ITEMS.map(it => {
+        const ok = placed[it.id] === it.zone;
+        const h = document.querySelector('.lm-zone[data-zone="' + it.zone + '"] .lm-zone-head');
+        const name = h ? h.textContent.split('·')[0].trim() : it.zone;
+        return '<div class="lm-key-row ' + (ok ? 'ok' : 'bad') + '"><span class="lm-key-item">' + (ok ? '✓' : '✗') + ' ' + esc(it.text) + '</span><span class="lm-key-zone">' + esc(name) + '</span></div>';
+      }).join('') + '</div>';
+  }
+  function render(){
+    const rest = ITEMS.filter(it => !placed[it.id]);
+    bank.innerHTML = rest.length ? rest.map(it =>
+      `<div class="lm-chip${selected === it.id ? ' selected' : ''}" data-id="${it.id}">${esc(it.text)}</div>`).join('')
+      : `<span class="lm-hint" style="margin:0;">${checked ? 'All defects placed and checked.' : 'All defects placed — press “Check mapping”.'}</span>`;
+    bank.querySelectorAll('.lm-chip').forEach(chip => chip.addEventListener('click', () => {
+      if (checked) return;
+      selected = selected === chip.dataset.id ? null : chip.dataset.id;
+      render();
+    }));
+    ZONES.forEach(z => {
+      byId('nfmzone-' + z).innerHTML = ITEMS.filter(it => placed[it.id] === z).map(it => {
+        let cls = 'lm-item';
+        if (checked) cls += it.zone === z ? ' correct' : ' incorrect';
+        return `<div class="${cls}" data-id="${it.id}">${esc(it.text)}</div>`;
+      }).join('');
+      byId('nfmzone-' + z).querySelectorAll('.lm-item').forEach(el => el.addEventListener('click', () => {
+        if (checked) return;
+        delete placed[el.dataset.id]; selected = null; render();
+      }));
+    });
+    document.querySelectorAll('.lm-zone').forEach(z => z.classList.toggle('armed', !!selected));
+    byId('nfmcheck').disabled = Object.keys(placed).length < ITEMS.length;
+    byId('nfmanswer').disabled = !checked;
+    if (!checked) byId('nfmscore').textContent = `${Object.keys(placed).length} of ${ITEMS.length} placed`;
+  }
+  document.querySelectorAll('.lm-zone').forEach(z => z.addEventListener('click', () => {
+    if (checked || !selected) return;
+    placed[selected] = z.dataset.zone; selected = null; render();
+  }));
+  byId('nfmcheck').addEventListener('click', () => {
+    checked = true;
+    const wrong = ITEMS.filter(it => placed[it.id] !== it.zone);
+    const score = ITEMS.length - wrong.length;
+    byId('nfmfeedback').innerHTML = wrong.length === 0
+      ? `<div class="lm-feedback correct">✓ ${score} / ${ITEMS.length}. Keep the three questions in order: is each cell <em>one value</em> (1NF)? does every attribute need the <em>whole</em> key (2NF)? does anything non-key determine another non-key (3NF)? Answering them in that order is the entire normalization algorithm.</div>`
+      : `<div class="lm-feedback incorrect">✗ ${score} / ${ITEMS.length}. The red ones are misplaced — click “Restart”. The distinction that matters: 2NF is about a <em>composite</em> key only (no composite key means 2NF is free), while 3NF is about one non-key attribute determining another.</div>`;
+    render();
+    byId('nfmscore').textContent = `${score} / ${ITEMS.length} correct`;
+  });
+  byId('nfmanswer').addEventListener('click', () => { byId('nfmkey').innerHTML = keyHtml(); });
+  byId('nfmrestart').addEventListener('click', () => {
+    placed = {}; selected = null; checked = false;
+    byId('nfmfeedback').innerHTML = ''; byId('nfmkey').innerHTML = ''; render();
+  });
+  render();
+})();
+</script>
+
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

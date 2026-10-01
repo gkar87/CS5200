@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · Single-Table SELECT: The NULL Trap Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, .cell, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:900px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:680px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+.step-card{border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:20px 22px; margin:22px 0;}
+.step-card .step-num{display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600; margin-right:10px;}
+.step-card h3{display:flex; align-items:center; margin-top:0;}
+
+.cell{background:var(--code-bg); border-radius:8px; margin:14px 0; overflow:hidden; border:1px solid var(--code-rule);}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75;}
+.cell textarea{
+  width:100%; min-height:0; background:var(--code-bg); color:var(--code-text);
+  border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; resize:none; outline:none; line-height:1.55; overflow:hidden; display:block; tab-size:2;
+}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+table.dbtable{border-collapse:collapse; margin:8px 0; font-size:12.5px; width:100%;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-align:left; padding:5px 10px; border:1px solid var(--code-rule);}
+table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text);}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.quiz-wrap{border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:20px 22px; margin:18px 0;}
+.quiz-progress{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
+.quiz-q{font-weight:600; margin-bottom:12px; font-size:1.05em;}
+.quiz-q .quiz-sql{display:block; margin-top:10px;}
+.quiz-opt{display:block; width:100%; text-align:left; padding:10px 14px; margin-bottom:8px; border:1px solid var(--rule); border-radius:8px; background:var(--paper); cursor:pointer; font-family:"Source Serif 4",serif; font-size:.98em;}
+.quiz-opt:hover{border-color:var(--blue);}
+.quiz-opt .opt-label{font-weight:600; margin-right:6px;}
+.quiz-opt .opt-hint{display:block; font-size:.85em; color:var(--ink-soft); margin-top:2px;}
+.quiz-opt.correct{border-color:var(--green); background:var(--green-soft);}
+.quiz-opt.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.quiz-opt.disabled{cursor:default;}
+.quiz-feedback{margin-top:12px; padding:12px 14px; border-radius:8px; font-size:.95em;}
+.quiz-feedback.correct{background:var(--green-soft); color:var(--green);}
+.quiz-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.quiz-nav{margin-top:14px;}
+.quiz-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft); margin-top:8px;}
+.quiz-done{text-align:center; padding:20px;}
+.quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+.quiz-verify-output{margin-top:10px; display:none;}
+.quiz-verify-output.show{display:block;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+/* ===== Three-Valued Logic Explorer ===== */
+.tv-picker{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 14px;}
+.tv-op{font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; padding:7px 14px; border-radius:20px; border:1.5px solid var(--rule-strong); background:#fff; color:var(--ink); cursor:pointer;}
+.tv-op:hover{border-color:var(--blue);}
+.tv-op.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.tv-grid{display:inline-grid; gap:6px; margin:2px 0 4px;}
+.tv-corner,.tv-head{font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:700; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; padding:8px 4px; text-transform:uppercase; letter-spacing:.04em;}
+.tv-cell{border:1.5px solid var(--rule); border-radius:8px; padding:12px 8px; min-width:92px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:700; cursor:pointer; background:#fff; color:var(--ink);}
+.tv-cell.t{background:var(--green-soft); color:var(--green); border-color:var(--green);}
+.tv-cell.f{background:var(--paper); color:var(--ink-soft); border-color:var(--rule-strong);}
+.tv-cell.u{background:var(--amber-soft); color:#7A560F; border-color:var(--amber);}
+.tv-cell.sel{box-shadow:0 0 0 3px rgba(47,93,138,.35);}
+.tv-read{font-family:"IBM Plex Mono",monospace; font-size:13px; margin:12px 0 0; color:var(--ink);}
+.tv-sql{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; margin:8px 0 12px;}
+.tv-rows{display:flex; flex-direction:column; gap:8px;}
+.tv-row{display:grid; grid-template-columns:64px 1fr auto auto; gap:12px; align-items:center; border:1px solid var(--rule); border-radius:8px; padding:10px 14px; background:#fff; color:var(--ink);}
+.tv-row.kept{border-color:var(--green); background:var(--green-soft);}
+.tv-row.dropped{opacity:.72;}
+.tv-row.dropped .tv-status{text-decoration:line-through;}
+.tv-id{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.tv-status{font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:700;}
+.tv-verdict{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap;}
+.tv-verdict.t{background:var(--green); color:#fff;}
+.tv-verdict.f{background:var(--ink-soft); color:#fff;}
+.tv-verdict.u{background:#7A560F; color:#fff;}
+.tv-keep{font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap;}
+.tv-row.kept .tv-keep{color:var(--green);}
+.tv-row.dropped .tv-keep{color:var(--rust);}
+.tv-note{font-size:.9em; color:var(--ink-soft); margin-top:12px;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:hover{opacity:.9;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip:hover{border-color:var(--blue);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.lm-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+
+/* ===== Set vs Bag visualizer ===== */
+.sb-modes{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 14px;}
+.sb-kw{color:#7FB3E0;}
+.sb-kw2{color:#C9A0E8;}
+.sb-grid{display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:center; margin:16px 0;}
+.sb-table{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:12px 14px;}
+.sb-table-head{font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:10px;}
+.sb-row{display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink);}
+.sb-row:last-child{margin-bottom:0;}
+.sb-dot{width:9px; height:9px; border-radius:50%; flex:0 0 auto;}
+.sb-name{font-weight:600;}
+.sb-dept{margin-left:auto; font-size:11px; color:var(--ink-soft);}
+.sb-chip .sb-dept{margin-left:0;}
+.sb-mid{text-align:center; font-family:"IBM Plex Mono",monospace;}
+.sb-mid .sb-arrow{display:block; font-size:22px; color:var(--ink-soft); line-height:1;}
+.sb-mid .sb-op-label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-top:6px;}
+.sb-venn{text-align:center; margin:10px 0 4px;}
+.sb-venn svg{max-width:100%; height:auto;}
+.sb-result-head{display:flex; align-items:center; gap:10px; margin:18px 0 10px;}
+.sb-count{margin-left:auto; font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--blue-soft); color:var(--blue);}
+.sb-chips{display:flex; flex-wrap:wrap; gap:8px;}
+.sb-chip{display:inline-flex; align-items:center; gap:8px; border:1px solid var(--rule); border-radius:8px; padding:6px 12px; font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink);}
+.sb-chip .sb-dedup{font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 6px; border-radius:10px; background:var(--rust-soft); color:var(--rust);}
+@media (max-width:680px){ .sb-grid{grid-template-columns:1fr;} }
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical cell buttons (shared) ===== */
+.cell .btn{ background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace; }
+.cell .btn:hover{ opacity:.9; }
+.cell .btn.secondary{ background:transparent; color:var(--code-text); border:1px solid var(--code-rule); }
+.cell .btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">Overview &amp; Execution Order</a>
+      <a href="#three-valued-logic">Three-Valued Logic &amp; NULL</a>
+      <a href="#refined-filtering">LIKE, BETWEEN, IN</a>
+      <div class="grp">Combining &amp; Shaping Results</div>
+      <a href="#set-operations">Set Operations</a>
+      <a href="#set-vs-bag">Set vs Bag (Visualizer)</a>
+      <a href="#sorting-pagination">Sorting &amp; Pagination</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-null-where">Tracing NULL Through WHERE</a>
+      <a href="#worked-union">UNION vs UNION ALL</a>
+      <a href="#worked-execution-order">Reading Execution Order</a>
+      <div class="grp">Apply It</div>
+      <a href="#three-valued-explorer">Three-Valued Logic Explorer</a>
+      <a href="#null-propagation">Tracing NULL Through a Query</a>
+      <a href="#null-trap-quiz">NULL Trap Detector</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+          <div class="grp">2026 Status</div>
+      <a href="#in-2026">In 2026: What Has Changed</a>
+</nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>Single-Table SELECT: The NULL Trap Detector</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede"><code>SELECT</code> is the first SQL you learn and the SQL you write most — and it's deceptively simple. Underneath, the same engine that runs your one-liner also runs the dashboards that drive a company. This playground is about the traps: three-valued logic, execution order, and the set-operation subtleties that separate someone who can write a query from someone who knows exactly what it returns.</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>The Logical Flow of a Query</h2>
+      <p>When you write a query, you usually start typing the word <code>SELECT</code>. The database doesn't. If you want to write efficient queries, you have to think in the order the engine actually executes them:</p>
+      <div class="schema-line">FROM  →  WHERE  →  SELECT  →  ORDER BY  →  LIMIT</div>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 760 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Logical query execution order: FROM identifies the source table, WHERE filters rows, SELECT picks columns, ORDER BY sorts the surviving rows, and LIMIT trims the final result set." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="lqe-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2F5D8A"/></marker>
+          </defs>
+
+          <!-- ===== 1. FROM ===== -->
+          <rect x="30" y="60" width="170" height="270" rx="10" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="46" y="86" font-size="13.5" font-weight="700" fill="#1E2A25">1. FROM</text>
+          <text x="46" y="112" font-size="10.5" fill="#4A564F">Identify the source.</text>
+          <text x="46" y="128" font-size="10.5" fill="#4A564F">Specify the table</text>
+          <text x="46" y="144" font-size="10.5" fill="#4A564F">name. Logical start</text>
+          <text x="46" y="160" font-size="10.5" fill="#4A564F">point.</text>
+          <rect x="62" y="182" width="106" height="124" rx="4" fill="#F6F7F2" stroke="#1E2A25" stroke-width="1.5"/>
+          <line x1="62" y1="222" x2="168" y2="222" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="62" y1="262" x2="168" y2="262" stroke="#1E2A25" stroke-width="1.2"/>
+          <rect x="96" y="218" width="38" height="8" rx="4" fill="#4A564F"/>
+          <rect x="96" y="258" width="38" height="8" rx="4" fill="#4A564F"/>
+
+          <!-- ===== 2. WHERE ===== -->
+          <rect x="246" y="60" width="184" height="150" rx="10" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="260" y="86" font-size="13.5" font-weight="700" fill="#1E2A25">2. WHERE</text>
+          <text x="260" y="106" font-size="10.5" fill="#4A564F">Filter rows.</text>
+          <text x="260" y="122" font-size="10.5" fill="#4A564F">Applies the</text>
+          <text x="260" y="138" font-size="10.5" fill="#4A564F">conditions to</text>
+          <text x="260" y="154" font-size="10.5" fill="#4A564F">the source rows.</text>
+          <text x="260" y="170" font-size="10.5" fill="#4A564F">Keeps only the</text>
+          <text x="260" y="186" font-size="10.5" fill="#4A564F">matching rows.</text>
+          <polygon points="372,104 424,104 402,146 394,146" fill="#E4EBF2" stroke="#2F5D8A" stroke-width="1.3"/>
+          <rect x="382" y="150" width="10" height="10" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1"/>
+          <rect x="396" y="150" width="10" height="10" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1"/>
+
+          <!-- ===== 4. ORDER BY ===== -->
+          <rect x="470" y="60" width="260" height="150" rx="10" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="484" y="86" font-size="13.5" font-weight="700" fill="#1E2A25">4. ORDER BY</text>
+          <text x="484" y="110" font-size="10.5" fill="#4A564F">Sort results. Final</text>
+          <text x="484" y="126" font-size="10.5" fill="#4A564F">ordering of the</text>
+          <text x="484" y="142" font-size="10.5" fill="#4A564F">surviving rows.</text>
+          <rect x="498" y="152" width="26" height="22" rx="3" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.2"/>
+          <rect x="527" y="152" width="26" height="22" rx="3" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.2"/>
+          <rect x="498" y="177" width="26" height="22" rx="3" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.2"/>
+          <rect x="527" y="177" width="26" height="22" rx="3" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.2"/>
+          <text x="511" y="168" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">3</text>
+          <text x="540" y="168" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">1</text>
+          <text x="511" y="193" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">4</text>
+          <text x="540" y="193" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">2</text>
+          <line x1="566" y1="164" x2="600" y2="164" stroke="#2F5D8A" stroke-width="2" marker-end="url(#lqe-arrow)"/>
+          <rect x="604" y="152" width="26" height="22" rx="3" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1.2"/>
+          <rect x="633" y="152" width="26" height="22" rx="3" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1.2"/>
+          <rect x="604" y="177" width="26" height="22" rx="3" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1.2"/>
+          <rect x="633" y="177" width="26" height="22" rx="3" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1.2"/>
+          <text x="617" y="168" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">1</text>
+          <text x="646" y="168" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">2</text>
+          <text x="617" y="193" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">3</text>
+          <text x="646" y="193" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">4</text>
+
+          <!-- ===== 3. SELECT ===== -->
+          <rect x="246" y="256" width="184" height="150" rx="10" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="260" y="282" font-size="13.5" font-weight="700" fill="#1E2A25">3. SELECT</text>
+          <text x="260" y="306" font-size="10.5" fill="#4A564F">Pick columns.</text>
+          <text x="260" y="322" font-size="10.5" fill="#4A564F">Chooses the columns</text>
+          <text x="260" y="338" font-size="10.5" fill="#4A564F">to include in the</text>
+          <text x="260" y="354" font-size="10.5" fill="#4A564F">result set. Defines</text>
+          <text x="260" y="370" font-size="10.5" fill="#4A564F">the output structure.</text>
+
+          <!-- ===== 5. LIMIT ===== -->
+          <rect x="470" y="256" width="260" height="150" rx="10" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="484" y="282" font-size="13.5" font-weight="700" fill="#1E2A25">5. LIMIT</text>
+          <text x="484" y="306" font-size="10.5" fill="#4A564F">Trim output.</text>
+          <text x="484" y="322" font-size="10.5" fill="#4A564F">Restricts the number</text>
+          <text x="484" y="338" font-size="10.5" fill="#4A564F">of rows returned.</text>
+          <text x="484" y="354" font-size="10.5" fill="#4A564F">Truncates the final</text>
+          <text x="484" y="370" font-size="10.5" fill="#4A564F">result set.</text>
+          <rect x="500" y="378" width="160" height="8" rx="2" fill="#E4EBF2" stroke="#2F5D8A" stroke-width="1"/>
+          <rect x="500" y="389" width="160" height="8" rx="2" fill="#E4EBF2" stroke="#2F5D8A" stroke-width="1"/>
+          <rect x="500" y="400" width="160" height="8" rx="2" fill="#E4EBF2" stroke="#2F5D8A" stroke-width="1"/>
+          <line x1="660" y1="376" x2="660" y2="410" stroke="#A1402A" stroke-width="1.6" stroke-dasharray="5,4"/>
+          <text x="676" y="392" font-size="14" fill="#4A564F">…</text>
+
+          <!-- ===== the flow between the boxes ===== -->
+          <line x1="200" y1="135" x2="242" y2="135" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#lqe-arrow)"/>
+          <line x1="338" y1="211" x2="338" y2="254" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#lqe-arrow)"/>
+          <path d="M430,330 H450 V135 H466" fill="none" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#lqe-arrow)"/>
+          <line x1="600" y1="211" x2="600" y2="254" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#lqe-arrow)"/>
+        </svg>
+        <figcaption>The order in which you write SQL is not the order in which the database executes it.</figcaption>
+      </figure>
+
+      <p>The database first looks at <code>FROM</code> to find the table. Then it moves to <code>WHERE</code> to throw away rows you don't need. Only after the rows are filtered does it look at <code>SELECT</code> to decide which columns to show. Finally it handles <code>ORDER BY</code> and <code>LIMIT</code> to sort and trim the final list. The order you <em>write</em> SQL in is not the order the database <em>runs</em> it in — a distinction that explains several traps in this reading.</p>
+      <p>One practical consequence right away: <code>SELECT *</code> asks the database to pull every column from every filtered row. On a table with fifty columns and a million rows, that's a lot of data moved for nothing. Naming only the columns you need reduces the "width" of what has to move, which is often a bigger performance lever than people expect.</p>
+    </section>
+
+    <section id="three-valued-logic">
+      <div class="kicker">Foundations</div>
+      <h2>The Logic of Nothing: Handling NULL</h2>
+      <p><code>NULL</code> doesn't mean zero, and it doesn't mean an empty string. It means the value is <em>unknown or missing</em>. This creates <strong>three-valued logic</strong>: instead of just True and False, every condition in SQL can also come out <strong>Unknown</strong>. A <code>WHERE</code> clause only keeps rows where the condition is <em>True</em> — Unknown is treated the same as False for filtering purposes, but it is not the same value.</p>
+      <div class="callout amber">
+        <strong>The single most common SQL bug:</strong> <code>WHERE column = NULL</code> will never match anything, ever — not even other <code>NULL</code>s. Because <code>NULL</code> means "unknown," comparing anything to it (even another <code>NULL</code>) can only produce <em>Unknown</em>, never True. To find missing values you must use <code>IS NULL</code> or <code>IS NOT NULL</code>, which are special-cased operators, not ordinary comparisons.
+      </div>
+      <div class="cell" data-cell="null_equals_trap">
+        <div class="cell-head"><span class="cell-title">null_equals_never_matches.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <h3>NULL Inside AND / OR</h3>
+      <p>When you combine conditions, NULL propagates predictably but requires care. <code>TRUE AND UNKNOWN</code> is <code>UNKNOWN</code>; <code>UNKNOWN OR UNKNOWN</code> is still <code>UNKNOWN</code>. If you want rows with an unknown value included, you must say so explicitly:</p>
+      <div class="cell" data-cell="and_or_null">
+        <div class="cell-head"><span class="cell-title">and_or_with_null.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="three-valued-explorer">
+      <div class="kicker">Foundations</div>
+      <h2>The Three-Valued Logic Explorer</h2>
+      <p>SQL has three truth values, not two: <code>TRUE</code>, <code>FALSE</code>, and <code>UNKNOWN</code>. Play with the logic first, then watch the very same rules decide &mdash; live, against a real SQLite database &mdash; which rows a <code>WHERE</code> clause keeps and which it silently drops.</p>
+
+      <div class="widget">
+        <div class="widget-title">Three-Valued Logic Explorer</div>
+        <div class="widget-sub">TRUE · FALSE · UNKNOWN — and what WHERE does with each</div>
+
+        <div class="widget-label">Part 1 — combine two conditions</div>
+        <div class="tv-picker" id="tv-op-picker"></div>
+        <div class="tv-grid" id="tv-grid"></div>
+        <p class="tv-read" id="tv-read">Click any cell to read the rule it encodes.</p>
+
+        <div class="widget-label">Part 2 — the same logic deciding which rows survive</div>
+        <div class="tv-picker" id="tv-pred-picker"></div>
+        <div class="tv-sql" id="tv-sql"></div>
+        <div class="tv-rows" id="tv-rows"></div>
+        <div class="tv-note" id="tv-note"></div>
+      </div>
+    </section>
+
+    <section id="refined-filtering">
+      <div class="kicker">Foundations</div>
+      <h2>Refined Filtering: LIKE, BETWEEN, and IN</h2>
+      <p>Exact-match equals signs are fine until real-world data gets messy. <code>LIKE</code> gives you pattern matching: <code>%</code> is a wildcard for any run of characters, <code>_</code> is a wildcard for exactly one character. <code>Name LIKE 'J%'</code> matches "John" and "Jane"; <code>Name LIKE '%son'</code> matches "Jackson" and "Thompson."</p>
+      <p><code>BETWEEN</code> and <code>IN</code> exist purely for readability and optimizer-friendliness: <code>Age BETWEEN 18 AND 25</code> instead of two chained comparisons, <code>Country IN ('USA','Canada','Mexico')</code> instead of a chain of <code>OR</code>s.</p>
+      <div class="callout">
+        <strong>The wildcard-in-your-data gotcha:</strong> if the value you're searching for itself contains a literal <code>_</code> or <code>%</code>, a plain <code>LIKE '%_%'</code> will match far more than you intend, because SQL reads that <code>_</code> as "any one character," not literally. The fix is an <code>ESCAPE</code> clause that designates a character to neutralize the wildcard.
+      </div>
+      <div class="cell" data-cell="like_escape">
+        <div class="cell-head"><span class="cell-title">like_wildcard_escape.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="set-operations">
+      <div class="kicker">Combining & Shaping Results</div>
+      <h2>Set Operations: Combining Results</h2>
+      <p>Sometimes what you need isn't in one query's rows — it's the combination, overlap, or difference of two queries. That's <code>UNION</code>, <code>INTERSECT</code>, and <code>EXCEPT</code> (called <code>MINUS</code> in some systems).</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three Venn diagrams: UNION shades both query results, INTERSECT shades only the overlap, and EXCEPT shades only the first query's rows." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="sv-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#1E2A25"/></marker>
+          </defs>
+
+          <!-- ===== UNION ===== -->
+          <text x="130" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">UNION</text>
+          <line x1="130" y1="74" x2="130" y2="137" stroke="#1E2A25" stroke-width="1.6" marker-end="url(#sv-arrow)"/>
+          <circle cx="102" cy="196" r="62" fill="#F6E4DE" stroke="#1E2A25" stroke-width="1.6"/>
+          <circle cx="158" cy="196" r="62" fill="#F6E4DE" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="68" y="200" text-anchor="middle" font-size="10.5" fill="#1E2A25">Query A</text>
+          <text x="192" y="200" text-anchor="middle" font-size="10.5" fill="#1E2A25">Query B</text>
+
+          <!-- ===== INTERSECT ===== -->
+          <text x="380" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">INTERSECT</text>
+          <line x1="380" y1="74" x2="380" y2="137" stroke="#1E2A25" stroke-width="1.6" marker-end="url(#sv-arrow)"/>
+          <circle cx="352" cy="196" r="62" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <circle cx="408" cy="196" r="62" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <path d="M380,140.7 A62,62 0 0 1 380,251.3 A62,62 0 0 1 380,140.7 Z" fill="#F6E4DE" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="318" y="200" text-anchor="middle" font-size="10.5" fill="#1E2A25">Query A</text>
+          <text x="442" y="200" text-anchor="middle" font-size="10.5" fill="#1E2A25">Query B</text>
+
+          <!-- ===== EXCEPT ===== -->
+          <text x="630" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">EXCEPT</text>
+          <line x1="630" y1="74" x2="630" y2="137" stroke="#1E2A25" stroke-width="1.6" marker-end="url(#sv-arrow)"/>
+          <circle cx="658" cy="196" r="62" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <circle cx="602" cy="196" r="62" fill="#F6E4DE" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="568" y="200" text-anchor="middle" font-size="10.5" fill="#1E2A25">Query A</text>
+          <text x="692" y="200" text-anchor="middle" font-size="10.5" fill="#1E2A25">Query B</text>
+        </svg>
+        <figcaption>Set operations allow you to combine, compare, or subtract the results of two queries.</figcaption>
+      </figure>
+
+      <table class="compare">
+        <tr><th>Operator</th><th>Meaning</th><th>Semantics</th></tr>
+        <tr><td><code>UNION</code></td><td>All rows from both queries</td><td><strong>Set</strong> — duplicates removed, requires a sort/hash</td></tr>
+        <tr><td><code>UNION ALL</code></td><td>All rows from both queries</td><td><strong>Bag</strong> — nothing removed, just concatenated</td></tr>
+        <tr><td><code>INTERSECT</code></td><td>Rows that appear in both</td><td>Set</td></tr>
+        <tr><td><code>EXCEPT</code></td><td>Rows in the first query, not in the second</td><td>Set</td></tr>
+      </table>
+      <p>Removing duplicates is expensive — the engine has to sort or hash the entire combined result to find matches. <code>UNION ALL</code> skips that step entirely, which is why it's almost always faster than plain <code>UNION</code> when you don't actually need deduplication.</p>
+      <div class="cell" data-cell="union_vs_all_basic">
+        <div class="cell-head"><span class="cell-title">union_set_vs_bag.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="callout amber">
+        <strong>Dialect gap worth knowing:</strong> standard SQL also defines <code>INTERSECT ALL</code> and <code>EXCEPT ALL</code> — bag versions of intersection and difference, useful when duplicate counts matter (e.g. "how many extra signups did campaign A have over campaign B, per email"). PostgreSQL supports both. SQLite does not support either <code>ALL</code> variant — try it below and watch it fail with a plain syntax error.
+      </div>
+      <div class="cell" data-cell="except_all_gap">
+        <div class="cell-head"><span class="cell-title">except_all_unsupported.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">When you're stuck on an engine without <code>EXCEPT ALL</code>, you can simulate bag difference with a window function — number each duplicate on the left side, count matches on the right, and keep only the "extra" copies:</p>
+      <div class="cell" data-cell="except_all_simulated">
+        <div class="cell-head"><span class="cell-title">except_all_simulated_with_window_fn.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="set-vs-bag">
+      <div class="kicker">Combining &amp; Shaping Results</div>
+      <h2>Set vs Bag, Visualized</h2>
+      <p>Last year's roster and this year's roster share some students. What comes back from <code>UNION</code> versus <code>UNION ALL</code> is the difference between a <strong>set</strong> and a <strong>bag</strong>: <code>UNION</code> collapses rows that match on every column into one, while <code>UNION ALL</code> keeps every row exactly as it arrived. Toggle the operator and watch the result change.</p>
+
+      <div class="widget">
+        <div class="widget-title">Set vs Bag — UNION vs UNION ALL</div>
+        <div class="widget-sub">Toggle the operator to see how duplicate rows are handled in the result.</div>
+
+        <div class="widget-label">Operator</div>
+        <div class="sb-modes" id="sb-modes"></div>
+
+        <div class="tv-sql" id="sb-sql"></div>
+
+        <div class="sb-grid">
+          <div class="sb-table">
+            <div class="sb-table-head">Table A — students_2023</div>
+            <div id="sb-a"></div>
+          </div>
+          <div class="sb-mid"><span class="sb-arrow" aria-hidden="true">→</span><span class="sb-op-label" id="sb-mid-label">UNION</span></div>
+          <div class="sb-table">
+            <div class="sb-table-head">Table B — students_2024</div>
+            <div id="sb-b"></div>
+          </div>
+        </div>
+
+        <div class="sb-venn">
+          <svg viewBox="0 0 640 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A Venn diagram of the two tables: three rows belong to table A only, two rows are shared, and three rows belong to table B only." font-family="IBM Plex Mono, monospace">
+            <ellipse cx="240" cy="110" rx="120" ry="72" fill="#2F5D8A" fill-opacity="0.15" stroke="#2F5D8A" stroke-width="1.6"/>
+            <ellipse cx="400" cy="110" rx="120" ry="72" fill="#6B4C8A" fill-opacity="0.15" stroke="#6B4C8A" stroke-width="1.6"/>
+            <text x="135" y="56" font-size="12" font-weight="700" fill="#4A564F">A</text>
+            <text x="505" y="56" font-size="12" font-weight="700" fill="#4A564F">B</text>
+            <text x="185" y="102" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">Table A only</text>
+            <text x="185" y="120" text-anchor="middle" font-size="10.5" fill="#4A564F">3 rows</text>
+            <text x="320" y="102" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">Both</text>
+            <text x="320" y="120" text-anchor="middle" font-size="10.5" fill="#4A564F">2 shared</text>
+            <text x="455" y="102" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">Table B only</text>
+            <text x="455" y="120" text-anchor="middle" font-size="10.5" fill="#4A564F">3 rows</text>
+          </svg>
+        </div>
+
+        <div class="sb-result-head">
+          <strong>Result</strong>
+          <span class="badge blue" id="sb-op-badge">UNION</span>
+          <span class="sb-count" id="sb-count"></span>
+        </div>
+
+        <div class="sb-chips" id="sb-chips"></div>
+
+        <div class="callout" id="sb-note"></div>
+      </div>
+    </section>
+
+    <section id="sorting-pagination">
+      <div class="kicker">Combining & Shaping Results</div>
+      <h2>Sorting and Trimming</h2>
+      <p>Row order in a table is never guaranteed. If you need a specific order, you must say so with <code>ORDER BY</code> — including for multiple columns: <code>ORDER BY LastName ASC, FirstName ASC</code> sorts by last name first, then breaks ties by first name.</p>
+      <p><code>LIMIT</code> trims the sorted result, and <code>LIMIT ... OFFSET ...</code> is the standard pagination pattern — <code>LIMIT 10 OFFSET 10</code> skips the first ten rows and returns the next ten.</p>
+      <div class="callout rust">
+        <strong>The pagination trap:</strong> if your <code>ORDER BY</code> key has ties — two rows with the exact same <code>created_at</code> — SQL makes no promise about which order the tied rows come out in. A page built from <code>LIMIT 20 OFFSET 40</code> can legitimately return a different subset of the tied rows on a later run, on a different engine, or after a query-plan change, even though "<code>ORDER BY created_at DESC</code>" is technically satisfied both times. The fix is a deterministic tie-breaker: add a column that's guaranteed unique, like the primary key.
+      </div>
+      <p>Below, the same 25 rows (with heavy ties on <code>created_at</code>) are paginated three ways. All three satisfy <code>ORDER BY created_at DESC</code> — but look at which five rows land on "page 3" (<code>OFFSET 20</code>) each time:</p>
+      <div class="cell" data-cell="pagination_tiebreak">
+        <div class="cell-head"><span class="cell-title">pagination_tiebreaker.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="worked-null-where">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Tracing NULL Through a WHERE Clause</h2>
+      <p>Given this <code>employees</code> table:</p>
+      <table class="compare">
+        <tr><th>emp_id</th><th>name</th><th>dept</th><th>salary</th><th>bonus</th></tr>
+        <tr><td>1</td><td>Alice</td><td>Eng</td><td>90000</td><td>5000</td></tr>
+        <tr><td>2</td><td>Bob</td><td>Sales</td><td>60000</td><td><em>NULL</em></td></tr>
+        <tr><td>3</td><td>Carol</td><td>Eng</td><td>85000</td><td>0</td></tr>
+        <tr><td>4</td><td>Dave</td><td><em>NULL</em></td><td>70000</td><td>2000</td></tr>
+      </table>
+      <p>Predict each query's result before running it — this is where three-valued logic bites:</p>
+      <div class="cell" data-cell="worked_null_where">
+        <div class="cell-head"><span class="cell-title">worked_null_through_where.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small"><strong>Query 3 is the one that surprises people:</strong> <code>dept = 'Eng' OR dept != 'Eng'</code> looks tautologically true — "either it is or it isn't" — but Dave's <code>NULL = 'Eng'</code> is Unknown, and so is <code>NULL != 'Eng'</code>. <code>UNKNOWN OR UNKNOWN</code> is still Unknown, so Dave is silently dropped. The universal fix: any predicate that must include NULL-valued rows has to call it out explicitly with <code>OR column IS NULL</code> — or drop the <code>WHERE</code> entirely if "any value including missing" is really what you want.</p>
+    </section>
+
+    <section id="worked-union">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: UNION vs UNION ALL — When Duplicates Matter</h2>
+      <p>Two tables record customer email signups from different campaigns:</p>
+      <div class="schema-line">campaign_a: alice@x.com, bob@y.com, alice@x.com
+campaign_b: alice@x.com, carol@z.com</div>
+      <div class="cell" data-cell="worked_union_campaigns">
+        <div class="cell-head"><span class="cell-title">worked_union_vs_union_all.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small"><strong>Rule of thumb:</strong> use <code>UNION ALL</code> by default when you know there are no duplicates, or you actively want to keep them (e.g. counting total signups per campaign). Reach for plain <code>UNION</code> only when deduplication is the actual goal — "list all unique customers."</p>
+    </section>
+
+    <section id="worked-execution-order">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Reading a Query in Execution Order</h2>
+      <p>You write this, top to bottom:</p>
+      <div class="schema-line">SELECT department, salary * 1.1 AS new_salary
+FROM employees
+WHERE hire_date &gt;= '2025-01-01'
+ORDER BY new_salary DESC
+LIMIT 5;</div>
+      <p>By the standard execution order, the database evaluates it: <code>FROM</code> (source relation) → <code>WHERE</code> (filter — at this point <code>new_salary</code> doesn't exist yet) → <code>SELECT</code> (now the expression is computed and the alias introduced) → <code>ORDER BY</code> (the alias exists now, so this is legal) → <code>LIMIT</code>. Reasoning from that order, <code>WHERE new_salary &gt; 100000</code> should be illegal — the alias hasn't been created yet.</p>
+      <div class="cell" data-cell="worked_execution_order">
+        <div class="cell-head"><span class="cell-title">worked_execution_order_alias_trap.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="callout amber">
+        <strong>SQLite quirk — it doesn't actually enforce this rule.</strong> Run the cell above and the second statement <em>succeeds</em>: SQLite falls back to resolving an unrecognized identifier in <code>WHERE</code> against a matching <code>SELECT</code>-list alias, as a non-standard convenience. Standard SQL, and strict engines like PostgreSQL, reject <code>WHERE new_salary &gt; 100000</code> exactly as the execution-order model predicts — that's the portable behavior to design around. The fallback only kicks in when there's no real column of that name; add a genuine <code>new_salary</code> column to the table and SQLite prefers the real column over the alias, silently changing what your query means. Treat "alias in <code>WHERE</code>" as a bug to avoid even on SQLite, not a feature to rely on.
+      </div>
+      <p class="small">This ordering is also why <code>SELECT COUNT(*) FROM t WHERE x IS NULL</code> counts NULLs but <code>SELECT COUNT(x) FROM t</code> does not — <code>COUNT(x)</code> runs during the <code>SELECT</code> projection step, which is exactly where NULLs get skipped by definition of the aggregate. <code>COUNT(*)</code> counts rows, full stop, regardless of what's NULL inside them.</p>
+      <div class="cell" data-cell="count_star_vs_col">
+        <div class="cell-head"><span class="cell-title">count_star_vs_count_column.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="null-propagation">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Tracing NULL Through a Query</h2>
+      <p>A <code>NULL</code> never announces itself. It travels through your query quietly, turning comparisons into UNKNOWN and making rows disappear. Step through where it changes the answer — every panel is a trap you will meet in real code.</p>
+
+      <div class="widget">
+        <div class="widget-title">Tracing NULL Through a Query</div>
+        <div class="widget-sub">seven places a NULL silently changes your result</div>
+        <div class="qstep-rail" id="nullstep-rail"></div>
+        <div class="qstep-body" id="nullstep-body"></div>
+        <div class="qstep-controls">
+          <button class="qstep-restart-btn" id="nullstep-back">◀ Back</button>
+          <button class="qstep-next-btn" id="nullstep-next">Next step ▶</button>
+          <button class="qstep-restart-btn" id="nullstep-restart">↺ Restart</button>
+          <span class="qstep-count" id="nullstep-count"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="null-trap-quiz">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: NULL Trap Detector</h2>
+      <p>Ten scenarios covering NULL semantics, three-valued logic, and query traps in single-table SELECT.</p>
+      <div id="ntd-quiz"></div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. Which queries match <code>!= 'shipped'</code>?</h4>
+        <p>Table <code>orders(id, customer_id, status)</code> has rows with status values <code>'shipped'</code>, <code>'pending'</code>, <code>'cancelled'</code>, and some rows with <code>status IS NULL</code>. Which of these queries returns the same set of rows as <code>WHERE status != 'shipped'</code>?</p>
+        <p>(a) <code>WHERE status IN ('pending', 'cancelled')</code> &nbsp; (b) <code>WHERE NOT (status = 'shipped')</code> &nbsp; (c) <code>WHERE status &lt;&gt; 'shipped' OR status IS NULL</code></p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>None of the three returns exactly what <code>WHERE status != 'shipped'</code> does, because <code>!=</code> silently drops NULL-status rows.</p>
+            <p>(a) matches the non-null non-shipped rows only — same result as <code>!=</code>. (b) is equivalent to <code>!=</code> (NOT of UNKNOWN is UNKNOWN, dropped) — same result. (c) explicitly includes NULLs — this is a <em>superset</em> of the <code>!=</code> result.</p>
+            <p>So (a) and (b) are equivalent to <code>!=</code>, and (c) is what you probably <em>wanted</em> (<code>!= 'shipped'</code> including NULL status). The universal lesson: <code>!=</code> and <code>NOT (=)</code> drop NULLs; if you want them included, add <code>OR ... IS NULL</code> explicitly.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Is this legal?</h4>
+        <p>You wrote <code>SELECT DISTINCT dept, salary FROM employees ORDER BY name</code>. Predict whether this query is legal, and why.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>It depends on the dialect, and is best avoided. After <code>SELECT DISTINCT</code>, the result contains only the columns <code>dept</code> and <code>salary</code> — <code>name</code> has been projected away. <code>ORDER BY</code> runs after <code>SELECT</code> and <code>DISTINCT</code>, so it operates on the projected relation. Some dialects (PostgreSQL) reject the query because <code>name</code> is not in the SELECT list and DISTINCT was applied. Others (MySQL in loose mode) accept it, sorting by the pre-projected <code>name</code> in a way that's ambiguous when DISTINCT collapses rows.</p>
+            <p>Safe rewrite: include the sort column in SELECT, or sort by a column that IS in the projection.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Matching literal wildcard characters</h4>
+        <p>You need to find all users whose usernames contain either an underscore <code>_</code> or a percent sign <code>%</code> (both are LIKE wildcards). Which query works?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <div class="schema-line">SELECT username FROM users
+WHERE username LIKE '%\_%' ESCAPE '\'
+   OR username LIKE '%\%%' ESCAPE '\';</div>
+            <p>The <code>ESCAPE '\'</code> clause designates a character to escape the wildcards. Without it, <code>LIKE '%_%'</code> matches any username with at least one character (since <code>_</code> means "any single character"). Any character can be chosen as the escape (backslash is conventional but arbitrary). This is a classic gotcha when searching data that itself contains SQL wildcard characters.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. Five set operations on the same two lists</h4>
+        <p>Given <code>campaign_a = {alice, bob, alice}</code> and <code>campaign_b = {alice, carol}</code>, predict the result of each:</p>
+        <p>(a) <code>... campaign_a UNION ... campaign_b</code> &nbsp; (b) <code>... UNION ALL ...</code> &nbsp; (c) <code>... EXCEPT ...</code> &nbsp; (d) <code>... EXCEPT ALL ...</code> &nbsp; (e) <code>... INTERSECT ...</code></p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><strong>(a)</strong> <code>{alice, bob, carol}</code> — set union deduplicates.</p>
+            <p><strong>(b)</strong> <code>{alice, bob, alice, alice, carol}</code> — bag union keeps everything.</p>
+            <p><strong>(c)</strong> <code>{bob}</code> — set difference. Alice appears in B, so all Alices in A are removed.</p>
+            <p><strong>(d)</strong> <code>{bob, alice}</code> — bag difference removes ONE alice per matching alice in B (only one in B), leaving one alice + one bob in A.</p>
+            <p><strong>(e)</strong> <code>{alice}</code> — set intersection collapses to a single alice.</p>
+            <p>The <code>ALL</code> variants matter when multiplicities are meaningful (e.g., counting duplicate signups). Note: as the Set Operations section above demonstrates live, SQLite doesn't actually implement <code>EXCEPT ALL</code> — this answer describes standard SQL semantics (PostgreSQL supports it natively), and the section above shows how to simulate it with a window function where it's missing.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>5. Deterministic pagination</h4>
+        <p>Write a query that returns the second page (page size 20) of employees ordered by salary descending, then by name ascending as a tie-breaker.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <div class="schema-line">SELECT emp_id, name, salary
+FROM employees
+ORDER BY salary DESC, name ASC
+LIMIT 20 OFFSET 20;</div>
+            <p><code>ORDER BY salary DESC</code> — highest paid first. <code>, name ASC</code> — alphabetize ties. <code>LIMIT 20 OFFSET 20</code> — skip page 1 (rows 1–20), return rows 21–40.</p>
+            <p>A common pitfall: without a deterministic tie-breaker like the secondary <code>name ASC</code>, two runs of the same paginated query can return different rows for the same page if there are ties on <code>salary</code>. Always make <code>ORDER BY</code> deterministic when paginating.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p>The single-table <code>SELECT</code> is the SQL equivalent of FizzBuzz — it screens out candidates who cannot write basic SQL, and rewards ones who understand its subtleties.</p>
+
+        <p><strong>The screener question.</strong> "Find all users who signed up in January but never verified their email." The immediate trap is that "never verified" often means <code>verified_at IS NULL</code>. Candidates who write <code>WHERE verified_at = NULL</code> fail the screener silently — the comparison is Unknown, so the result is empty. Being fluent in <code>IS NULL</code> / <code>IS NOT NULL</code> is table stakes.</p>
+
+        <p><strong>The follow-up.</strong> "Now return the top 20 sorted by signup date." A candidate who writes <code>LIMIT 20</code> alone is correct only if the ordering is inherent — which it never is in SQL. Always pair <code>LIMIT</code> with <code>ORDER BY</code>, and for pagination, add a deterministic tie-breaker (<code>ORDER BY signup_date DESC, user_id DESC</code>) so page 2 doesn't repeat page 1's tail.</p>
+
+        <p><strong>The three-valued logic gotcha.</strong> "For a <code>status</code> column that can be 'active', 'inactive', or NULL, does <code>WHERE status != 'active'</code> return the NULL rows?" No — <code>NULL != 'active'</code> is Unknown, which the <code>WHERE</code> drops. To include them, write <code>WHERE status != 'active' OR status IS NULL</code>, or use <code>WHERE status IS DISTINCT FROM 'active'</code> in PostgreSQL. This exact question appears in Meta, Google, and Amazon SQL screens with regularity.</p>
+
+        <p><strong>The set-operation trap.</strong> "Given two query results, combine them and remove duplicates." A weak answer is "just use UNION." A strong answer says "use UNION ALL if I know there are no duplicates or want to preserve counts, because plain UNION forces a sort/hash to dedupe and can be 5-10x slower on large data." That performance instinct is what interviewers watch for.</p>
+
+        <p><strong>A real-world SaaS scenario to practice.</strong> Given <code>events(user_id, event_name, event_ts)</code> with billions of rows:</p>
+        <ul class="criteria-list">
+          <li><span class="c-num">•</span>"Count users active in the last 7 days." → <code>SELECT COUNT(DISTINCT user_id) FROM events WHERE event_ts &gt; NOW() - INTERVAL '7 days'</code>.</li>
+          <li><span class="c-num">•</span>"How would you make this fast?" → Index on <code>event_ts</code>, or a pre-computed daily active-user rollup. Recognizing that "we could denormalize this into a summary table" is the shift from junior to mid-level thinking.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="in-2026">
+      <div class="kicker">2026 Status</div>
+      <h2>In 2026: What Has Changed</h2>
+      <p>Three-valued logic has not changed, but the ways it bites you have multiplied.</p>
+      <ul>
+        <li><strong><code>IS DISTINCT FROM</code> and <code>IS NOT DISTINCT FROM</code></strong> give NULL-safe comparison — the inequality that <code>=</code> and <code>&lt;&gt;</code> are not.</li>
+        <li><strong>Order NULLs deliberately</strong> with <code>NULLS FIRST</code> / <code>NULLS LAST</code> rather than relying on whatever the engine defaults to.</li>
+        <li><strong>JSON null is not SQL NULL.</strong> A JSON null survives extraction as a value, while a missing key extracts to SQL NULL — a distinction that quietly breaks filters.</li>
+        <li><strong>Three-valued logic bites AI-written SQL hardest</strong>, because a generated <code>NOT IN (…, NULL, …)</code> returns zero rows instead of raising an error.</li>
+      </ul>
+      <p class="small">Most silent data bugs are not crashes — they are filters that quietly matched nothing, and NULL is almost always the reason.</p>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="8_constraint_violation_predictor_playground.html">← 8. DDL Constraints</a>
+        <a class="pgnav-pos" href="index.html">Playground 9 of 15</a>
+        <a class="pgnav-next" href="10_join_pattern_selector_playground.html">10. Joins & Subqueries →</a>
+      </nav>
+    </footer>
+
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
+const CELLS = {
+  null_equals_trap: {
+    setup: ``,
+    starter:
+`CREATE TABLE logs (id INT PRIMARY KEY, severity TEXT, user_id INT);
+INSERT INTO logs VALUES (1, 'low', NULL), (2, 'high', 5), (3, 'low', 7);
+
+-- The classic bug: comparing to NULL with = never matches, even the NULL row itself
+SELECT * FROM logs WHERE user_id = NULL;
+
+-- The fix: IS NULL is a special-cased operator, not a comparison
+SELECT * FROM logs WHERE user_id IS NULL;`
+  },
+  and_or_null: {
+    setup: ``,
+    starter:
+`CREATE TABLE logs (id INT PRIMARY KEY, severity TEXT, user_id INT);
+INSERT INTO logs VALUES (1, 'low', NULL), (2, 'high', 5), (3, 'low', 7);
+
+-- (severity = 'high' OR user_id = NULL) -- the NULL branch NEVER contributes a TRUE, for any row
+SELECT * FROM logs WHERE (severity = 'high' OR user_id = NULL);
+
+-- To actually include the NULL-user_id rows, you must say so explicitly
+SELECT * FROM logs WHERE (severity = 'high' OR user_id IS NULL);`
+  },
+  like_escape: {
+    setup: ``,
+    starter:
+`CREATE TABLE users (username TEXT);
+INSERT INTO users VALUES ('alice_underscore'), ('bob%percent'), ('normaluser'), ('under_score_two');
+
+-- Without ESCAPE, '_' and '%' are wildcards, not literal characters
+SELECT username FROM users WHERE username LIKE '%_%';  -- matches almost everything (any 1+ char)
+
+-- With ESCAPE, '\\_' and '\\%' mean the LITERAL underscore and percent characters
+SELECT username FROM users
+WHERE username LIKE '%\\_%' ESCAPE '\\'
+   OR username LIKE '%\\%%' ESCAPE '\\';`
+  },
+  union_vs_all_basic: {
+    setup: ``,
+    starter:
+`CREATE TABLE jan_buyers (customer TEXT);
+CREATE TABLE feb_buyers (customer TEXT);
+INSERT INTO jan_buyers VALUES ('Alice'), ('Bob'), ('Alice');
+INSERT INTO feb_buyers VALUES ('Bob'), ('Carmen');
+
+-- Set semantics: every duplicate collapsed, good for "list unique customers"
+SELECT customer FROM jan_buyers UNION SELECT customer FROM feb_buyers;
+
+-- Bag semantics: nothing removed, good for "how many total purchases"
+SELECT customer FROM jan_buyers UNION ALL SELECT customer FROM feb_buyers;`
+  },
+  except_all_gap: {
+    setup: ``,
+    starter:
+`CREATE TABLE a (x INT);
+CREATE TABLE b (x INT);
+INSERT INTO a VALUES (1), (1), (2);
+INSERT INTO b VALUES (1);
+
+-- Standard SQL defines EXCEPT ALL (bag difference) -- SQLite does not implement it.
+-- This is expected to fail with a syntax error.
+SELECT x FROM a EXCEPT ALL SELECT x FROM b;`
+  },
+  except_all_simulated: {
+    setup: ``,
+    starter:
+`CREATE TABLE a (email TEXT);
+CREATE TABLE b (email TEXT);
+INSERT INTO a VALUES ('alice'), ('bob'), ('alice');
+INSERT INTO b VALUES ('alice'), ('carol');
+
+-- Manual bag-EXCEPT (a EXCEPT ALL b): number each duplicate in A, count matches in B,
+-- keep only the copies in A beyond what B can "cancel out"
+WITH a_numbered AS (
+  SELECT email, ROW_NUMBER() OVER (PARTITION BY email ORDER BY email) AS rn FROM a
+),
+b_counted AS (
+  SELECT email, COUNT(*) AS cnt FROM b GROUP BY email
+)
+SELECT a_numbered.email
+FROM a_numbered
+LEFT JOIN b_counted ON a_numbered.email = b_counted.email
+WHERE a_numbered.rn > COALESCE(b_counted.cnt, 0)
+ORDER BY a_numbered.email;
+-- Expect: bob (untouched), and ONE of the two alices (the other is "cancelled" by b's one alice)`
+  },
+  pagination_tiebreak: {
+    setup: ``,
+    starter:
+`CREATE TABLE reports (id INT PRIMARY KEY, created_at TEXT);
+INSERT INTO reports VALUES
+  (1,'2024-01-05'),(2,'2024-01-05'),(3,'2024-01-05'),(4,'2024-01-05'),(5,'2024-01-05'),
+  (6,'2024-01-04'),(7,'2024-01-04'),(8,'2024-01-04'),(9,'2024-01-04'),(10,'2024-01-04'),
+  (11,'2024-01-03'),(12,'2024-01-03'),(13,'2024-01-03'),(14,'2024-01-03'),(15,'2024-01-03'),
+  (16,'2024-01-02'),(17,'2024-01-02'),(18,'2024-01-02'),(19,'2024-01-02'),(20,'2024-01-02'),
+  (21,'2024-01-01'),(22,'2024-01-01'),(23,'2024-01-01'),(24,'2024-01-01'),(25,'2024-01-01');
+
+-- "Page 3" (rows 21-25) with no tie-breaker -- legal, but the engine picks SOME order among ties
+SELECT id, created_at FROM reports ORDER BY created_at DESC LIMIT 5 OFFSET 20;
+
+-- Same ORDER BY created_at DESC, but a DIFFERENT (also legal) tie-breaker -- different page!
+SELECT id, created_at FROM reports ORDER BY created_at DESC, id DESC LIMIT 5 OFFSET 20;
+
+-- The fix: pick ONE deterministic tie-breaker and always use it
+SELECT id, created_at FROM reports ORDER BY created_at DESC, id ASC LIMIT 5 OFFSET 20;`
+  },
+  worked_null_where: {
+    setup: ``,
+    starter:
+`CREATE TABLE employees (emp_id INT PRIMARY KEY, name TEXT, dept TEXT, salary INT, bonus INT);
+INSERT INTO employees VALUES
+  (1,'Alice','Eng',90000,5000),
+  (2,'Bob','Sales',60000,NULL),
+  (3,'Carol','Eng',85000,0),
+  (4,'Dave',NULL,70000,2000);
+
+-- Query 1: bonus > 0 -- Bob's NULL bonus makes the comparison UNKNOWN, silently dropped
+SELECT name FROM employees WHERE bonus > 0;
+
+-- Query 2: explicitly include the NULL-bonus row
+SELECT name FROM employees WHERE bonus > 0 OR bonus IS NULL;
+
+-- Query 3: looks tautological ("is or isn't Eng") -- but Dave's NULL dept breaks it
+SELECT name FROM employees WHERE dept = 'Eng' OR dept != 'Eng';
+
+-- Query 4: NOT (predicate) does not mean "everything else" when NULLs are present
+SELECT name FROM employees WHERE NOT (bonus > 5000);`
+  },
+  worked_union_campaigns: {
+    setup: ``,
+    starter:
+`CREATE TABLE campaign_a (email TEXT);
+CREATE TABLE campaign_b (email TEXT);
+INSERT INTO campaign_a VALUES ('alice@x.com'), ('bob@y.com'), ('alice@x.com');
+INSERT INTO campaign_b VALUES ('alice@x.com'), ('carol@z.com');
+
+SELECT email FROM campaign_a UNION SELECT email FROM campaign_b;      -- set: alice, bob, carol
+SELECT email FROM campaign_a UNION ALL SELECT email FROM campaign_b;  -- bag: all 5 rows preserved`
+  },
+  worked_execution_order: {
+    setup: ``,
+    starter:
+`CREATE TABLE employees2 (emp_id INT PRIMARY KEY, department TEXT, salary REAL, hire_date TEXT);
+INSERT INTO employees2 VALUES
+  (1,'Eng',100000,'2025-02-01'),
+  (2,'Sales',80000,'2024-06-01'),
+  (3,'Eng',120000,'2025-03-15');
+
+-- Legal: the alias is used in ORDER BY, which runs AFTER SELECT computes it
+SELECT department, salary * 1.1 AS new_salary
+FROM employees2
+WHERE hire_date >= '2025-01-01'
+ORDER BY new_salary DESC
+LIMIT 5;
+
+-- By the standard execution order, WHERE runs BEFORE SELECT, so this alias
+-- shouldn't exist yet -- standard SQL (and engines like PostgreSQL) reject this.
+-- SQLite, however, is non-standard here: it succeeds by falling back to the
+-- SELECT-list alias. Don't rely on this -- see the callout below the cell.
+SELECT department, salary * 1.1 AS new_salary
+FROM employees2
+WHERE new_salary > 100000;`
+  },
+  count_star_vs_col: {
+    setup: ``,
+    starter:
+`CREATE TABLE t (id INT PRIMARY KEY, x INT);
+INSERT INTO t VALUES (1, 10), (2, NULL), (3, 20), (4, NULL);
+
+-- COUNT(*) counts ROWS. COUNT(x) counts NON-NULL VALUES of x. Very different things.
+SELECT COUNT(*) AS count_star, COUNT(x) AS count_x FROM t WHERE x IS NULL;
+SELECT COUNT(*) AS count_star_all, COUNT(x) AS count_x_all FROM t;`
+  }
+};
+
+/* ============ common error hints ============ */
+function commonErrorHint(msg){
+  const m = msg.toLowerCase();
+  if (m.includes('no such column')) {
+    return "That column (or alias) doesn't exist at this point in query execution -- likely the classic \"alias used in WHERE\" trap: WHERE runs before SELECT computes the alias.";
+  }
+  if (m.includes('near "all"') || (m.includes('syntax error') && m.includes('all'))) {
+    return "SQLite doesn't implement the ALL variant of this set operator -- that's the point of this cell.";
+  }
+  if (m.includes('unique constraint failed')) {
+    return "A UNIQUE or PRIMARY KEY constraint stopped this -- that value already exists in the table.";
+  }
+  if (m.includes('foreign key constraint failed')) {
+    return "A foreign key stopped this -- a row points at a parent that doesn't exist, or a parent still has dependent children.";
+  }
+  return null;
+}
+
+/* ============ SQL execution engine (uses iterateStatements so zero-row SELECTs and partial output before an error are preserved) ============ */
+let SQL = null;
+async function getSqlJsModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderResultTable(columns, rows){
+  if (!columns.length) return '';
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of columns) html += `<th>${escapeHtml(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += '<tr>';
+    for (const v of row) html += `<td>${v === null ? '<em>NULL</em>' : escapeHtml(v)}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+async function runSqlAgainstFreshDb(setupSql, mainSql, outputEl){
+  outputEl.innerHTML = '';
+  outputEl.classList.remove('err');
+  outputEl.classList.add('show');
+  try {
+    const SQLmod = await getSqlJsModule();
+    const db = new SQLmod.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setupSql && setupSql.trim()) db.run(setupSql);
+    let out = '';
+    let hadOutput = false;
+    let stmtIter;
+    try {
+      stmtIter = db.iterateStatements(mainSql);
+    } catch (e) {
+      throw e;
+    }
+    for (const stmt of stmtIter) {
+      try {
+        const cols = stmt.getColumnNames();
+        const rows = [];
+        while (stmt.step()) {
+          rows.push(stmt.get());
+        }
+        if (cols.length) {
+          out += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length===1?'':'s'}</div>`;
+          out += renderResultTable(cols, rows);
+          hadOutput = true;
+        }
+      } catch (stmtErr) {
+        const hint = commonErrorHint(stmtErr.message);
+        out += `<div style="color:#F0A38A; margin-top:8px;">✖ Error: ${escapeHtml(stmtErr.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+        hadOutput = true;
+        outputEl.innerHTML = out;
+        outputEl.classList.add('err');
+        db.close();
+        return;
+      }
+    }
+    if (!hadOutput) out = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    outputEl.innerHTML = out;
+    db.close();
+  } catch (e) {
+    const hint = commonErrorHint(e.message);
+    outputEl.innerHTML = `<div style="color:#F0A38A;">✖ Error: ${escapeHtml(e.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+    outputEl.classList.add('err');
+  }
+}
+
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+
+function wireCell(cellEl){
+  const id = cellEl.getAttribute('data-cell');
+  const spec = CELLS[id];
+  if (!spec) return;
+  const textarea = cellEl.querySelector('textarea');
+  const output = cellEl.querySelector('.cell-output');
+  const runBtn = cellEl.querySelector('.run-btn');
+  const resetBtn = cellEl.querySelector('.reset-btn');
+  textarea.value = spec.starter;
+  pgGrow(textarea);
+  textarea.addEventListener('input', () => pgGrow(textarea));
+  runBtn.addEventListener('click', () => {
+    runSqlAgainstFreshDb(spec.setup, textarea.value, output);
+  });
+  resetBtn.addEventListener('click', () => {
+    textarea.value = spec.starter;
+    pgGrow(textarea);
+    output.classList.remove('show', 'err');
+    output.innerHTML = '';
+  });
+}
+
+function initAllCells(){
+  document.querySelectorAll('.cell[data-cell]').forEach(wireCell);
+}
+
+/* ============ NULL Trap Detector quiz ============ */
+const NULL_TRAP_QUESTIONS = [
+  {
+    q: "You run SELECT * FROM users WHERE age != 18. Some users have age IS NULL. Which users appear in the result?",
+    ddl: ``,
+    verifySetup: `CREATE TABLE users (id INT PRIMARY KEY, name TEXT, age INT);
+INSERT INTO users VALUES (1,'A',18),(2,'B',25),(3,'C',NULL),(4,'D',30);`,
+    verifyMain: `SELECT * FROM users WHERE age != 18;`,
+    options: [
+      { label: "All users except age = 18 (including NULL-age users)", hint: "", correct: false },
+      { label: "Only users with a known age that isn't 18 — NULL-age users are excluded", hint: "", correct: true },
+      { label: "Only NULL-age users", hint: "", correct: false },
+      { label: "Query errors out", hint: "", correct: false }
+    ],
+    feedback: "age != 18 on a NULL age evaluates to UNKNOWN, which WHERE drops just like FALSE. Only rows with a known, non-18 age survive."
+  },
+  {
+    q: "Table orders has 1000 rows. 300 have discount_pct IS NULL (no discount applied). What does SELECT AVG(discount_pct) FROM orders return?",
+    ddl: ``,
+    verifySetup: `CREATE TABLE orders (id INT PRIMARY KEY, discount_pct REAL);
+INSERT INTO orders SELECT value, CASE WHEN value <= 300 THEN NULL ELSE 10.0 END FROM (
+  WITH RECURSIVE seq(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM seq WHERE value < 1000)
+  SELECT value FROM seq
+);`,
+    verifyMain: `SELECT COUNT(*) AS total_rows, COUNT(discount_pct) AS non_null_rows, AVG(discount_pct) AS avg_result FROM orders;`,
+    options: [
+      { label: "Sum of all non-null discounts / 1000", hint: "", correct: false },
+      { label: "Sum of all non-null discounts / 700", hint: "", correct: true },
+      { label: "NULL", hint: "Because there are NULLs", correct: false },
+      { label: "Error", hint: "", correct: false }
+    ],
+    feedback: "AVG() ignores NULLs entirely — both in the sum and in the count it divides by. The denominator is the count of NON-NULL rows (700), not the total row count (1000)."
+  },
+  {
+    q: "You run SELECT * FROM logs WHERE (severity = 'high' OR user_id = NULL). What does the second condition (user_id = NULL) evaluate to?",
+    ddl: ``,
+    verifySetup: `CREATE TABLE logs (id INT PRIMARY KEY, severity TEXT, user_id INT);
+INSERT INTO logs VALUES (1,'low',NULL),(2,'high',5),(3,'low',7);`,
+    verifyMain: `SELECT * FROM logs WHERE (severity = 'high' OR user_id = NULL);`,
+    options: [
+      { label: "TRUE for rows where user_id is NULL", hint: "", correct: false },
+      { label: "FALSE for rows where user_id is NULL", hint: "", correct: false },
+      { label: "UNKNOWN for every row", hint: "", correct: true },
+      { label: "Syntax error", hint: "", correct: false }
+    ],
+    feedback: "user_id = NULL is UNKNOWN for EVERY row, not just the ones where user_id happens to be NULL — comparing anything to NULL with = is always UNKNOWN, regardless of the left-hand value. This condition can never contribute a TRUE to the OR; only the severity='high' branch can."
+  },
+  {
+    q: "table_A = {1, 1, 2, 3}, table_B = {1, 4}. What does (SELECT x FROM A) EXCEPT (SELECT x FROM B) return?",
+    ddl: ``,
+    verifySetup: `CREATE TABLE A (x INT);
+CREATE TABLE B (x INT);
+INSERT INTO A VALUES (1),(1),(2),(3);
+INSERT INTO B VALUES (1),(4);`,
+    verifyMain: `SELECT x FROM A EXCEPT SELECT x FROM B;`,
+    options: [
+      { label: "{1, 2, 3}", hint: "Each row of A minus each row of B", correct: false },
+      { label: "{2, 3}", hint: "Set-based — both 1s removed", correct: true },
+      { label: "{1, 1, 2, 3}", hint: "Bag semantics", correct: false },
+      { label: "{}", hint: "", correct: false }
+    ],
+    feedback: "Plain EXCEPT is set-based: it removes EVERY occurrence of any value that appears in B at all — both of A's 1s disappear, not just one. (EXCEPT ALL, where supported, would remove only one 1 per matching 1 in B.)"
+  },
+  {
+    q: "Two identical queries are run against a big table: SELECT DISTINCT city FROM users and SELECT city FROM users GROUP BY city. Which one is faster, and why?",
+    ddl: ``,
+    verifySetup: `CREATE TABLE users2 (id INT PRIMARY KEY, city TEXT);
+INSERT INTO users2 VALUES (1,'NYC'),(2,'LA'),(3,'NYC'),(4,'SF');`,
+    verifyMain: `SELECT DISTINCT city FROM users2;
+SELECT city FROM users2 GROUP BY city;`,
+    options: [
+      { label: "DISTINCT is faster", hint: "", correct: false },
+      { label: "GROUP BY is faster", hint: "", correct: false },
+      { label: "Identical performance", hint: "Optimizer treats them the same", correct: true },
+      { label: "Depends on the DBMS", hint: "", correct: false }
+    ],
+    feedback: "DISTINCT and a GROUP BY with no aggregate function are logically the same operation — collapse rows to unique combinations of the listed columns. Every mainstream query optimizer recognizes this and generates the identical physical plan for both."
+  },
+  {
+    q: "You paginate a report: page 3 (size 20). You write ORDER BY created_at DESC LIMIT 20 OFFSET 40. Two rows share the exact same created_at timestamp. Later, page 3 is loaded again — but shows different rows this time. Why?",
+    ddl: ``,
+    verifySetup: `CREATE TABLE reports (id INT PRIMARY KEY, created_at TEXT);
+INSERT INTO reports VALUES
+  (1,'2024-01-05'),(2,'2024-01-05'),(3,'2024-01-05'),(4,'2024-01-05'),(5,'2024-01-05'),
+  (6,'2024-01-04'),(7,'2024-01-04'),(8,'2024-01-04'),(9,'2024-01-04'),(10,'2024-01-04'),
+  (11,'2024-01-03'),(12,'2024-01-03'),(13,'2024-01-03'),(14,'2024-01-03'),(15,'2024-01-03'),
+  (16,'2024-01-02'),(17,'2024-01-02'),(18,'2024-01-02'),(19,'2024-01-02'),(20,'2024-01-02'),
+  (21,'2024-01-01'),(22,'2024-01-01'),(23,'2024-01-01'),(24,'2024-01-01'),(25,'2024-01-01');`,
+    verifyMain: `SELECT id, created_at FROM reports ORDER BY created_at DESC LIMIT 5 OFFSET 20;
+SELECT id, created_at FROM reports ORDER BY created_at DESC, id DESC LIMIT 5 OFFSET 20;`,
+    options: [
+      { label: "Query cache issue", hint: "", correct: false },
+      { label: "No deterministic tie-breaker in the ORDER BY", hint: "", correct: true },
+      { label: "LIMIT is non-deterministic", hint: "", correct: false },
+      { label: "Race condition with new inserts", hint: "", correct: false }
+    ],
+    feedback: "ORDER BY created_at DESC alone doesn't say anything about how to order rows that tie on created_at. Any ordering of the tied rows satisfies that ORDER BY — so a different query plan, engine version, or even the same engine on a different run can legally return a different subset for the same OFFSET/LIMIT window. The fix is a secondary, unique tie-breaker column."
+  },
+  {
+    q: "A subquery used with NOT IN happens to return a list that contains a NULL: WHERE id NOT IN (SELECT manager_id FROM employees). What does the outer query return?",
+    ddl: ``,
+    verifySetup: `CREATE TABLE employees (id INT PRIMARY KEY, name TEXT, manager_id INT);
+INSERT INTO employees VALUES (1,'Boss',NULL),(2,'Ada',1),(3,'Bob',1),(4,'Ken',2);`,
+    verifyMain: `SELECT name FROM employees WHERE id NOT IN (SELECT manager_id FROM employees);`,
+    options: [
+      { label: "Every employee whose id is not in the list", hint: "", correct: false },
+      { label: "Zero rows — the NULL makes every comparison UNKNOWN", hint: "", correct: true },
+      { label: "A syntax error", hint: "", correct: false },
+      { label: "Only the boss", hint: "", correct: false }
+    ],
+    feedback: "NOT IN is shorthand for a chain of <code>!=</code> comparisons ANDed together. Because the subquery's list contains NULL, every row's chain includes <code>id != NULL</code>, which is UNKNOWN — and UNKNOWN is not TRUE, so the WHERE clause fails for <strong>every</strong> row and the result is empty. Use <code>NOT EXISTS</code>, or filter the NULLs out of the subquery first."
+  },
+  {
+    q: "Table users has some rows with a NULL nickname. A report must show the nickname, falling back to the username when there is none. Which expression does that?",
+    ddl: ``,
+    verifySetup: `CREATE TABLE users3 (id INT PRIMARY KEY, username TEXT, nickname TEXT);
+INSERT INTO users3 VALUES (1,'ada','Ada Lovelace'),(2,'bob',NULL);`,
+    verifyMain: `SELECT username, COALESCE(nickname, username) AS display FROM users3;`,
+    options: [
+      { label: "COALESCE(nickname, username)", hint: "First non-NULL argument wins", correct: true },
+      { label: "nickname || username", hint: "", correct: false },
+      { label: "nickname = username", hint: "", correct: false },
+      { label: "IFNULL(username, nickname)", hint: "", correct: false }
+    ],
+    feedback: "<code>COALESCE</code> returns the first argument that is not NULL, so it shows the nickname when present and falls back to the username when it is NULL. <code>IFNULL(a, b)</code> does the same job but takes exactly two arguments — and order matters: <code>IFNULL(username, nickname)</code> would return the username every time, because a username is never NULL."
+  },
+  {
+    q: "You run SELECT name, age FROM users ORDER BY age; against rows where some ages are NULL. Where do the NULL ages sort?",
+    ddl: ``,
+    verifySetup: `CREATE TABLE users4 (id INT PRIMARY KEY, name TEXT, age INT);
+INSERT INTO users4 VALUES (1,'A',25),(2,'B',NULL),(3,'C',30);`,
+    verifyMain: `SELECT name, age FROM users4 ORDER BY age;`,
+    options: [
+      { label: "First — SQLite treats NULL as lower than every value", hint: "", correct: true },
+      { label: "Last, always", hint: "", correct: false },
+      { label: "They are dropped from the result", hint: "", correct: false },
+      { label: "The query errors out", hint: "", correct: false }
+    ],
+    feedback: "In SQLite (and MySQL) NULL sorts as if it were smaller than every value, so an ascending ORDER BY puts NULLs first. PostgreSQL does the opposite — NULLs sort last by default. When the placement matters, say so explicitly with <code>NULLS FIRST</code> / <code>NULLS LAST</code> rather than relying on the engine's default."
+  },
+  {
+    q: "Table t has 4 rows, two of which have NULL in column x. What does SELECT COUNT(*), COUNT(x) FROM t return?",
+    ddl: ``,
+    verifySetup: `CREATE TABLE t (id INT PRIMARY KEY, x INT);
+INSERT INTO t VALUES (1,10),(2,NULL),(3,20),(4,NULL);`,
+    verifyMain: `SELECT COUNT(*) AS count_star, COUNT(x) AS count_x FROM t;`,
+    options: [
+      { label: "4 and 4", hint: "", correct: false },
+      { label: "4 and 2", hint: "COUNT(*) counts rows; COUNT(x) counts non-NULLs", correct: true },
+      { label: "2 and 4", hint: "", correct: false },
+      { label: "4 and NULL", hint: "", correct: false }
+    ],
+    feedback: "<code>COUNT(*)</code> counts rows; <code>COUNT(x)</code> counts only the rows where x is not NULL. Four rows with two NULLs gives 4 and 2. This is the same NULL-skipping rule that makes <code>AVG</code> ignore NULLs — and the reason 'how many rows?' and 'how many known values?' are different questions."
+  }
+];
+
+/* ============ quiz rendering (extends the generic engine with a DDL/SQL preview and a live Verify button) ============ */
+const ntdState = { idx: 0, score: 0, answered: false };
+
+function ntdQuestionHtml(idx, total, question){
+  let html = `<div class="quiz-progress">Question ${idx + 1} of ${total}</div>`;
+  html += `<div class="quiz-q">${escapeHtml(question.q)}</div>`;
+  question.options.forEach((opt, i) => {
+    html += `<button class="quiz-opt" data-idx="${i}">
+      <span class="opt-label">${String.fromCharCode(65 + i)}.</span>${escapeHtml(opt.label)}
+      ${opt.hint ? `<span class="opt-hint">${escapeHtml(opt.hint)}</span>` : ''}
+    </button>`;
+  });
+  html += `<div class="quiz-feedback-slot"></div>`;
+  html += `<div class="quiz-nav">
+    <button class="btn secondary quiz-verify-btn" style="display:none;">▶ Verify against real SQLite</button>
+    <button class="btn next-btn" style="display:none;">Next →</button>
+  </div>`;
+  html += `<div class="cell-output quiz-verify-output" style="background:var(--code-bg); border-radius:8px; padding:12px 14px;"></div>`;
+  html += `<div class="quiz-score">Score: <span class="score-val">0</span> / ${total}</div>`;
+  return html;
+}
+
+function ntdDoneHtml(score, total){
+  return `<div class="quiz-done">
+    <div class="big-score">${score} / ${total}</div>
+    <p>${score === total ? "Perfect score." : "Review the ones you missed above, then try again."}</p>
+    <button class="btn secondary restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+
+function initNtdQuiz(){
+  ntdState.idx = 0;
+  ntdState.score = 0;
+  ntdState.answered = false;
+  renderNtdQuiz();
+}
+
+function renderNtdQuiz(){
+  const wrap = document.getElementById('ntd-wrap');
+  if (ntdState.idx >= NULL_TRAP_QUESTIONS.length) {
+    wrap.innerHTML = ntdDoneHtml(ntdState.score, NULL_TRAP_QUESTIONS.length);
+    wrap.querySelector('.restart-btn').addEventListener('click', initNtdQuiz);
+    return;
+  }
+  const q = NULL_TRAP_QUESTIONS[ntdState.idx];
+  wrap.innerHTML = ntdQuestionHtml(ntdState.idx, NULL_TRAP_QUESTIONS.length, q);
+  wrap.querySelector('.score-val').textContent = ntdState.score;
+  wrap.querySelectorAll('.quiz-opt').forEach(btn => {
+    btn.addEventListener('click', () => ntdSelectOption(parseInt(btn.getAttribute('data-idx'), 10)));
+  });
+  wrap.querySelector('.next-btn').addEventListener('click', ntdNext);
+  wrap.querySelector('.quiz-verify-btn').addEventListener('click', ntdVerify);
+}
+
+function ntdSelectOption(optIdx){
+  if (ntdState.answered) return;
+  ntdState.answered = true;
+  const q = NULL_TRAP_QUESTIONS[ntdState.idx];
+  const wrap = document.getElementById('ntd-wrap');
+  const opts = wrap.querySelectorAll('.quiz-opt');
+  const chosen = q.options[optIdx];
+  opts.forEach((btn, i) => {
+    btn.classList.add('disabled');
+    if (q.options[i].correct) btn.classList.add('correct');
+    else if (i === optIdx) btn.classList.add('incorrect');
+  });
+  const slot = wrap.querySelector('.quiz-feedback-slot');
+  if (chosen.correct) {
+    ntdState.score++;
+    wrap.querySelector('.score-val').textContent = ntdState.score;
+    slot.innerHTML = `<div class="quiz-feedback correct">✓ Correct. ${escapeHtml(q.feedback || '')}</div>`;
+  } else {
+    slot.innerHTML = `<div class="quiz-feedback incorrect">✖ Not quite. ${escapeHtml(q.feedback || '')}</div>`;
+  }
+  wrap.querySelector('.next-btn').style.display = 'inline-block';
+  wrap.querySelector('.quiz-verify-btn').style.display = 'inline-block';
+}
+
+async function ntdVerify(){
+  const q = NULL_TRAP_QUESTIONS[ntdState.idx];
+  const wrap = document.getElementById('ntd-wrap');
+  const out = wrap.querySelector('.quiz-verify-output');
+  out.classList.add('show');
+  await runSqlAgainstFreshDb(q.verifySetup, q.verifyMain, out);
+}
+
+function ntdNext(){
+  ntdState.idx++;
+  ntdState.answered = false;
+  renderNtdQuiz();
+}
+
+/* ============ boot ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  initAllCells();
+  document.getElementById('ntd-quiz').innerHTML = '<div class="quiz-wrap" id="ntd-wrap"></div>';
+  initNtdQuiz();
+});
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: Tracing NULL Through a Query ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const STEPS = [
+    { name: '1 · NULL is not a value', tag: 'UNKNOWN',
+      action: 'NULL means "no value is known". It is not 0, not an empty string, and — the part that surprises everyone — it is not equal to itself. Any comparison involving NULL evaluates to UNKNOWN, not TRUE and not FALSE.',
+      artLabel: 'Artifact · the very first comparison',
+      art: 'NULL = NULL    ->  UNKNOWN   (not TRUE)\nNULL <> NULL   ->  UNKNOWN\nNULL = 0       ->  UNKNOWN\n\nSELECT NULL IS NULL -> 1   -- the only safe test' },
+    { name: '2 · WHERE keeps only TRUE', tag: 'filter',
+      action: 'A WHERE clause keeps a row only when the predicate is TRUE. UNKNOWN is discarded exactly like FALSE — so every row whose column is NULL silently vanishes, without an error.',
+      artLabel: 'Artifact · rows that survive',
+      art: 'WHERE discount > 10        -- NULL discount -> UNKNOWN -> dropped\n\n  if you meant "no discount counts as 0", say so:\nWHERE (discount IS NULL OR discount > 10)' },
+    { name: '3 · Combine with 3VL', tag: 'AND / OR / NOT',
+      action: 'Conditions combine under three-valued logic. FALSE AND UNKNOWN is FALSE, TRUE OR UNKNOWN is TRUE — but NOT UNKNOWN is still UNKNOWN, which is how a NULL can flip an OR clause into dropping rows.',
+      artLabel: 'Artifact · the truth tables',
+      art: 'TRUE  AND UNKNOWN  = UNKNOWN\nFALSE AND UNKNOWN  = FALSE\nTRUE  OR  UNKNOWN  = TRUE\nFALSE OR  UNKNOWN  = UNKNOWN\nNOT   UNKNOWN      = UNKNOWN' },
+    { name: '4 · NOT IN with NULLs', tag: 'the classic trap',
+      action: 'If the subquery returns even one NULL, NOT IN can never be TRUE. The list expands to a chain of ANDs ending in <> NULL, which is UNKNOWN — so the result is empty, and looks like a bug in your data rather than in your query.',
+      artLabel: 'Artifact · the wrong answer',
+      art: 'WHERE id NOT IN (SELECT dept_id FROM Dept)\n  -- one NULL dept_id -> the whole predicate is UNKNOWN\n  -- -> ZERO rows, silently\n\nWHERE NOT EXISTS (SELECT 1 FROM Dept d\n                  WHERE d.dept_id = e.dept_id)\n  -- NULL-safe, and the answer you actually wanted' },
+    { name: '5 · Aggregates skip NULLs', tag: 'COUNT vs SUM',
+      action: 'COUNT(*) counts rows; COUNT(col) counts only non-NULL values. SUM, AVG, MIN and MAX ignore NULLs entirely, which is why AVG is the mean of the values that exist — not of the rows you can see.',
+      artLabel: 'Artifact · over 10, NULL, 20',
+      art: 'COUNT(*)      = 3   (rows)\nCOUNT(value)  = 2   (non-NULL values)\nSUM(value)    = 30\nAVG(value)    = 15  (30 / 2, not 30 / 3)' },
+    { name: '6 · GROUP BY makes a NULL bucket', tag: 'one bucket',
+      action: 'GROUP BY treats every NULL as belonging to the same group and gathers them together. This is the one place where NULL behaves like an ordinary value — which is useful, and also easy to miss when you are reading a report.',
+      artLabel: 'Artifact · the groups',
+      art: 'GROUP BY region\n\n  North   -> 2 rows\n  South   -> 1 row\n  NULL    -> 3 rows   (all the unknowns, together)' },
+    { name: '7 · Compare and sort on purpose', tag: 'NULL-safe tools',
+      action: 'NULLs sort first by default in SQLite, NULL = NULL is still UNKNOWN, and plain comparisons will keep surprising you. When NULL means "unknown" and you need real equality, reach for IS DISTINCT FROM or COALESCE.',
+      artLabel: 'Artifact · the safe tools',
+      art: 'ORDER BY total ASC          -- NULLs sort first (SQLite)\nORDER BY total DESC NULLS LAST\n\na IS DISTINCT FROM b        -- NULL-safe inequality\nCOALESCE(total, 0)          -- substitute a default' },
+  ];
+  let i = 0;
+  const rail = byId('nullstep-rail'), body = byId('nullstep-body');
+  if (!body) return;
+  function railRender(){
+    rail.innerHTML = STEPS.map((s, k) =>
+      `<div class="qstep-node${k === i ? ' active' : (k < i ? ' done' : '')}" data-i="${k}"><span class="qstep-idx">${k + 1}</span>${esc(s.name)}</div>`).join('');
+    rail.querySelectorAll('.qstep-node').forEach(n => n.addEventListener('click', () => { i = +n.dataset.i; render(); }));
+  }
+  function render(){
+    const s = STEPS[i];
+    body.innerHTML =
+      `<div class="qstep-head"><div class="qstep-name">${esc(s.name)}</div><div class="qstep-layer">${esc(s.tag)}</div></div>` +
+      `<div class="qstep-action">${esc(s.action)}</div>` +
+      `<div class="qstep-art"><span class="art-label">${esc(s.artLabel)}</span>${esc(s.art)}</div>`;
+    railRender();
+    byId('nullstep-count').textContent = `Stage ${i + 1} of ${STEPS.length}`;
+    byId('nullstep-back').disabled = i === 0;
+    byId('nullstep-next').disabled = i === STEPS.length - 1;
+  }
+  byId('nullstep-back').addEventListener('click', () => { if (i > 0) { i--; render(); } });
+  byId('nullstep-next').addEventListener('click', () => { if (i < STEPS.length - 1) { i++; render(); } });
+  byId('nullstep-restart').addEventListener('click', () => { i = 0; render(); });
+  render();
+})();
+</script>
+
+<script>
+/* ===== Three-Valued Logic Explorer ===== */
+(function () {
+  const byId = id => document.getElementById(id);
+  const esc = s => escapeHtml(String(s));
+
+  /* --- Part 1: the truth tables --- */
+  const VALS = [true, false, null];
+  const VNAME = v => v === true ? 'TRUE' : v === false ? 'FALSE' : 'UNKNOWN';
+  const VCLS  = v => v === true ? 't' : v === false ? 'f' : 'u';
+  const OPS = [
+    { id:'and', label:'A AND B', arity:2, fn:(a,b) => (a===false||b===false) ? false : (a===null||b===null) ? null : true,
+      note: a => a===false ? 'FALSE AND anything is FALSE — one false side is enough.' : 'a FALSE anywhere wins; otherwise an UNKNOWN side makes the whole thing UNKNOWN.' },
+    { id:'or', label:'A OR B', arity:2, fn:(a,b) => (a===true||b===true) ? true : (a===null||b===null) ? null : false,
+      note: a => a===true ? 'TRUE OR anything is TRUE — one true side is enough.' : 'a TRUE anywhere wins; otherwise an UNKNOWN side makes the whole thing UNKNOWN.' },
+    { id:'not', label:'NOT A', arity:1, fn:a => a===null ? null : !a,
+      note: () => 'NOT UNKNOWN is still UNKNOWN — negating “we don\u2019t know” leaves us not knowing.' },
+  ];
+  let op = OPS[0];
+
+  function renderOps(){
+    const p = byId('tv-op-picker');
+    p.innerHTML = '';
+    OPS.forEach(o => {
+      const b = document.createElement('button');
+      b.className = 'tv-op' + (o.id === op.id ? ' active' : '');
+      b.textContent = o.label;
+      b.addEventListener('click', () => { op = o; renderOps(); renderGrid(); });
+      p.appendChild(b);
+    });
+  }
+
+  function renderGrid(){
+    const g = byId('tv-grid');
+    g.style.gridTemplateColumns = op.arity === 2 ? 'repeat(4, minmax(92px, auto))' : 'repeat(2, minmax(92px, auto))';
+    let html = '';
+    if (op.arity === 2){
+      html += '<div class="tv-corner">A \\ B</div>';
+      VALS.forEach(b => html += '<div class="tv-head">' + VNAME(b) + '</div>');
+      VALS.forEach(a => {
+        html += '<div class="tv-head">' + VNAME(a) + '</div>';
+        VALS.forEach(b => {
+          const r = op.fn(a,b);
+          html += '<div class="tv-cell ' + VCLS(r) + '" data-a="' + VALS.indexOf(a) + '" data-b="' + VALS.indexOf(b) + '">' + VNAME(r) + '</div>';
+        });
+      });
+    } else {
+      html += '<div class="tv-corner">A</div><div class="tv-head">NOT A</div>';
+      VALS.forEach(a => {
+        const r = op.fn(a);
+        html += '<div class="tv-head">' + VNAME(a) + '</div>';
+        html += '<div class="tv-cell ' + VCLS(r) + '" data-a="' + VALS.indexOf(a) + '" data-b="-1">' + VNAME(r) + '</div>';
+      });
+    }
+    g.innerHTML = html;
+    g.querySelectorAll('.tv-cell').forEach(c => c.addEventListener('click', () => {
+      g.querySelectorAll('.tv-cell').forEach(x => x.classList.remove('sel'));
+      c.classList.add('sel');
+      const a = VALS[+c.dataset.a];
+      const b = c.dataset.b === '-1' ? null : VALS[+c.dataset.b];
+      const r = op.arity === 2 ? op.fn(a,b) : op.fn(a);
+      const expr = op.arity === 2 ? VNAME(a) + ' ' + op.label.replace('A','').replace('B','').trim() + ' ' + VNAME(b) : 'NOT ' + VNAME(a);
+      byId('tv-read').innerHTML = esc(expr) + ' = <strong class="tv-eq" style="color:var(--blue)">' + VNAME(r) + '</strong> &nbsp;&mdash;&nbsp; ' + esc(op.note(a));
+    }));
+    byId('tv-read').textContent = 'Click any cell to read the rule it encodes.';
+  }
+
+  /* --- Part 2: the live row filter --- */
+  const TV_ROWS = [
+    { id: 1, status: 'active' },
+    { id: 2, status: 'inactive' },
+    { id: 3, status: null },
+    { id: 4, status: 'active' },
+  ];
+  const TV_SETUP = "CREATE TABLE accounts (id INTEGER PRIMARY KEY, status TEXT);\n" +
+    "INSERT INTO accounts VALUES (1,'active');\n" +
+    "INSERT INTO accounts VALUES (2,'inactive');\n" +
+    "INSERT INTO accounts VALUES (3,NULL);\n" +
+    "INSERT INTO accounts VALUES (4,'active');";
+  const TV_PREDS = [
+    { id:'eq', label:"status = 'active'", sql:"status = 'active'",
+      verdict:s => s === 'active' ? true : s === null ? null : false },
+    { id:'ne', label:"status != 'active'", sql:"status != 'active'",
+      verdict:s => s === 'active' ? false : s === null ? null : true },
+    { id:'isnull', label:'status IS NULL', sql:'status IS NULL',
+      verdict:s => s === null },
+    { id:'not', label:"NOT (status = 'active')", sql:"NOT (status = 'active')",
+      verdict:s => s === 'active' ? false : s === null ? null : true },
+    { id:'orne', label:"status != 'active' OR status IS NULL", sql:"(status != 'active' OR status IS NULL)",
+      verdict:s => s !== 'active' },
+  ];
+  let pred = TV_PREDS[0];
+
+  function renderPreds(){
+    const p = byId('tv-pred-picker');
+    p.innerHTML = '';
+    TV_PREDS.forEach(x => {
+      const b = document.createElement('button');
+      b.className = 'tv-op' + (x.id === pred.id ? ' active' : '');
+      b.textContent = x.label;
+      b.addEventListener('click', () => { pred = x; renderPreds(); runPred(); });
+      p.appendChild(b);
+    });
+  }
+
+  function drawRows(keptIds){
+    byId('tv-rows').innerHTML = TV_ROWS.map(r => {
+      const v = pred.verdict(r.status);
+      const kept = keptIds.includes(r.id);
+      return '<div class="tv-row ' + (kept ? 'kept' : 'dropped') + '">' +
+        '<span class="tv-id">id ' + r.id + '</span>' +
+        '<span class="tv-status">' + (r.status === null ? 'NULL' : "'" + esc(r.status) + "'") + '</span>' +
+        '<span class="tv-verdict ' + VCLS(v) + '">' + VNAME(v) + '</span>' +
+        '<span class="tv-keep">' + (kept ? '✓ kept' : '✕ dropped') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  async function runPred(){
+    byId('tv-sql').textContent = 'SELECT id FROM accounts WHERE ' + pred.sql + ';';
+    const claimed = TV_ROWS.filter(r => pred.verdict(r.status) === true).map(r => r.id);
+    let keptIds = claimed;
+    try {
+      const SQLmod = await getSqlJsModule();
+      const db = new SQLmod.Database();
+      db.run(TV_SETUP);
+      const res = db.exec('SELECT id FROM accounts WHERE ' + pred.sql + ' ORDER BY id');
+      keptIds = res.length ? res[0].values.map(v => v[0]) : [];
+      db.close();
+    } catch (e) { /* fall back to the model if the engine is not ready yet */ }
+    drawRows(keptIds);
+    const unknownDropped = TV_ROWS.filter(r => pred.verdict(r.status) === null && !keptIds.includes(r.id)).length;
+    byId('tv-note').innerHTML = 'SQLite kept <strong>' + keptIds.length + ' of ' + TV_ROWS.length + '</strong> rows — a WHERE clause keeps only rows the condition rates <strong>TRUE</strong>. ' +
+      (unknownDropped
+        ? '<span style="color:var(--rust)">' + unknownDropped + ' row' + (unknownDropped === 1 ? '' : 's') + ' rated UNKNOWN, so ' + (unknownDropped === 1 ? 'it was' : 'they were') + ' dropped.</span> The fix is to spell out the NULL case explicitly: <code>status != \'active\' OR status IS NULL</code>.'
+        : 'Here every surviving row was rated TRUE, and no UNKNOWN value was silently discarded.');
+  }
+
+  function init(){
+    if (!byId('tv-grid')) return;
+    renderOps();
+    renderGrid();
+    renderPreds();
+    runPred();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+
+<script>
+/* ===== Set vs Bag visualizer: UNION vs UNION ALL ===== */
+(function () {
+  const byId = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const TINT = ['#DCEBF7', '#F7E9CF', '#DFF0E0', '#F6DEF0'];
+  const DOT  = ['#2F5D8A', '#A9781F', '#3D6B4A', '#6B4C8A'];
+  const A = [['Alice', 'CS'], ['Bob', 'Math'], ['Carol', 'CS'], ['Dave', 'Bio'], ['Eve', 'CS']];
+  const B = [['Carol', 'CS'], ['Frank', 'Math'], ['Grace', 'CS'], ['Dave', 'Bio'], ['Henry', 'Phys']];
+  const rowKey = r => r[0] + '|' + r[1];
+
+  const rowHtml = (name, dept, i) =>
+    '<div class="sb-row" style="background:' + TINT[i % 4] + '">' +
+      '<span class="sb-dot" style="background:' + DOT[i % 4] + '"></span>' +
+      '<span class="sb-name">' + esc(name) + '</span>' +
+      '<span class="sb-dept">' + esc(dept) + '</span>' +
+    '</div>';
+
+  /* a result row takes the colour of its source row, preferring table B so a
+     de-duplicated row reads as "the one that came last" */
+  function tintOf(name, dept) {
+    const iB = B.findIndex(r => r[0] === name && r[1] === dept);
+    if (iB >= 0) return iB % 4;
+    const iA = A.findIndex(r => r[0] === name && r[1] === dept);
+    return iA >= 0 ? iA % 4 : 0;
+  }
+
+  const chipHtml = r =>
+    '<span class="sb-chip" style="background:' + TINT[tintOf(r.name, r.dept)] + '">' +
+      '<span class="sb-name">' + esc(r.name) + '</span>' +
+      '<span class="sb-dept">' + esc(r.dept) + '</span>' +
+      (r.dup ? '<span class="sb-dedup">deduped</span>' : '') +
+    '</span>';
+
+  function resultRows(isAll) {
+    if (isAll) return A.concat(B).map(r => ({ name: r[0], dept: r[1], dup: false }));
+    const seen = {};
+    const out = [];
+    A.forEach(r => {
+      const k = rowKey(r);
+      if (!(k in seen)) { seen[k] = out.length; out.push({ name: r[0], dept: r[1], dup: false }); }
+    });
+    B.forEach(r => {
+      const k = rowKey(r);
+      if (k in seen) out[seen[k]].dup = true;
+      else { seen[k] = out.length; out.push({ name: r[0], dept: r[1], dup: false }); }
+    });
+    return out;
+  }
+
+  function render(op) {
+    const isAll = op === 'unionall';
+    const label = isAll ? 'UNION ALL' : 'UNION';
+
+    byId('sb-modes').querySelectorAll('.sb-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.op === op));
+
+    byId('sb-sql').innerHTML =
+      '<span class="sb-kw">SELECT</span> name, dept <span class="sb-kw">FROM</span> students_2023\n' +
+      '<span class="sb-kw2">' + label + '</span>\n' +
+      '<span class="sb-kw">SELECT</span> name, dept <span class="sb-kw">FROM</span> students_2024;';
+    byId('sb-mid-label').textContent = label;
+    byId('sb-a').innerHTML = A.map((r, i) => rowHtml(r[0], r[1], i)).join('');
+    byId('sb-b').innerHTML = B.map((r, i) => rowHtml(r[0], r[1], i)).join('');
+
+    const out = resultRows(isAll);
+    const raw = A.length + B.length;
+    const removed = raw - out.length;
+
+    byId('sb-op-badge').textContent = label;
+    byId('sb-count').textContent = out.length + ' rows';
+    byId('sb-chips').innerHTML = out.map(chipHtml).join('');
+
+    byId('sb-note').innerHTML = isAll
+      ? '<p style="margin:0 0 8px"><strong>UNION ALL</strong> implements <strong>bag</strong> semantics: every row from both tables is kept, duplicates included.</p>' +
+        '<p style="margin:0 0 8px">Combined raw rows: <strong>' + raw + '</strong> &rarr; result also has <strong>' + out.length + '</strong> rows (no deduplication).</p>' +
+        '<p style="margin:0"><strong>Carol/CS</strong> and <strong>Dave/Bio</strong> each appear twice — once from each table. Use <code>UNION ALL</code> when you need counts to reflect reality (e.g., enrollment totals).</p>'
+      : '<p style="margin:0 0 8px"><strong>UNION</strong> implements <strong>set</strong> semantics: it automatically removes duplicate rows from the combined result.</p>' +
+        '<p style="margin:0 0 8px">Combined raw rows: <strong>' + raw + '</strong> &rarr; after deduplication: <strong>' + out.length + '</strong> (' + removed + ' duplicates removed).</p>' +
+        '<p style="margin:0">A row is a duplicate when <em>all</em> column values match. Here, <strong>Carol/CS</strong> and <strong>Dave/Bio</strong> appear in both tables and are merged into one row each.</p>';
+  }
+
+  function init() {
+    const m = byId('sb-modes');
+    if (!m) return;
+    m.innerHTML = [['union', 'UNION'], ['unionall', 'UNION ALL']]
+      .map(p => '<button class="sb-mode-btn" data-op="' + p[0] + '">' + p[1] + '</button>').join('');
+    m.querySelectorAll('.sb-mode-btn').forEach(b => b.addEventListener('click', () => render(b.dataset.op)));
+    render('union');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · Relational Model &amp; ER-to-Relational Mapping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, .cell, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:900px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:680px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+/* schema notation */
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0;}
+.schema-line .pk{color:#F4C97A; font-weight:600;}
+.schema-line .fk{color:#8FB8E0; font-weight:600;}
+
+/* step cards */
+.step-card{border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:20px 22px; margin:22px 0;}
+.step-card .step-num{display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600; margin-right:10px;}
+.step-card h3{display:flex; align-items:center; margin-top:0;}
+
+/* code / cells */
+.cell{background:var(--code-bg); border-radius:8px; margin:14px 0; overflow:hidden; border:1px solid var(--code-rule);}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75;}
+.cell textarea{
+  width:100%; min-height:0; background:var(--code-bg); color:var(--code-text);
+  border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; resize:none; outline:none; line-height:1.55; overflow:hidden; display:block; tab-size:2;
+}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+table.dbtable{border-collapse:collapse; margin:8px 0; font-size:12.5px; width:100%;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-align:left; padding:5px 10px; border:1px solid var(--code-rule);}
+table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text);}
+
+/* practice problems */
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+/* quiz */
+.quiz-wrap{border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:20px 22px; margin:18px 0;}
+.quiz-progress{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
+.quiz-q{font-weight:600; margin-bottom:12px; font-size:1.05em;}
+.quiz-opt{display:block; width:100%; text-align:left; padding:10px 14px; margin-bottom:8px; border:1px solid var(--rule); border-radius:8px; background:var(--paper); cursor:pointer; font-family:"Source Serif 4",serif; font-size:.98em;}
+.quiz-opt:hover{border-color:var(--blue);}
+.quiz-opt .opt-label{font-weight:600; margin-right:6px;}
+.quiz-opt .opt-hint{display:block; font-size:.85em; color:var(--ink-soft); margin-top:2px;}
+.quiz-opt.correct{border-color:var(--green); background:var(--green-soft);}
+.quiz-opt.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.quiz-opt.disabled{cursor:default;}
+.quiz-feedback{margin-top:12px; padding:12px 14px; border-radius:8px; font-size:.95em;}
+.quiz-feedback.correct{background:var(--green-soft); color:var(--green);}
+.quiz-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.quiz-nav{margin-top:14px;}
+.quiz-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft); margin-top:8px;}
+.quiz-done{text-align:center; padding:20px;}
+.quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+
+/* interview box */
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:hover{opacity:.9;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip:hover{border-color:var(--blue);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.lm-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-answer-btn{background:transparent; color:var(--blue); border:1px solid var(--blue); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-answer-btn:hover:not(:disabled){background:var(--blue-soft);}
+.lm-answer-btn:disabled{color:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed;}
+.lm-key{margin-top:14px; border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:14px 16px;}
+.lm-key-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+.lm-key-row{display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:6px 0; border-bottom:1px dashed var(--rule); font-size:.9em;}
+.lm-key-row:last-child{border-bottom:none;}
+.lm-key-item{flex:1;}
+.lm-key-zone{font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:700; white-space:nowrap;}
+.lm-key-row.ok .lm-key-zone{color:var(--green);}
+.lm-key-row.bad .lm-key-zone{color:var(--rust);}
+.lm-key-row.bad .lm-key-item{color:var(--rust);}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+
+/* comparison table */
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+/* simple svg diagram frame */
+/* ===== Canonical figure container (shared by every playground) ===== */
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical cell buttons (shared) ===== */
+.cell .btn{ background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace; }
+.cell .btn:hover{ opacity:.9; }
+.cell .btn.secondary{ background:transparent; color:var(--code-text); border:1px solid var(--code-rule); }
+.cell .btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+
+/* ===== ER → Relational Mapper ===== */
+.ert-layout{display:grid; grid-template-columns:1fr 1.15fr; gap:18px; align-items:start;}
+@media (max-width:760px){.ert-layout{grid-template-columns:1fr;}}
+.ert-panel{border:1px solid var(--rule); border-radius:10px; background:var(--paper); padding:14px;}
+.ert-panel-title{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:10px;}
+.ert-entity{border:1.5px solid var(--rule-strong); border-radius:8px; background:#fff; color:var(--ink); padding:9px 12px; margin-bottom:8px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:700;}
+.ert-entity.on{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.ert-rel{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); padding:5px 4px 5px 14px;}
+.ert-rel.on{color:var(--blue); font-weight:700;}
+.ert-schema{display:flex; flex-direction:column; gap:10px;}
+.ert-card{border:1.5px solid var(--rule-strong); border-radius:8px; background:#fff; overflow:hidden;}
+.ert-card.new{border-color:var(--green);}
+.ert-card-head{font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:700; padding:8px 12px; background:var(--paper-raised); border-bottom:1px solid var(--rule); display:flex; justify-content:space-between; gap:10px;}
+.ert-card.new .ert-card-head{background:var(--green-soft); color:var(--green);}
+.ert-card-head .ert-new{font-size:9.5px; text-transform:uppercase; letter-spacing:.05em;}
+.ert-col{display:flex; justify-content:space-between; gap:10px; padding:6px 12px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; border-bottom:1px dashed var(--rule); color:var(--ink);}
+.ert-col:last-child{border-bottom:none;}
+.ert-col.hot{background:var(--green-soft); color:var(--green); font-weight:700;}
+.ert-col .ert-tag{font-size:10px; font-weight:700; color:var(--ink-soft); white-space:nowrap;}
+.ert-col.hot .ert-tag{color:var(--green);}
+.ert-col.fk .ert-tag{color:var(--purple);}
+.ert-note{font-size:.92em; color:var(--ink-soft); margin-top:12px;}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">Overview</a>
+      <a href="#terminology">Formal Terminology</a>
+      <a href="#keys">The Four Kinds of Keys</a>
+      <div class="grp">The Algorithm</div>
+      <a href="#algo-overview">Seven Steps at a Glance</a>
+      <a href="#step1">Step 1 — Strong Entities</a>
+      <a href="#step2">Step 2 — Weak Entities</a>
+      <a href="#step3">Step 3 — 1:1 Relationships</a>
+      <a href="#step4">Step 4 — 1:N Relationships</a>
+      <a href="#step5">Step 5 — M:N Relationships</a>
+      <a href="#step6">Step 6 — Multivalued Attrs</a>
+      <a href="#step7">Step 7 — N-ary Relationships</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-university">Full University Mapping</a>
+      <a href="#inheritance">Inheritance: Three Strategies</a>
+      <a href="#broken">Detecting a Broken Mapping</a>
+      <div class="grp">Apply It</div>
+      <a href="#er-to-relational">ER → Relational Mapper</a>
+      <a href="#mapping-mapper">The Mapping Mapper</a>
+      <a href="#mapping-quiz">Pick the Right Mapping</a>
+      <a href="#keyquiz">Key Type Identifier</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+          <div class="grp">2026 Status</div>
+      <a href="#in-2026">In 2026: What Has Changed</a>
+</nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>Relational Model &amp; ER-to-Relational Mapping</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">An ER diagram is a picture. A database engine needs tables. This playground turns the seven-step mapping algorithm into something you run, break, and fix — every <code>CREATE TABLE</code> below executes against a real, in-browser SQLite engine.</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>Overview</h2>
+      <p>The translation from an ER diagram to a relational schema is not creative work — it's a deterministic algorithm developed in the 1970s and refined ever since. Once you know the seven steps, you can look at any ER diagram and produce working tables in minutes. This page walks through the formal vocabulary, the four kinds of keys, the algorithm step by step (each with a live cell you can edit and run), and three worked examples that show where the "just add an FK" mental model gets more interesting: multi-strategy inheritance, deceptively simple 1:1 relationships, and a broken mapping you have to diagnose yourself.</p>
+      <div class="callout">
+        <strong>How to use the cells:</strong> Every gray box below is a real SQLite database. Click <strong>Run</strong> to execute the SQL as written, or edit it first — try changing a value, breaking a constraint on purpose, or adding your own row. Each cell starts from a fresh, isolated database, so nothing you do here can break another cell.
+      </div>
+    </section>
+
+    <section id="terminology">
+      <div class="kicker">Foundations</div>
+      <h2>The Formal Language of Relations</h2>
+      <p>In conversation we say "table," "row," and "column." The formal relational model uses more precise terms, because they carry mathematical weight.</p>
+      <table class="compare">
+        <tr><th>Formal term</th><th>What you'd call it informally</th><th>Definition</th></tr>
+        <tr><td><strong>Relation</strong></td><td>Table</td><td>A <em>set</em> of tuples. Because it's a set, row order doesn't matter, and every row must be unique — no formal relation can contain two identical rows.</td></tr>
+        <tr><td><strong>Tuple</strong></td><td>Row</td><td>A single instance of an entity or a relationship.</td></tr>
+        <tr><td><strong>Attribute</strong></td><td>Column</td><td>A named role that a data value plays in the relation.</td></tr>
+        <tr><td><strong>Domain</strong></td><td>Column type + rules</td><td>The set of all possible values an attribute can take — not just "integer," but "integer between 0 and 120" for an <code>Age</code> domain.</td></tr>
+      </table>
+      <p>The structure of a relation is written as a <strong>relation schema</strong>:</p>
+      <div class="schema-line">R(A<sub>1</sub>, A<sub>2</sub>, ..., A<sub>n</sub>)</div>
+      <p>where <code>R</code> is the relation's name and each <code>A<sub>i</sub></code> is an attribute. For a student database:</p>
+      <div class="schema-line">STUDENT(StudentID, Name, Email, Major)</div>
+    </section>
+
+    <section id="keys">
+      <div class="kicker">Foundations</div>
+      <h2>The Four Kinds of Keys</h2>
+      <p>In a set, every element must be distinguishable from every other. In a database, keys do that job. Understanding the hierarchy below is the difference between a schema that works and one that silently corrupts itself the first time someone updates a row.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 640 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The key hierarchy: every candidate key is a superkey, one candidate key is chosen as the primary key, and a foreign key is a separate axis pointing in from another table." font-family="IBM Plex Mono, monospace">
+          <rect x="10" y="10" width="620" height="320" rx="14" fill="none" stroke="#A8B0A0" stroke-width="2"/>
+          <text x="30" y="36" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" fill="#2F5D8A">Superkey</text>
+          <text x="30" y="54" font-family="Source Serif 4, serif" font-size="12" fill="#4A564F">any attribute set that uniquely identifies a row</text>
+          <rect x="60" y="70" width="560" height="218" rx="12" fill="#E4EBF2" stroke="#2F5D8A" stroke-width="1.5"/>
+          <text x="80" y="96" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" fill="#3D6B4A">Candidate Keys</text>
+          <text x="80" y="114" font-family="Source Serif 4, serif" font-size="12" fill="#4A564F">minimal superkeys — remove any attribute and uniqueness breaks</text>
+          <rect x="100" y="128" width="500" height="150" rx="10" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1.5"/>
+          <text x="120" y="152" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="700" fill="#A9781F">Primary Key</text>
+          <text x="120" y="170" font-family="Source Serif 4, serif" font-size="12" fill="#4A564F">the one candidate key chosen as the official identifier</text>
+          <rect x="140" y="182" width="260" height="28" rx="8" fill="#F4EBD6" stroke="#A9781F" stroke-width="1.5"/>
+          <text x="270" y="200" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="#A9781F">e.g. SocialSecurityNumber</text>
+          <text x="120" y="228" font-family="Source Serif 4, serif" font-size="11.5" fill="#4A564F">Other candidates exist too (e.g. Email, Username) — just not chosen.</text>
+          <text x="120" y="246" font-family="Source Serif 4, serif" font-size="11.5" fill="#A8B0A0">They stay minimal and unique; they simply lost the vote for "official."</text>
+          <text x="30" y="302" font-family="Source Serif 4, serif" font-size="11.5" fill="#4A564F">e.g. {SSN, FavoriteColor} is a superkey, not a candidate key —</text>
+          <text x="30" y="318" font-family="Source Serif 4, serif" font-size="11.5" fill="#4A564F">the extra attribute adds nothing, so it isn't minimal.</text>
+        </svg>
+        <figcaption>Superkey ⊃ Candidate Keys ⊃ Primary Key. Foreign Key is a different axis entirely — it lives in another table and points back here.</figcaption>
+      </figure>
+
+      <div class="step-card">
+        <h3><span class="step-num">1</span> Superkey</h3>
+        <p>Any set of attributes that, taken together, uniquely identifies a tuple. If you have a <code>SocialSecurityNumber</code>, that's a superkey. If you combine <code>SocialSecurityNumber</code> and <code>FavoriteColor</code>, that's <em>also</em> a superkey — it's "super" because it's a superset of a unique identifier, not because it's efficient.</p>
+      </div>
+      <div class="step-card">
+        <h3><span class="step-num">2</span> Candidate Key</h3>
+        <p>A <em>minimal</em> superkey — remove any attribute and it stops being unique. <code>SocialSecurityNumber</code> is a candidate key. <code>SocialSecurityNumber + FavoriteColor</code> is <strong>not</strong>, because <code>FavoriteColor</code> is unnecessary.</p>
+      </div>
+      <div class="step-card">
+        <h3><span class="step-num">3</span> Primary Key</h3>
+        <p>Out of all your candidate keys, you choose one to be the official identifier for the relation. Every other table that wants to reference this one points at the primary key.</p>
+      </div>
+      <div class="step-card">
+        <h3><span class="step-num">4</span> Foreign Key</h3>
+        <p>An attribute in one table that points to the primary key of another. This is how relationships are created, and it enforces <strong>referential integrity</strong>: you cannot have a pointer to something that doesn't exist. If table A has a foreign key pointing to "Employee 502" in table B, table B must actually contain Employee 502.</p>
+      </div>
+
+      <p>Run this cell to see a table with <em>two</em> independent candidate keys — a common source of confusion, since people assume a table can only have one:</p>
+      <div class="cell" data-cell="keys_candidates">
+        <div class="cell-head"><span class="cell-title">candidate-keys.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions">
+          <button class="btn run-btn">▶ Run</button>
+          <button class="btn secondary reset-btn">Reset</button>
+        </div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Both <code>emp_id</code> and <code>ssn</code> are declared <code>UNIQUE NOT NULL</code>, so either one alone can serve as the row's identity. SQLite happily enforces both — but only one, here <code>emp_id</code>, is the actual <code>PRIMARY KEY</code>. <code>ssn</code> remains a candidate key that lost the vote.</p>
+    </section>
+
+    <section id="algo-overview">
+      <div class="kicker">The Algorithm</div>
+      <h2>The ER-to-Relational Mapping Algorithm</h2>
+      <p>Turning a visual ER diagram into a set of tables follows a specific, seven-step algorithm. Skip a step and you lose information about how your entities relate to each other.</p>
+      <table class="compare">
+        <tr><th>Step</th><th>ER construct</th><th>What happens to it</th></tr>
+        <tr><td>1</td><td>Strong entity</td><td>One relation. Choose a candidate key as PK. Flatten composite attributes to their components.</td></tr>
+        <tr><td>2</td><td>Weak entity</td><td>One relation. Owner's PK becomes an FK. New PK = owner's PK + partial key.</td></tr>
+        <tr><td>3</td><td>1:1 relationship</td><td>FK on the totally-participating side — or merge the two entities if conceptually inseparable.</td></tr>
+        <tr><td>4</td><td>1:N relationship</td><td>No new table. PK from the "1" side becomes an FK on the "N" side.</td></tr>
+        <tr><td>5</td><td>M:N relationship</td><td>New junction table. Two FKs, together forming the composite PK.</td></tr>
+        <tr><td>6</td><td>Multivalued attribute</td><td>New relation: the attribute value + the parent's PK.</td></tr>
+        <tr><td>7</td><td>N-ary relationship (3+ entities)</td><td>New relation with the PKs of all participants as FKs.</td></tr>
+      </table>
+    </section>
+
+    <section id="step1">
+      <div class="kicker">The Algorithm</div>
+      <div class="step-card">
+        <h3><span class="step-num">1</span> Strong Entities</h3>
+        <p>For every regular entity, create a relation. Include all simple attributes. Choose one candidate key as the primary key. A composite attribute (like <code>Address</code> made of <code>Street</code>, <code>City</code>, <code>Zip</code>) gets flattened — you keep the components, not the parent attribute.</p>
+        <div class="cell" data-cell="step1_strong">
+          <div class="cell-head"><span class="cell-title">step1_strong_entities.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="step2">
+      <div class="kicker">The Algorithm</div>
+      <div class="step-card">
+        <h3><span class="step-num">2</span> Weak Entities</h3>
+        <p>Weak entities have no primary key of their own — they depend on an owner. Add the owner's PK as an FK in the new table, and set the weak entity's PK to <em>owner's PK + partial key</em>. Because the weak entity can't exist without its owner, the FK is usually declared <code>ON DELETE CASCADE</code>.</p>
+        <p>Example: a <code>Dependent</code> is owned by a <code>Professor</code>; <code>name</code> is unique only within a given professor.</p>
+        <div class="cell" data-cell="step2_weak">
+          <div class="cell-head"><span class="cell-title">step2_weak_entities.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+        <p class="small">Delete the professor and watch the dependents disappear with them — that's the cascade matching the existence dependency.</p>
+      </div>
+    </section>
+
+    <section id="step3">
+      <div class="kicker">The Algorithm</div>
+      <div class="step-card">
+        <h3><span class="step-num">3</span> 1:1 Relationships</h3>
+        <p>The reading's short answer: "pick one side, add the FK." The full answer depends on which side has total participation. Consider <code>Employee</code> and <code>ParkingSpot</code> in a 1:1 <code>assigned_to</code> relationship.</p>
+
+        <table class="compare">
+          <tr><th>Case</th><th>Participation</th><th>Where the FK goes</th><th>Gotcha</th></tr>
+          <tr><td><strong>A</strong></td><td>Employee total, ParkingSpot partial</td><td><code>Employee.spot_id NOT NULL</code></td><td>None — every employee has a spot, so the FK is never NULL.</td></tr>
+          <tr><td><strong>B</strong></td><td>Both partial</td><td>Whichever side is queried more, nullable — or a separate <code>Assignment(emp_id UNIQUE, spot_id UNIQUE)</code> table</td><td>The standalone table cleanly represents "there is/isn't an assignment" as one row that either exists or doesn't.</td></tr>
+          <tr><td><strong>C</strong></td><td>Both total</td><td>Either side, both <code>NOT NULL</code></td><td>Chicken-and-egg insertion order: whichever table you insert into first will fail its FK check.</td></tr>
+        </table>
+
+        <p><strong>Case A</strong> — the common case:</p>
+        <div class="cell" data-cell="step3_case_a">
+          <div class="cell-head"><span class="cell-title">step3_case_a.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+
+        <p><strong>Case B</strong> — both partial, modeled as a standalone assignment table:</p>
+        <div class="cell" data-cell="step3_case_b">
+          <div class="cell-head"><span class="cell-title">step3_case_b.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+
+        <p><strong>Case C</strong> — both total. Try running this cell as-is: the very first insert fails, because <code>ParkingSpot</code> doesn't exist yet and <code>Employee.spot_id</code> is <code>NOT NULL</code>:</p>
+        <div class="cell" data-cell="step3_case_c_broken">
+          <div class="cell-head"><span class="cell-title">step3_case_c_chicken_egg.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+        <div class="callout amber">
+          <strong>This is expected to fail.</strong> Neither insert order works alone: Employee needs a spot that doesn't exist yet, and if you flip the FK, ParkingSpot needs an employee that doesn't exist yet. Real engines solve this with <em>deferred</em> constraint checking — the constraint is checked at <code>COMMIT</code> instead of at each statement, so both rows can go in in the same transaction.
+        </div>
+        <p>The fix, using SQLite's <code>PRAGMA defer_foreign_keys</code> (PostgreSQL uses <code>DEFERRABLE INITIALLY DEFERRED</code> constraints for the same purpose):</p>
+        <div class="cell" data-cell="step3_case_c_fixed">
+          <div class="cell-head"><span class="cell-title">step3_case_c_deferred_fix.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="step4">
+      <div class="kicker">The Algorithm</div>
+      <div class="step-card">
+        <h3><span class="step-num">4</span> 1:N Relationships</h3>
+        <p>The most frequent mapping, and the one that needs <em>no new table</em>. Take the primary key from the "1" side and add it as a foreign key on the "N" side. A department has many professors, so <code>Professor</code> gets a <code>dept_code</code> column — not the other way around.</p>
+        <figure class="diagram">
+          <svg viewBox="0 0 520 130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A one-to-many relationship is mapped by taking the primary key of the one side and adding it as a foreign key on the many side, creating no new table." font-family="IBM Plex Mono, monospace">
+            <rect x="20" y="40" width="150" height="50" rx="8" fill="#E4EBF2" stroke="#2F5D8A" stroke-width="1.5"/>
+            <text x="95" y="70" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" fill="#2F5D8A">Department</text>
+            <text x="95" y="20" text-anchor="middle" font-family="Source Serif 4, serif" font-size="11" fill="#4A564F">"1" side — PK: dept_code</text>
+            <line x1="170" y1="65" x2="330" y2="65" stroke="#4A564F" stroke-width="1.5" marker-end="url(#arr)"/>
+            <text x="250" y="55" text-anchor="middle" font-family="Source Serif 4, serif" font-size="11" fill="#4A564F">PK copied as FK</text>
+            <rect x="330" y="40" width="170" height="50" rx="8" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1.5"/>
+            <text x="415" y="63" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" fill="#3D6B4A">Professor</text>
+            <text x="415" y="79" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#3D6B4A">+ dept_code FK</text>
+            <text x="415" y="20" text-anchor="middle" font-family="Source Serif 4, serif" font-size="11" fill="#4A564F">"N" side — gets the FK</text>
+            <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#4A564F"/></marker></defs>
+          </svg>
+          <figcaption>The FK always lands on the "many" side — never create a separate table for a plain 1:N relationship.</figcaption>
+        </figure>
+        <div class="cell" data-cell="step4_oneton">
+          <div class="cell-head"><span class="cell-title">step4_one_to_many.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+        <p class="small">A recursive 1:N relationship works the same way — the FK just points back at the same table. An <code>Employee</code> "manages" other employees:</p>
+        <div class="cell" data-cell="step4_recursive">
+          <div class="cell-head"><span class="cell-title">step4_recursive_manages.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="step5">
+      <div class="kicker">The Algorithm</div>
+      <div class="step-card">
+        <h3><span class="step-num">5</span> M:N Relationships</h3>
+        <p>For many-to-many relationships you <em>do</em> create a new relation — often called a junction or cross-reference table. It has two foreign keys, one to each participating entity, and their combination forms the primary key.</p>
+        <div class="cell" data-cell="step5_manyton">
+          <div class="cell-head"><span class="cell-title">step5_many_to_many.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+        <p class="small">Try re-running the last <code>INSERT</code> a second time — the composite primary key on <code>(prof_id, student_id)</code> is exactly what stops a professor from advising the same student twice.</p>
+      </div>
+    </section>
+
+    <section id="step6">
+      <div class="kicker">The Algorithm</div>
+      <div class="step-card">
+        <h3><span class="step-num">6</span> Multivalued Attributes</h3>
+        <p>If an entity has an attribute that can take multiple values — a person with three phone numbers — you can't put them all in one cell. Create a new relation holding the attribute value plus the parent's primary key.</p>
+        <div class="cell" data-cell="step6_multivalued">
+          <div class="cell-head"><span class="cell-title">step6_multivalued.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+        <h3>Getting it wrong: Product tags</h3>
+        <p>A common real-world version of this mistake: a <code>Product</code> needs multiple <code>tags</code>. Two ways to map it —</p>
+        <table class="compare">
+          <tr><th></th><th>Wrong: CSV string</th><th>Right: separate relation</th></tr>
+          <tr><td>Schema</td><td><code>Product(product_id, name, tags)</code> with <code>tags = 'outdoor,camping,4-season'</code></td><td><code>ProductTag(product_id, tag)</code>, composite PK <code>(product_id, tag)</code></td></tr>
+          <tr><td>Querying "all products tagged camping"</td><td><code>WHERE tags LIKE '%camping%'</code></td><td><code>WHERE tag = 'camping'</code></td></tr>
+          <tr><td>Problems</td><td>No index can make the <code>LIKE</code> fast; <code>'camping'</code> matches inside unrelated words too (e.g. a tag literally named <code>decamping</code>); no controlled vocabulary — <code>"Outdoor"</code> and <code>"outdoor"</code> silently diverge; can't cleanly remove one tag without string surgery.</td><td>Indexable, exact-match, trivially add/remove a single tag, and you can add a <code>Tag(tag PRIMARY KEY)</code> lookup table to enforce a controlled vocabulary.</td></tr>
+        </table>
+        <div class="cell" data-cell="step6_tags">
+          <div class="cell-head"><span class="cell-title">step6_tags_wrong_vs_right.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="step7">
+      <div class="kicker">The Algorithm</div>
+      <div class="step-card">
+        <h3><span class="step-num">7</span> N-ary Relationships</h3>
+        <p>If a relationship involves three or more entities at once, create a new relation with the primary keys of all participants as foreign keys. A <code>Sale</code> that ties together <code>Customer</code>, <code>Product</code>, and <code>Store</code> is a three-way relationship — it cannot be decomposed into three separate binary relationships without losing information about which combinations actually happened.</p>
+        <div class="cell" data-cell="step7_nary">
+          <div class="cell-head"><span class="cell-title">step7_nary.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="worked-university">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: A Full ER-to-Relational Mapping</h2>
+      <p>A university has <strong>Departments</strong> (dept_code, name, budget). Each department employs many <strong>Professors</strong> (prof_id, name, phone_numbers <em>[multivalued]</em>, hire_date) — every professor works for exactly one department. Professors advise many <strong>Students</strong> (student_id, name, gpa), and a student may have multiple advisors (M:N). Professors have <strong>Dependents</strong> (name, relationship, dob) — a dependent's name is unique only within a given professor and can't exist without one. Some professors are <strong>Tenured</strong> (tenure_date, endowed_chair_name), some are <strong>Adjunct</strong> (hourly_rate) — every professor is exactly one of these; there are no generic professors.</p>
+
+      <table class="compare">
+        <tr><th>Step</th><th>ER construct</th><th>Applied here</th></tr>
+        <tr><td>1</td><td>Strong entities</td><td><code>Department</code>, <code>Student</code>, and the core of <code>Professor</code></td></tr>
+        <tr><td>2</td><td>Weak entity</td><td><code>Dependent</code> — owned by Professor, partial key <code>name</code></td></tr>
+        <tr><td>3</td><td>1:N</td><td><code>Professor.dept_code</code> FK to <code>Department</code></td></tr>
+        <tr><td>4</td><td>M:N</td><td><code>Advises(prof_id, student_id)</code> junction table</td></tr>
+        <tr><td>5</td><td>Multivalued attribute</td><td><code>ProfessorPhone(prof_id, phone)</code></td></tr>
+        <tr><td>6</td><td>Specialization (disjoint, total)</td><td><code>Professor.kind</code> discriminator with a <code>CHECK</code> constraint tying it to <code>tenure_date</code> / <code>hourly_rate</code></td></tr>
+      </table>
+
+      <p>Run the full mapping — six tables from one moderately-complex ER diagram:</p>
+      <div class="cell" data-cell="worked_university_full">
+        <div class="cell-head"><span class="cell-title">worked_university_full_mapping.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="callout">
+        <strong>Notice the mechanical nature of this.</strong> Six tables, and every single one traces back to exactly one step of the algorithm. There's no judgment call left except "which candidate key becomes the primary key" and "which mapping strategy for the specialization" — and the next section covers that second choice in depth.
+      </div>
+    </section>
+
+    <section id="inheritance">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Handling Inheritance — The Three Strategies</h2>
+      <p>When your ER diagram includes subclasses (Employee → Engineer, Secretary), you have to decide how to represent that "Is-A" relationship in a system that only understands flat tables. Say <code>Employee(EmpID, Name, Salary)</code> specializes into <code>Engineer(SoftwareStack)</code> and <code>Secretary(TypingSpeed)</code>.</p>
+
+      <table class="compare">
+        <tr><th>Strategy</th><th>Shape</th><th>Pros</th><th>Cons</th></tr>
+        <tr><td><strong>1. Multiple Tables</strong><br>(class-specific)</td><td><code>Employee(EmpID,Name,Salary)</code><br><code>Engineer(EmpID,SoftwareStack)</code><br><code>Secretary(EmpID,TypingSpeed)</code></td><td>Clean, no wasted columns, subclass-specific <code>NOT NULL</code> works, overlapping specializations are trivial (a row can exist in both).</td><td>Every subclass query needs a join back to Employee.</td></tr>
+        <tr><td><strong>2. Single Table</strong><br>(type discriminator)</td><td><code>Employee(EmpID,Name,Salary,SoftwareStack,TypingSpeed,JobType)</code></td><td>Fast — no joins at all.</td><td>Wasted NULLs (an engineer's <code>TypingSpeed</code> is always empty); can't use a plain <code>NOT NULL</code> to require "engineers must have a stack" without also blocking every secretary row.</td></tr>
+        <tr><td><strong>3. Concrete Tables Only</strong></td><td><code>Engineer(EmpID,Name,Salary,SoftwareStack)</code><br><code>Secretary(EmpID,Name,Salary,TypingSpeed)</code></td><td>No joins, no NULLs, each table stands alone.</td><td>Can't enforce "EmpID unique across all employees" without extra work; "list every employee" needs a <code>UNION</code>; a person who's genuinely both would need duplicated rows.</td></tr>
+      </table>
+
+      <p><strong>Strategy 1</strong> — table-per-subclass:</p>
+      <div class="cell" data-cell="inherit_strategy1">
+        <div class="cell-head"><span class="cell-title">strategy1_multiple_tables.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+      <p><strong>Strategy 2</strong> — single table with a discriminator. The <code>CHECK</code> constraint is the closest plain SQL gets to "an engineer must have a stack and no typing speed, a secretary the reverse" — try changing the last row's <code>job_type</code> to see the constraint fire:</p>
+      <div class="cell" data-cell="inherit_strategy2">
+        <div class="cell-head"><span class="cell-title">strategy2_single_table.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+      <p><strong>Strategy 3</strong> — concrete tables only:</p>
+      <div class="cell" data-cell="inherit_strategy3">
+        <div class="cell-head"><span class="cell-title">strategy3_concrete_tables.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+      <div class="callout purple">
+        <strong>How to choose:</strong> if you constantly ask "give me all employees regardless of type," Strategy 1 or 2 wins. If you never treat subclasses uniformly, Strategy 3 is fine. This mirrors the disjoint/total specialization trade-offs from the EER playground: Strategy 1 is the natural fit for disjoint-or-overlapping partial specializations, Strategy 3 fits disjoint-and-total, and Strategy 2 fits any case with few subclass-specific columns.
+      </div>
+
+      <h3>The Professor tenure/adjunct discriminator, mapped fully</h3>
+      <p>This is Step 6 of the university worked example above, isolated so you can see just the discriminator's <code>CHECK</code> logic:</p>
+      <div class="cell" data-cell="inherit_professor_kind">
+        <div class="cell-head"><span class="cell-title">professor_kind_discriminator.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="broken">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Detecting a Broken Mapping</h2>
+      <p>Here's a schema someone actually shipped. Run it, look at what it lets you insert, and see if you can spot the ER structure it was trying to represent — and why the mapping is wrong.</p>
+      <div class="cell" data-cell="broken_enrollment">
+        <div class="cell-head"><span class="cell-title">broken_enrollment.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <details class="answer">
+        <summary>▸ Reveal the three problems</summary>
+        <div class="answer-body">
+          <p><strong>Problem 1 — natural-key collision:</strong> <code>(student_name, course_code)</code> as the primary key means two different students who happen to share a name become an instant collision the moment they take the same course. The mapping used a natural key where it should have introduced a surrogate <code>student_id</code>.</p>
+          <p><strong>Problem 2 — update anomaly:</strong> <code>student_dob</code> and <code>course_title</code> repeat on every row that mentions that student or course. If Alice takes six courses, her date of birth is stored six times — and nothing stops those six copies from silently drifting apart.</p>
+          <p><strong>Problem 3 — three entities conflated into one table:</strong> this single table is trying to be Student, Course, and Enrollment all at once. The fix is to decompose it back into three relations, each describing exactly one kind of thing.</p>
+        </div>
+      </details>
+      <p>The corrected decomposition — run it and notice that two different people named "Alice Kim" can now coexist without conflict:</p>
+      <div class="cell" data-cell="corrected_enrollment">
+        <div class="cell-head"><span class="cell-title">corrected_3table_decomposition.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Rule of thumb: any time a table's non-key attributes describe more than one "kind of thing," you've found a mapping mistake worth undoing before you write data into it.</p>
+    </section>
+
+    <section id="er-to-relational">
+      <div class="kicker">Apply It</div>
+      <h2>The ER → Relational Mapper</h2>
+      <p>ER constructs and relational tables are not the same shape — they have to be translated, and each construct translates by its own rule. Step through a small university model and watch the schema physically build itself, one rule at a time.</p>
+
+      <div class="widget">
+        <div class="widget-title">The ER → Relational Mapper</div>
+        <div class="widget-sub">strong entity · 1:N · M:N — each rule, applied live</div>
+        <div class="qstep-rail" id="ert-rail"></div>
+        <div class="ert-layout">
+          <div class="ert-panel">
+            <div class="ert-panel-title">ER model</div>
+            <div id="ert-er"></div>
+          </div>
+          <div class="ert-panel">
+            <div class="ert-panel-title">Relational schema</div>
+            <div class="ert-schema" id="ert-schema"></div>
+          </div>
+        </div>
+        <div class="ert-note" id="ert-note"></div>
+        <div class="qstep-controls">
+          <button class="qstep-restart-btn" id="ert-back">◀ Back</button>
+          <button class="qstep-next-btn" id="ert-next">Next step ▶</button>
+          <button class="qstep-restart-btn" id="ert-restart">↺ Restart</button>
+          <span class="qstep-count" id="ert-count"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="mapping-mapper">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: The Mapping Mapper</h2>
+      <p>The seven-step algorithm looks like seven unrelated rules. It isn't — every construct you draw in an ER model maps to exactly one of three things: a <strong>table</strong>, a <strong>column</strong>, or a <strong>constraint</strong>. Sort the nine constructs below by what they actually produce.</p>
+
+      <div class="widget">
+        <div class="widget-title">The Mapping Mapper</div>
+        <div class="widget-sub">ER construct → table · column · constraint</div>
+        <div class="widget-label">Constructs to place</div>
+        <div class="lm-bank" id="mapbank"></div>
+        <div class="lm-zones">
+          <div class="lm-zone z-a" data-zone="table"><div class="lm-zone-head">Becomes its own table</div><div id="mapzone-table"></div></div>
+          <div class="lm-zone z-b" data-zone="column"><div class="lm-zone-head">Becomes a column (or columns)</div><div id="mapzone-column"></div></div>
+          <div class="lm-zone z-c" data-zone="constraint"><div class="lm-zone-head">Becomes a constraint</div><div id="mapzone-constraint"></div></div>
+        </div>
+        <div class="lm-hint">Tip: click a construct, then click a destination. Click a placed construct to send it back.</div>
+        <div class="qstep-controls">
+          <button class="lm-check-btn" id="mapcheck">Check mapping</button>
+          <button class="lm-answer-btn" id="mapanswer" disabled>Show correct mapping</button>
+          <button class="lm-restart-btn" id="maprestart">↺ Restart</button>
+          <span class="lm-score" id="mapscore"></span>
+        </div>
+        <div id="mapfeedback"></div>
+        <div id="mapkey"></div>
+      </div>
+    </section>
+
+    <section id="mapping-quiz">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Pick the Right Mapping</h2>
+      <p>Ten scenarios pulling together everything above — key hierarchy, FK direction, weak entities, multivalued attributes, inheritance strategy, and spotting a broken mapping. For each one, decide what the algorithm actually produces.</p>
+      <div id="mapq-quiz"></div>
+    </section>
+
+    <section id="keyquiz">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Key Type Identifier</h2>
+      <p>Ten scenarios. Given a schema and an attribute set, decide: superkey, candidate key, primary key, foreign key, composite key — or not a key at all.</p>
+      <div id="keyq-quiz"></div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. Author / Book / Wrote / Chapter</h4>
+        <p>An <code>Author</code> writes many <code>Book</code>s (M:N, via <code>Wrote</code>, which carries a <code>royalty_pct</code>). Each <code>Book</code> has many <code>Chapter</code>s (weak entity, partial key <code>chapter_number</code>). Map this ER fragment to relations.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <div class="schema-line">Author(author_id PK, name, email)</div>
+            <div class="schema-line">Book(isbn PK, title, year)</div>
+            <div class="schema-line">Wrote(author_id FK, isbn FK, royalty_pct, PRIMARY KEY(author_id, isbn))</div>
+            <div class="schema-line">Chapter(isbn FK, chapter_number, title, PRIMARY KEY(isbn, chapter_number), FOREIGN KEY(isbn) REFERENCES Book ON DELETE CASCADE)</div>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Product with multivalued <code>tags</code></h4>
+        <p>Show a wrong mapping and a right mapping for a <code>Product</code> entity with a multivalued <code>tags</code> attribute.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><strong>Wrong:</strong> a CSV string column, e.g. <code>Product(product_id, name, tags)</code> with <code>tags='outdoor,camping,4-season'</code>. Forces <code>LIKE</code> queries with no usable index, produces false substring matches, and has no controlled vocabulary.</p>
+            <p><strong>Right:</strong> <code>ProductTag(product_id FK, tag, PRIMARY KEY(product_id, tag))</code> — optionally with a lookup table <code>Tag(tag PK)</code> to enforce a controlled vocabulary.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Employee <code>manages</code> (self-referencing)</h4>
+        <p>Map a 1:N recursive <code>manages</code> relationship on <code>Employee</code>. What changes if managers can co-manage the same subordinate (M:N)?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><strong>1:N:</strong> <code>Employee(emp_id PK, name, salary, manager_id NULL REFERENCES Employee(emp_id))</code> — a self-referencing, nullable FK on the subordinate side (the classic adjacency-list pattern; <code>NULL</code> represents "no manager," e.g. the CEO).</p>
+            <p><strong>M:N (co-management):</strong> needs its own junction table: <code>Manages(manager_id FK, subordinate_id FK, PRIMARY KEY(manager_id, subordinate_id))</code>, both FKs referencing <code>Employee(emp_id)</code>.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. Country ← Locates → Store, Country total</h4>
+        <p>A <code>Country</code> "locates" many <code>Store</code>s (1:N), and <em>every</em> country in the database is required to have at least one store (total participation on the Country side). Where does the FK go, and does it enforce that rule?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>The FK goes on <code>Store</code> (the "N" side, as always for 1:N): <code>Store.country_code NOT NULL REFERENCES Country</code>. This enforces "every store has a country" — but it does <strong>not</strong> enforce "every country has at least one store." Plain SQL has no native way to require a parent row to have at least one matching child. Options: application-level checks before allowing a country to be inserted without a store, a trigger that re-verifies on insert/delete, or a denormalized <code>store_count</code> column with a <code>CHECK</code> — each with real trade-offs. In practice, the honest answer is often "document the rule and accept application-level enforcement."</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>5. Reverse-engineer a broken table</h4>
+        <p><code>Enrollment(student_id, student_name, student_email, course_id, course_title, professor_name, grade)</code>. What ER structure was this trying to represent, and what's wrong with the mapping?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><strong>Flaws:</strong> student attributes (<code>name</code>, <code>email</code>) and course attributes (<code>title</code>) are redundantly repeated on every enrollment row — an update anomaly (changing a professor's name means updating every enrollment row for every course they teach); an insertion anomaly (you can't represent a course that has zero enrollments yet); a deletion anomaly (deleting the last enrollment in a course silently loses that course's metadata); and <code>professor_name</code> is a plain string rather than a foreign key to a <code>Professor</code> table, so a professor's name typo can silently create a "new" professor.</p>
+            <p><strong>Corrected:</strong></p>
+            <div class="schema-line">Student(student_id PK, name, email)</div>
+            <div class="schema-line">Course(course_id PK, title, professor_id FK)</div>
+            <div class="schema-line">Enrollment(student_id FK, course_id FK, grade, PRIMARY KEY(student_id, course_id))</div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p>Schema design is the most common single hour of a system-design interview at any company that touches data. Practicing the ER-to-relational algorithm makes you fast at what interviewers actually watch for.</p>
+        <p>The classic setup: design the schema for a ride-sharing app, Instagram, Slack, or a stock brokerage. You're expected to identify entities, cardinalities, primary keys, and foreign keys — usually without being prompted step by step.</p>
+        <p>What's actually being scored:</p>
+        <ul class="criteria-list">
+          <li><span class="c-num">1.</span><strong>Correct cardinality.</strong> User↔Ride should be 1:N, not 1:1 — a rider takes many rides over time. Getting the multiplicity wrong on the very first relationship you draw is a bad signal.</li>
+          <li><span class="c-num">2.</span><strong>Junction tables for M:N.</strong> Post↔Tag, Song↔Playlist — if you draw a direct FK for a many-to-many relationship, that's a tell that the algorithm hasn't been internalized.</li>
+          <li><span class="c-num">3.</span><strong>Weak entities and identifying relationships.</strong> OrderLine, Chapter, Comment — entities that only make sense in the context of an owner, with composite primary keys.</li>
+          <li><span class="c-num">4.</span><strong>Foreign-key referential actions.</strong> "What happens when a user deletes their account?" is really asking whether you know <code>CASCADE</code> / <code>SET NULL</code> / <code>RESTRICT</code> and can reason about GDPR-style deletion requirements.</li>
+        </ul>
+        <p><strong>The senior-level curveball:</strong> "How would this schema handle 100 million users? What do you denormalize first?" The answer interviewers want isn't "denormalize everything" — it's <em>normalize the source of truth, and denormalize read-side projections for hot paths.</em> Keep one clean, correct table as the system of record, and build fast, possibly-stale materialized views or caches on top of it for the queries that actually need to be cheap.</p>
+        <p class="small"><strong>Practice suggestion:</strong> pick a product you use daily — DoorDash, GitHub, Notion, Robinhood — and sketch its schema in 10 minutes: 4–6 entities, every cardinality, every foreign key. Repeat with a different product five times. The algorithm becomes reflexive faster than you'd expect.</p>
+      </div>
+    </section>
+
+    <section id="in-2026">
+      <div class="kicker">2026 Status</div>
+      <h2>In 2026: What Has Changed</h2>
+      <p>Mapping rules have not changed; the keys, the nullability and the temporal columns around them have.</p>
+      <ul>
+        <li><strong>Surrogate keys are the default</strong> (<code>IDENTITY</code>, UUIDv7), while natural keys still dominate integration and analytics schemas because they mean something to the business.</li>
+        <li><strong>Soft deletes need a partial index</strong> — <code>UNIQUE … WHERE deleted_at IS NULL</code> — or a deleted row blocks reuse of the natural key forever.</li>
+        <li><strong>Temporal and bitemporal tables</strong> (SQL:2011 <code>SYSTEM_TIME</code>, or a companion audit table) record not just what is true but when it was true.</li>
+        <li><strong>Mapping a JSON column</strong> is the modern 'one extra attribute' escape hatch: cheap to add now, expensive to query and constrain later.</li>
+      </ul>
+      <p class="small">Mapping is where modelling decisions become constraints — and constraints are the only part of a schema an application cannot ignore.</p>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="5_eer_inheritance_aggregation_playground.html">← 5. EER: Inheritance & Aggregation</a>
+        <a class="pgnav-pos" href="index.html">Playground 6 of 15</a>
+        <a class="pgnav-next" href="7_relational_algebra_playground.html">7. Relational Algebra →</a>
+      </nav>
+    </footer>
+
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
+const CELLS = {
+  keys_candidates: {
+    setup: ``,
+    starter:
+`CREATE TABLE Employee (
+  emp_id  INTEGER PRIMARY KEY,
+  ssn     TEXT UNIQUE NOT NULL,
+  email   TEXT UNIQUE NOT NULL,
+  name    TEXT,
+  dept_id INTEGER
+);
+
+INSERT INTO Employee VALUES (1, '111-11-1111', 'alice@uni.edu', 'Alice', 10);
+INSERT INTO Employee VALUES (2, '222-22-2222', 'bob@uni.edu',   'Bob',   10);
+
+SELECT * FROM Employee;`
+  },
+  step1_strong: {
+    setup: ``,
+    starter:
+`CREATE TABLE Department (
+  dept_code TEXT PRIMARY KEY,
+  name      TEXT NOT NULL,
+  budget    REAL
+);
+
+CREATE TABLE Student (
+  student_id INTEGER PRIMARY KEY,
+  name       TEXT NOT NULL,
+  gpa        REAL
+);
+
+INSERT INTO Department VALUES ('CS', 'Computer Science', 2500000);
+INSERT INTO Student VALUES (1, 'Alice', 3.8);
+
+SELECT * FROM Department;
+SELECT * FROM Student;`
+  },
+  step2_weak: {
+    setup: ``,
+    starter:
+`CREATE TABLE Department (dept_code TEXT PRIMARY KEY, name TEXT, budget REAL);
+CREATE TABLE Professor (
+  prof_id   INTEGER PRIMARY KEY,
+  name      TEXT NOT NULL,
+  hire_date TEXT,
+  dept_code TEXT REFERENCES Department(dept_code)
+);
+CREATE TABLE Dependent (
+  prof_id      INTEGER,
+  name         TEXT,
+  relationship TEXT,
+  dob          TEXT,
+  PRIMARY KEY (prof_id, name),
+  FOREIGN KEY (prof_id) REFERENCES Professor(prof_id) ON DELETE CASCADE
+);
+
+INSERT INTO Department VALUES ('CS', 'Computer Science', 2500000);
+INSERT INTO Professor VALUES (100, 'Dr. Knuth', '2001-01-01', 'CS');
+INSERT INTO Dependent VALUES (100, 'Junior', 'child', '2015-04-01');
+INSERT INTO Dependent VALUES (100, 'Spouse', 'spouse', '1980-02-02');
+
+SELECT * FROM Dependent;
+
+-- Uncomment to see the cascade in action:
+-- DELETE FROM Professor WHERE prof_id = 100;
+-- SELECT * FROM Dependent;`
+  },
+  step3_case_a: {
+    setup: ``,
+    starter:
+`CREATE TABLE ParkingSpot (
+  spot_id  INTEGER PRIMARY KEY,
+  location TEXT
+);
+
+CREATE TABLE Employee (
+  emp_id  INTEGER PRIMARY KEY,
+  name    TEXT NOT NULL,
+  spot_id INTEGER NOT NULL UNIQUE REFERENCES ParkingSpot(spot_id)
+);
+
+INSERT INTO ParkingSpot VALUES (1, 'A-12'), (2, 'A-13');
+INSERT INTO Employee VALUES (1, 'Alice', 1);
+INSERT INTO Employee VALUES (2, 'Bob', 2);
+
+SELECT * FROM Employee;
+-- Spot A-13 is unassigned to nobody yet if we drop the Bob insert — ParkingSpot stays partial.`
+  },
+  step3_case_b: {
+    setup: ``,
+    starter:
+`CREATE TABLE Employee (emp_id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE ParkingSpot (spot_id INTEGER PRIMARY KEY, location TEXT);
+
+CREATE TABLE Assignment (
+  emp_id  INTEGER UNIQUE REFERENCES Employee(emp_id),
+  spot_id INTEGER UNIQUE REFERENCES ParkingSpot(spot_id)
+);
+
+INSERT INTO Employee VALUES (1, 'Alice'), (2, 'Bob');
+INSERT INTO ParkingSpot VALUES (1, 'A-12'), (2, 'A-13');
+
+-- Only Alice has a spot; Bob and spot A-13 remain unmatched — that's fine, both sides are partial.
+INSERT INTO Assignment VALUES (1, 1);
+
+SELECT * FROM Assignment;`
+  },
+  step3_case_c_broken: {
+    setup: ``,
+    starter:
+`CREATE TABLE ParkingSpot (spot_id INTEGER PRIMARY KEY, emp_id INTEGER NOT NULL);
+CREATE TABLE Employee (emp_id INTEGER PRIMARY KEY, spot_id INTEGER NOT NULL REFERENCES ParkingSpot(spot_id));
+
+-- Both tables require the other to already exist. There is no valid insertion order:
+INSERT INTO Employee VALUES (1, 1);`
+  },
+  step3_case_c_fixed: {
+    setup: ``,
+    starter:
+`CREATE TABLE ParkingSpot (spot_id INTEGER PRIMARY KEY, emp_id INTEGER NOT NULL);
+CREATE TABLE Employee (emp_id INTEGER PRIMARY KEY, spot_id INTEGER NOT NULL REFERENCES ParkingSpot(spot_id));
+
+BEGIN;
+PRAGMA defer_foreign_keys = ON;
+INSERT INTO Employee VALUES (1, 1);
+INSERT INTO ParkingSpot VALUES (1, 1);
+COMMIT;
+
+SELECT * FROM Employee;
+SELECT * FROM ParkingSpot;`
+  },
+  step4_oneton: {
+    setup: ``,
+    starter:
+`CREATE TABLE Department (dept_code TEXT PRIMARY KEY, name TEXT, budget REAL);
+CREATE TABLE Professor (
+  prof_id   INTEGER PRIMARY KEY,
+  name      TEXT NOT NULL,
+  hire_date TEXT,
+  dept_code TEXT REFERENCES Department(dept_code)
+);
+
+INSERT INTO Department VALUES ('CS', 'Computer Science', 2500000);
+INSERT INTO Professor VALUES (100, 'Dr. Knuth', '2001-01-01', 'CS');
+INSERT INTO Professor VALUES (101, 'Dr. Lovelace', '2010-09-01', 'CS');
+
+SELECT * FROM Professor;`
+  },
+  step4_recursive: {
+    setup: ``,
+    starter:
+`CREATE TABLE Employee (
+  emp_id     INTEGER PRIMARY KEY,
+  name       TEXT NOT NULL,
+  salary     REAL,
+  manager_id INTEGER REFERENCES Employee(emp_id)
+);
+
+INSERT INTO Employee VALUES (1, 'Carol (CEO)', 200000, NULL);
+INSERT INTO Employee VALUES (2, 'Dave (VP)',   150000, 1);
+INSERT INTO Employee VALUES (3, 'Eve (IC)',    100000, 2);
+
+SELECT * FROM Employee;`
+  },
+  step5_manyton: {
+    setup: ``,
+    starter:
+`CREATE TABLE Professor (prof_id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE Student (student_id INTEGER PRIMARY KEY, name TEXT);
+
+CREATE TABLE Advises (
+  prof_id    INTEGER,
+  student_id INTEGER,
+  PRIMARY KEY (prof_id, student_id),
+  FOREIGN KEY (prof_id) REFERENCES Professor(prof_id),
+  FOREIGN KEY (student_id) REFERENCES Student(student_id)
+);
+
+INSERT INTO Professor VALUES (100, 'Dr. Knuth');
+INSERT INTO Student VALUES (1, 'Alice');
+INSERT INTO Advises VALUES (100, 1);
+
+SELECT * FROM Advises;`
+  },
+  step6_multivalued: {
+    setup: ``,
+    starter:
+`CREATE TABLE Professor (prof_id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE ProfessorPhone (
+  prof_id INTEGER,
+  phone   TEXT,
+  PRIMARY KEY (prof_id, phone),
+  FOREIGN KEY (prof_id) REFERENCES Professor(prof_id) ON DELETE CASCADE
+);
+
+INSERT INTO Professor VALUES (100, 'Dr. Knuth');
+INSERT INTO ProfessorPhone VALUES (100, '555-1000');
+INSERT INTO ProfessorPhone VALUES (100, '555-2000');
+
+SELECT * FROM ProfessorPhone;`
+  },
+  step6_tags: {
+    setup: ``,
+    starter:
+`-- WRONG: multivalued attribute crammed into one column
+CREATE TABLE ProductWrong (product_id INTEGER PRIMARY KEY, name TEXT, tags TEXT);
+INSERT INTO ProductWrong VALUES (1, 'Tent', 'outdoor,camping,4-season');
+SELECT * FROM ProductWrong;
+
+-- RIGHT: a proper relation for the multivalued attribute
+CREATE TABLE Product (product_id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE ProductTag (
+  product_id INTEGER,
+  tag        TEXT,
+  PRIMARY KEY (product_id, tag),
+  FOREIGN KEY (product_id) REFERENCES Product(product_id) ON DELETE CASCADE
+);
+INSERT INTO Product VALUES (1, 'Tent');
+INSERT INTO ProductTag VALUES (1, 'outdoor'), (1, 'camping'), (1, '4-season');
+SELECT * FROM ProductTag WHERE tag = 'camping';`
+  },
+  step7_nary: {
+    setup: ``,
+    starter:
+`CREATE TABLE Customer (customer_id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE Product (product_id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE Store (store_id INTEGER PRIMARY KEY, name TEXT);
+
+CREATE TABLE Sale (
+  customer_id INTEGER,
+  product_id  INTEGER,
+  store_id    INTEGER,
+  quantity    INTEGER,
+  PRIMARY KEY (customer_id, product_id, store_id),
+  FOREIGN KEY (customer_id) REFERENCES Customer(customer_id),
+  FOREIGN KEY (product_id)  REFERENCES Product(product_id),
+  FOREIGN KEY (store_id)    REFERENCES Store(store_id)
+);
+
+INSERT INTO Customer VALUES (1, 'Alice');
+INSERT INTO Product VALUES (1, 'Widget');
+INSERT INTO Store VALUES (1, 'Main St');
+INSERT INTO Sale VALUES (1, 1, 1, 3);
+
+SELECT * FROM Sale;`
+  },
+  worked_university_full: {
+    setup: ``,
+    starter:
+`CREATE TABLE Department (
+  dept_code TEXT PRIMARY KEY,
+  name      TEXT NOT NULL,
+  budget    REAL
+);
+
+CREATE TABLE Professor (
+  prof_id           INTEGER PRIMARY KEY,
+  name              TEXT NOT NULL,
+  hire_date         TEXT,
+  dept_code         TEXT REFERENCES Department(dept_code),
+  kind              TEXT CHECK (kind IN ('T','A')),
+  tenure_date       TEXT,
+  endowed_chair_name TEXT,
+  hourly_rate       REAL,
+  CHECK ((kind='T' AND tenure_date IS NOT NULL AND hourly_rate IS NULL)
+      OR (kind='A' AND hourly_rate IS NOT NULL AND tenure_date IS NULL))
+);
+
+CREATE TABLE ProfessorPhone (
+  prof_id INTEGER,
+  phone   TEXT,
+  PRIMARY KEY (prof_id, phone),
+  FOREIGN KEY (prof_id) REFERENCES Professor(prof_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Dependent (
+  prof_id      INTEGER,
+  name         TEXT,
+  relationship TEXT,
+  dob          TEXT,
+  PRIMARY KEY (prof_id, name),
+  FOREIGN KEY (prof_id) REFERENCES Professor(prof_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Student (
+  student_id INTEGER PRIMARY KEY,
+  name       TEXT NOT NULL,
+  gpa        REAL
+);
+
+CREATE TABLE Advises (
+  prof_id    INTEGER,
+  student_id INTEGER,
+  PRIMARY KEY (prof_id, student_id),
+  FOREIGN KEY (prof_id) REFERENCES Professor(prof_id),
+  FOREIGN KEY (student_id) REFERENCES Student(student_id)
+);
+
+INSERT INTO Department VALUES ('CS', 'Computer Science', 2500000);
+INSERT INTO Professor VALUES (1, 'Dr. Chen', '2010-01-01', 'CS', 'T', '2015-06-01', 'Chen Chair', NULL);
+INSERT INTO Professor VALUES (2, 'Dr. Diaz', '2019-01-01', 'CS', 'A', NULL, NULL, 75.0);
+INSERT INTO ProfessorPhone VALUES (1, '555-1000'), (1, '555-2000');
+INSERT INTO Dependent VALUES (1, 'Junior', 'child', '2015-04-01');
+INSERT INTO Student VALUES (10, 'Alice', 3.8);
+INSERT INTO Advises VALUES (1, 10);
+INSERT INTO Advises VALUES (2, 10);
+
+SELECT * FROM Professor;
+SELECT * FROM Advises;`
+  },
+  inherit_strategy1: {
+    setup: ``,
+    starter:
+`CREATE TABLE Employee (emp_id INTEGER PRIMARY KEY, name TEXT, salary REAL);
+CREATE TABLE Engineer (emp_id INTEGER PRIMARY KEY REFERENCES Employee(emp_id), software_stack TEXT);
+CREATE TABLE Secretary (emp_id INTEGER PRIMARY KEY REFERENCES Employee(emp_id), typing_speed INTEGER);
+
+INSERT INTO Employee VALUES (1, 'Priya', 95000);
+INSERT INTO Engineer VALUES (1, 'Python/Go');
+
+-- Getting "all employees" needs no join; getting engineer-specific data needs one:
+SELECT Employee.emp_id, Employee.name, Engineer.software_stack
+FROM Employee JOIN Engineer ON Employee.emp_id = Engineer.emp_id;`
+  },
+  inherit_strategy2: {
+    setup: ``,
+    starter:
+`CREATE TABLE Employee (
+  emp_id         INTEGER PRIMARY KEY,
+  name           TEXT,
+  salary         REAL,
+  job_type       TEXT CHECK (job_type IN ('Engineer','Secretary')),
+  software_stack TEXT,
+  typing_speed   INTEGER,
+  CHECK (
+    (job_type='Engineer' AND typing_speed IS NULL) OR
+    (job_type='Secretary' AND software_stack IS NULL)
+  )
+);
+
+INSERT INTO Employee VALUES (1, 'Priya', 95000, 'Engineer', 'Python/Go', NULL);
+INSERT INTO Employee VALUES (2, 'Sam', 60000, 'Secretary', NULL, 95);
+
+SELECT * FROM Employee;
+
+-- Try this: an engineer row that also has a typing_speed violates the CHECK.
+-- INSERT INTO Employee VALUES (3, 'Bad Row', 50000, 'Engineer', 'X', 80);`
+  },
+  inherit_strategy3: {
+    setup: ``,
+    starter:
+`CREATE TABLE Engineer (emp_id INTEGER PRIMARY KEY, name TEXT, salary REAL, software_stack TEXT);
+CREATE TABLE Secretary (emp_id INTEGER PRIMARY KEY, name TEXT, salary REAL, typing_speed INTEGER);
+
+INSERT INTO Engineer VALUES (1, 'Priya', 95000, 'Python/Go');
+INSERT INTO Secretary VALUES (2, 'Sam', 60000, 95);
+
+-- "All employees" now requires a UNION:
+SELECT emp_id, name FROM Engineer
+UNION
+SELECT emp_id, name FROM Secretary;`
+  },
+  inherit_professor_kind: {
+    setup: ``,
+    starter:
+`CREATE TABLE Professor (
+  prof_id            INTEGER PRIMARY KEY,
+  name               TEXT,
+  hire_date          TEXT,
+  dept_code          TEXT,
+  kind               TEXT CHECK (kind IN ('T','A')),
+  tenure_date        TEXT,
+  endowed_chair_name TEXT,
+  hourly_rate        REAL,
+  CHECK ((kind='T' AND tenure_date IS NOT NULL AND hourly_rate IS NULL)
+      OR (kind='A' AND hourly_rate IS NOT NULL AND tenure_date IS NULL))
+);
+
+INSERT INTO Professor VALUES (1, 'Dr. Chen', '2010-01-01', 'CS', 'T', '2015-06-01', 'Chen Chair', NULL);
+INSERT INTO Professor VALUES (2, 'Dr. Diaz', '2019-01-01', 'CS', 'A', NULL, NULL, 75.0);
+
+SELECT * FROM Professor;
+
+-- Try this: a tenured row with no tenure_date violates the CHECK.
+-- INSERT INTO Professor VALUES (3, 'Dr. Bad', '2020-01-01', 'CS', 'T', NULL, NULL, NULL);`
+  },
+  broken_enrollment: {
+    setup: ``,
+    starter:
+`CREATE TABLE Enrollment (
+  student_name  TEXT,
+  student_dob   TEXT,
+  course_code   TEXT,
+  course_title  TEXT,
+  professor_name TEXT,
+  grade         TEXT,
+  PRIMARY KEY (student_name, course_code)
+);
+
+INSERT INTO Enrollment VALUES ('Alice Kim', '2001-05-04', 'CS101', 'Intro to CS', 'Dr. Knuth', 'A');
+INSERT INTO Enrollment VALUES ('Alice Kim', '2001-05-04', 'CS201', 'Data Structures', 'Dr. Lovelace', 'B+');
+
+SELECT * FROM Enrollment;
+
+-- Try this: a second, different Alice Kim taking CS101 collides on the primary key.
+-- INSERT INTO Enrollment VALUES ('Alice Kim', '1990-01-01', 'CS101', 'Intro to CS', 'Dr. Knuth', 'C');`
+  },
+  corrected_enrollment: {
+    setup: ``,
+    starter:
+`CREATE TABLE Student (student_id INTEGER PRIMARY KEY, name TEXT, dob TEXT);
+CREATE TABLE Course (course_code TEXT PRIMARY KEY, title TEXT, professor_name TEXT);
+CREATE TABLE Enrollment (
+  student_id  INTEGER,
+  course_code TEXT,
+  grade       TEXT,
+  PRIMARY KEY (student_id, course_code),
+  FOREIGN KEY (student_id) REFERENCES Student(student_id),
+  FOREIGN KEY (course_code) REFERENCES Course(course_code)
+);
+
+INSERT INTO Student VALUES (1, 'Alice Kim', '2001-05-04');
+INSERT INTO Student VALUES (2, 'Alice Kim', '1990-01-01'); -- two different people, no collision now
+INSERT INTO Course VALUES ('CS101', 'Intro to CS', 'Dr. Knuth');
+INSERT INTO Enrollment VALUES (1, 'CS101', 'A');
+INSERT INTO Enrollment VALUES (2, 'CS101', 'C');
+
+SELECT Student.name, Student.dob, Enrollment.grade
+FROM Enrollment JOIN Student ON Student.student_id = Enrollment.student_id
+WHERE Enrollment.course_code = 'CS101';`
+  }
+};
+
+/* ============ common error hints, matched against real SQLite error text ============ */
+function commonErrorHint(msg){
+  const m = msg.toLowerCase();
+  if (m.includes('foreign key constraint failed')) {
+    return "A foreign key stopped this. Either a row points at a parent that doesn't exist yet, or you tried to delete/update a parent row that a child still depends on.";
+  }
+  if (m.includes('unique constraint failed')) {
+    return "A UNIQUE or PRIMARY KEY constraint stopped this — the value (or combination of values) you inserted already exists.";
+  }
+  if (m.includes('check constraint failed')) {
+    return "A CHECK constraint stopped this — the row you tried to insert doesn't satisfy one of the table's business rules.";
+  }
+  if (m.includes('not null constraint failed')) {
+    return "A NOT NULL constraint stopped this — a required column was left empty.";
+  }
+  return null;
+}
+
+/* ============ SQL execution engine (uses iterateStatements so zero-row SELECTs and partial output before an error are preserved) ============ */
+let SQL = null;
+async function getSqlJsModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderResultTable(columns, rows){
+  if (!columns.length) return '';
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of columns) html += `<th>${escapeHtml(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += '<tr>';
+    for (const v of row) html += `<td>${v === null ? '<em>NULL</em>' : escapeHtml(v)}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+async function runSqlAgainstFreshDb(setupSql, mainSql, outputEl){
+  outputEl.innerHTML = '';
+  outputEl.classList.remove('err');
+  outputEl.classList.add('show');
+  try {
+    const SQLmod = await getSqlJsModule();
+    const db = new SQLmod.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setupSql && setupSql.trim()) db.run(setupSql);
+    const full = mainSql;
+    let out = '';
+    let hadOutput = false;
+    let stmtIter;
+    try {
+      stmtIter = db.iterateStatements(full);
+    } catch (e) {
+      throw e;
+    }
+    for (const stmt of stmtIter) {
+      try {
+        const cols = stmt.getColumnNames();
+        const rows = [];
+        while (stmt.step()) {
+          rows.push(stmt.get());
+        }
+        if (cols.length) {
+          out += renderResultTable(cols, rows);
+          hadOutput = true;
+        }
+      } catch (stmtErr) {
+        const hint = commonErrorHint(stmtErr.message);
+        out += `<div style="color:#F0A38A; margin-top:8px;">✖ Error: ${escapeHtml(stmtErr.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+        hadOutput = true;
+        outputEl.innerHTML = out;
+        outputEl.classList.add('err');
+        db.close();
+        return;
+      }
+    }
+    if (!hadOutput) out = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    outputEl.innerHTML = out;
+    db.close();
+  } catch (e) {
+    const hint = commonErrorHint(e.message);
+    outputEl.innerHTML = `<div style="color:#F0A38A;">✖ Error: ${escapeHtml(e.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+    outputEl.classList.add('err');
+  }
+}
+
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+
+function wireCell(cellEl){
+  const id = cellEl.getAttribute('data-cell');
+  const spec = CELLS[id];
+  if (!spec) return;
+  const textarea = cellEl.querySelector('textarea');
+  const output = cellEl.querySelector('.cell-output');
+  const runBtn = cellEl.querySelector('.run-btn');
+  const resetBtn = cellEl.querySelector('.reset-btn');
+  textarea.value = spec.starter;
+  pgGrow(textarea);
+  textarea.addEventListener('input', () => pgGrow(textarea));
+  runBtn.addEventListener('click', () => {
+    runSqlAgainstFreshDb(spec.setup, textarea.value, output);
+  });
+  resetBtn.addEventListener('click', () => {
+    textarea.value = spec.starter;
+    pgGrow(textarea);
+    output.classList.remove('show', 'err');
+    output.innerHTML = '';
+  });
+}
+
+function initAllCells(){
+  document.querySelectorAll('.cell[data-cell]').forEach(wireCell);
+}
+
+/* ============ Key Type Identifier quiz ============ */
+const KEY_TYPE_QUESTIONS = [
+  {
+    q: "In table Employee(emp_id, ssn, email, name, dept_id), we know that emp_id, ssn, and email are each individually unique. Consider the attribute set {emp_id, ssn}. What kind of key is it?",
+    options: [
+      { label: "Candidate key", hint: "Minimal + unique", correct: false },
+      { label: "Superkey (non-minimal)", hint: "Unique but has redundant attrs", correct: true },
+      { label: "Primary key", hint: "The chosen candidate key", correct: false },
+      { label: "Not a key", hint: "Doesn't uniquely identify", correct: false }
+    ],
+    feedback: "It's unique — but not minimal, since either emp_id or ssn alone would already suffice. A non-minimal unique set is a superkey, not a candidate key."
+  },
+  {
+    q: "In the same Employee(emp_id, ssn, email, name, dept_id) schema (with emp_id, ssn, email each unique), what is {name}?",
+    options: [
+      { label: "Candidate key", hint: "Minimal + unique", correct: false },
+      { label: "Superkey (non-minimal)", hint: "Unique but has redundant attrs", correct: false },
+      { label: "Primary key", hint: "The chosen candidate key", correct: false },
+      { label: "Not a key", hint: "Doesn't uniquely identify", correct: true }
+    ],
+    feedback: "name was never declared unique — nothing stops two employees from sharing a name. It isn't a key of any kind."
+  },
+  {
+    q: "In Order(order_id PK, customer_id, product_id, quantity, ordered_at), customer_id is declared as REFERENCES customers(customer_id). What kind of key is customer_id in the Order table?",
+    options: [
+      { label: "Primary key", hint: "Row identity in this table", correct: false },
+      { label: "Foreign key", hint: "Pointer to another table's PK", correct: true },
+      { label: "Candidate key", hint: "Minimal + unique in THIS table", correct: false },
+      { label: "Composite key", hint: "Multi-column PK", correct: false }
+    ],
+    feedback: "customer_id doesn't identify a row in Order — many orders can share the same customer_id. It's a foreign key: a pointer back to the customers table's primary key."
+  },
+  {
+    q: "In a LineItem(order_id, line_no, product_id, quantity) table where line_no restarts at 1 for each order, the PK is declared as PRIMARY KEY (order_id, line_no). What kind of key is this?",
+    options: [
+      { label: "Simple key", hint: "Single-column PK", correct: false },
+      { label: "Composite key", hint: "Multi-column PK", correct: true },
+      { label: "Foreign key", hint: "Pointer to another table", correct: false },
+      { label: "Surrogate key", hint: "Auto-generated ID", correct: false }
+    ],
+    feedback: "Neither order_id nor line_no is unique alone (line_no restarts every order). Together they are — that's a composite key."
+  },
+  {
+    q: "You inherit a schema: User(id, email, phone, name). id is declared as PK, but you also notice that email has a UNIQUE NOT NULL constraint. Which of the following is true?",
+    options: [
+      { label: "Only id is a candidate key", hint: "UNIQUE alone doesn't count", correct: false },
+      { label: "Both {id} and {email} are candidate keys", hint: "Multiple minimal superkeys can exist", correct: true },
+      { label: "Neither — you can only have one candidate key per table", hint: "", correct: false },
+      { label: "Only {id, email} combined is a candidate key", hint: "", correct: false }
+    ],
+    feedback: "A table can have several candidate keys; only one becomes the primary key. Here id is the chosen primary key, but email — unique and not null — is still a perfectly valid candidate key that lost the vote."
+  },
+  {
+    q: "A weak entity Dependent is owned by Employee. Its schema is Dependent(emp_id FK, dep_name, dob). What must the primary key of Dependent be?",
+    options: [
+      { label: "{dep_name} alone", hint: "", correct: false },
+      { label: "{emp_id} alone", hint: "", correct: false },
+      { label: "{emp_id, dep_name}", hint: "Owner's key + partial key", correct: true },
+      { label: "A new surrogate ID", hint: "Auto-generated", correct: false }
+    ],
+    feedback: "A weak entity's primary key is always the owner's primary key combined with its own partial key — here, {emp_id, dep_name}. dep_name alone might repeat across different employees' dependents; emp_id alone would collapse all of one employee's dependents into a single row."
+  },
+  {
+    q: "A table is declared as Account(account_id INTEGER PRIMARY KEY AUTOINCREMENT, balance REAL). account_id is generated by the database and has no meaning outside this table. What kind of key is account_id?",
+    options: [
+      { label: "Natural key", hint: "A real-world identifier", correct: false },
+      { label: "Surrogate key", hint: "System-generated, no business meaning", correct: true },
+      { label: "Foreign key", hint: "Pointer to another table", correct: false },
+      { label: "Composite key", hint: "Multi-column", correct: false }
+    ],
+    feedback: "account_id is a surrogate key: the database invents it purely to give each row a stable identity. A natural key would be something the business already uses — an account number printed on a statement."
+  },
+  {
+    q: "A Country table is declared as Country(iso_code CHAR(2) PRIMARY KEY, name TEXT). iso_code is the official two-letter country code used everywhere in the real world. What kind of key is iso_code?",
+    options: [
+      { label: "Surrogate key", hint: "Invented by the database", correct: false },
+      { label: "Natural key", hint: "Chosen from the real world", correct: true },
+      { label: "Foreign key", hint: "Pointer to another table", correct: false },
+      { label: "Not a key", hint: "Codes can change", correct: false }
+    ],
+    feedback: "iso_code is a natural key — the identifier comes from the domain, not from the database. It is stable and meaningful, but if a code could ever be reassigned you would rather use a surrogate id plus a UNIQUE on the code."
+  },
+  {
+    q: "A junction table Enrollment(student_id, course_id, enrolled_at) is declared with PRIMARY KEY (student_id, course_id), and each of those columns also REFERENCES a parent table. Which key types are present?",
+    options: [
+      { label: "One composite primary key and two foreign keys", hint: "The pair identifies the row; each column points out", correct: true },
+      { label: "One primary key and one foreign key", hint: "", correct: false },
+      { label: "Two candidate keys and no foreign keys", hint: "", correct: false },
+      { label: "A single surrogate key", hint: "", correct: false }
+    ],
+    feedback: "The primary key is composite — {student_id, course_id} together identify one enrollment — and each column is independently a foreign key into Student and Course. A junction table is exactly where all three ideas meet."
+  },
+  {
+    q: "A table has two candidate keys, {id} and {email}. You declare PRIMARY KEY (id). What is the status of {email} now?",
+    options: [
+      { label: "It stops being a key", hint: "Only one key survives", correct: false },
+      { label: "It remains a candidate key, and you can still enforce it with UNIQUE", hint: "Uniqueness is independent of the PK choice", correct: true },
+      { label: "It automatically becomes a foreign key", hint: "", correct: false },
+      { label: "It must be dropped from the table", hint: "", correct: false }
+    ],
+    feedback: "Choosing a primary key does not delete the other candidates — it only elects one of them. {email} is still a candidate key, and a UNIQUE (NOT NULL) constraint is how you keep it true. Primary key is a choice; candidate key is a fact about the data."
+  }
+];
+
+/* ============ Pick the Right Mapping quiz ============ */
+const MAPPING_QUESTIONS = [
+  {
+    q: "A Book has many Reviews; each Review belongs to exactly one Book — a plain 1:N relationship. Where does the algorithm put the foreign key?",
+    options: [
+      { label: "A new junction table", hint: "Two FKs forming a composite PK", correct: false },
+      { label: "FK on Review, pointing to Book", hint: "PK from the \"1\" side lands on the \"N\" side", correct: true },
+      { label: "FK on Book, pointing to Review", hint: "", correct: false },
+      { label: "Merge Book and Review into one table", hint: "", correct: false }
+    ],
+    feedback: "Step 4: for a plain 1:N relationship, no new table is created. The PK of the \"1\" side (Book) becomes an FK on the \"N\" side (Review) — never the reverse."
+  },
+  {
+    q: "Students and Clubs relate M:N through a Membership that also records a join_date. How is this mapped?",
+    options: [
+      { label: "Add club_id to Student", hint: "", correct: false },
+      { label: "Add student_id to Club", hint: "", correct: false },
+      { label: "New table Membership(student_id, club_id, join_date), composite PK", hint: "Step 5", correct: true },
+      { label: "Merge Student and Club into one table", hint: "", correct: false }
+    ],
+    feedback: "Step 5: M:N relationships always get a new junction table with two FKs whose combination forms the primary key. Any attribute that belongs to the relationship itself — like join_date — lives in that same table."
+  },
+  {
+    q: "A weak entity OrderLine is owned by Order, with partial key line_no (which restarts at 1 for every order). After mapping, what is OrderLine's primary key?",
+    options: [
+      { label: "{line_no}", hint: "", correct: false },
+      { label: "{order_id}", hint: "", correct: false },
+      { label: "{order_id, line_no}", hint: "Owner's PK + partial key", correct: true },
+      { label: "A new surrogate id", hint: "", correct: false }
+    ],
+    feedback: "Step 2: a weak entity's primary key is always the owner's PK plus its own partial key. line_no alone repeats across different orders, and order_id alone would collapse every line of an order into one row."
+  },
+  {
+    q: "A Person entity has a multivalued attribute certifications (a person can hold several). What does Step 6 of the algorithm produce?",
+    options: [
+      { label: "A comma-separated certifications column on Person", hint: "", correct: false },
+      { label: "A new relation Certification(person_id, certification)", hint: "Value + parent's PK", correct: true },
+      { label: "Columns certification_1, certification_2, certification_3 on Person", hint: "", correct: false },
+      { label: "A JSON blob column on Person", hint: "", correct: false }
+    ],
+    feedback: "Step 6: a multivalued attribute becomes its own relation, holding the attribute's value plus the parent entity's primary key — exactly the shape of ProfessorPhone or ProductTag above. The other three options all reintroduce the CSV-column problem in a different costume."
+  },
+  {
+    q: "A reporting system will only ever query \"give me all Engineers\" or \"give me all Secretaries\" separately — it never asks for a combined list of all Employees regardless of type. Which inheritance strategy avoids both wasted NULL columns and unnecessary joins for this workload?",
+    options: [
+      { label: "Strategy 1 — table-per-subclass", hint: "Clean, but every query joins back to Employee", correct: false },
+      { label: "Strategy 2 — single table with a discriminator", hint: "Fast, but wastes NULL columns", correct: false },
+      { label: "Strategy 3 — concrete tables only", hint: "No joins, no NULLs, each table stands alone", correct: true },
+      { label: "None — inheritance can't be mapped to tables", hint: "", correct: false }
+    ],
+    feedback: "Strategy 3 fits exactly this workload: since subclasses are never queried uniformly, there's no cost to dropping the superclass table, and each concrete table is join-free and NULL-free."
+  },
+  {
+    q: "Store.country_code is declared NOT NULL REFERENCES Country. What does this constraint actually guarantee?",
+    options: [
+      { label: "Both \"every store has a country\" and \"every country has a store\"", hint: "", correct: false },
+      { label: "\"Every store has a country\" — but not \"every country has a store\"", hint: "The FK direction only protects the side it's declared on", correct: true },
+      { label: "\"Every country has a store\" — but not \"every store has a country\"", hint: "", correct: false },
+      { label: "Neither — NOT NULL on an FK does nothing", hint: "", correct: false }
+    ],
+    feedback: "A NOT NULL FK on Store only forces every store to name a valid country. It says nothing about the reverse direction — a country with zero stores is still perfectly legal SQL, even if the business rule calls for total participation on the Country side."
+  },
+  {
+    q: "Invoice(customer_name, customer_address, invoice_num, item_desc, item_price) uses PRIMARY KEY (customer_name, invoice_num, item_desc). What's the biggest structural problem?",
+    options: [
+      { label: "Nothing — this is a reasonable schema", hint: "", correct: false },
+      { label: "It conflates Customer, Invoice, and InvoiceLineItem into one table", hint: "Three different \"kinds of thing\" in one relation", correct: true },
+      { label: "invoice_num should be declared as TEXT instead of INTEGER", hint: "", correct: false },
+      { label: "item_price is missing a CHECK constraint", hint: "", correct: false }
+    ],
+    feedback: "customer_address repeats on every line of every invoice for that customer, and item_desc/item_price describe line items, not invoices — three entities (Customer, Invoice, InvoiceLineItem) have been flattened into one table, the same mistake as the broken Enrollment example above."
+  },
+  {
+    q: "Employee and ParkingSpot are related 1:1, and a spot may sit unassigned. Where does the foreign key go, and what else is needed?",
+    options: [
+      { label: "FK on ParkingSpot referencing Employee, with UNIQUE on that FK", hint: "The UNIQUE is what makes it 1:1", correct: true },
+      { label: "FK on Employee referencing ParkingSpot", hint: "", correct: false },
+      { label: "A new junction table with both keys", hint: "That is for M:N", correct: false },
+      { label: "Merge the two entities into one table", hint: "", correct: false }
+    ],
+    feedback: "A 1:1 is mapped like a 1:N but with a UNIQUE on the foreign key, so at most one child row can point at each parent. The FK goes on the optional side (ParkingSpot) so the mandatory side (Employee) needs no nullable column. Step 3 of the algorithm."
+  },
+  {
+    q: "A ternary relationship Supplies links Supplier, Part, and Project, and carries its own attribute qty. What does the algorithm produce?",
+    options: [
+      { label: "Three separate 1:N relationships", hint: "", correct: false },
+      { label: "One table Supplies(supplier_id, part_id, project_id, qty) with a composite PK of the three FKs", hint: "Step 7", correct: true },
+      { label: "A column added to whichever entity is largest", hint: "", correct: false },
+      { label: "Nothing — n-ary relationships cannot be mapped", hint: "", correct: false },
+    ],
+    feedback: "Step 7: an n-ary relationship becomes its own table holding one FK per participating entity, all of them together forming the primary key, plus any attributes of the relationship itself (qty). Splitting it into three binaries would misrepresent it — a supply row exists only when supplier, part, and project all participate at once."
+  },
+  {
+    q: "Department and Employee are 1:N, and the business rule says every employee must belong to a department. Which declaration makes the DBMS enforce that participation?",
+    options: [
+      { label: "NOT NULL on Employee.dept_id, together with the FK", hint: "Total participation of the many side", correct: true },
+      { label: "NOT NULL on Department's primary key", hint: "", correct: false },
+      { label: "A CHECK on Department", hint: "", correct: false },
+      { label: "Total participation can never be enforced in SQL", hint: "", correct: false }
+    ],
+    feedback: "Participation on the many side is enforceable: put the FK on Employee and make it NOT NULL, so no employee row can exist without a department. What is <em>not</em> enforceable with plain constraints is the reverse — that every department must have at least one employee."
+  }
+];
+
+/* ============ generic one-at-a-time multiple-choice quiz engine ============ */
+const quizState = {};
+
+function choiceQuizHtml(prefix, questions){
+  return `<div class="quiz-wrap" id="${prefix}-wrap"></div>`;
+}
+
+function choiceQuestionHtml(prefix, idx, total, question){
+  let html = `<div class="quiz-progress">Question ${idx + 1} of ${total}</div>`;
+  html += `<div class="quiz-q">${escapeHtml(question.q)}</div>`;
+  question.options.forEach((opt, i) => {
+    html += `<button class="quiz-opt" data-idx="${i}">
+      <span class="opt-label">${String.fromCharCode(65 + i)}.</span>${escapeHtml(opt.label)}
+      ${opt.hint ? `<span class="opt-hint">${escapeHtml(opt.hint)}</span>` : ''}
+    </button>`;
+  });
+  html += `<div class="quiz-feedback-slot"></div>`;
+  html += `<div class="quiz-nav"><button class="btn next-btn" style="display:none;">Next →</button></div>`;
+  html += `<div class="quiz-score">Score: <span class="score-val">0</span> / ${total}</div>`;
+  return html;
+}
+
+function choiceDoneHtml(prefix, score, total){
+  return `<div class="quiz-done">
+    <div class="big-score">${score} / ${total}</div>
+    <p>${score === total ? "Perfect score." : "Review the ones you missed above, then try again."}</p>
+    <button class="btn secondary restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+
+function initChoiceQuiz(prefix, questions){
+  quizState[prefix] = { idx: 0, score: 0, answered: false, questions };
+  renderChoiceQuiz(prefix);
+}
+
+function renderChoiceQuiz(prefix){
+  const state = quizState[prefix];
+  const wrap = document.getElementById(`${prefix}-wrap`);
+  if (state.idx >= state.questions.length) {
+    wrap.innerHTML = choiceDoneHtml(prefix, state.score, state.questions.length);
+    wrap.querySelector('.restart-btn').addEventListener('click', () => {
+      quizState[prefix] = { idx: 0, score: 0, answered: false, questions: state.questions };
+      renderChoiceQuiz(prefix);
+    });
+    return;
+  }
+  const q = state.questions[state.idx];
+  wrap.innerHTML = choiceQuestionHtml(prefix, state.idx, state.questions.length, q);
+  wrap.querySelector('.score-val').textContent = state.score;
+  wrap.querySelectorAll('.quiz-opt').forEach(btn => {
+    btn.addEventListener('click', () => choiceSelectOption(prefix, parseInt(btn.getAttribute('data-idx'), 10)));
+  });
+  const nextBtn = wrap.querySelector('.next-btn');
+  nextBtn.addEventListener('click', () => choiceNext(prefix));
+}
+
+function choiceSelectOption(prefix, optIdx){
+  const state = quizState[prefix];
+  if (state.answered) return;
+  state.answered = true;
+  const q = state.questions[state.idx];
+  const wrap = document.getElementById(`${prefix}-wrap`);
+  const opts = wrap.querySelectorAll('.quiz-opt');
+  const chosen = q.options[optIdx];
+  opts.forEach((btn, i) => {
+    btn.classList.add('disabled');
+    if (q.options[i].correct) btn.classList.add('correct');
+    else if (i === optIdx) btn.classList.add('incorrect');
+  });
+  const slot = wrap.querySelector('.quiz-feedback-slot');
+  if (chosen.correct) {
+    state.score++;
+    wrap.querySelector('.score-val').textContent = state.score;
+    slot.innerHTML = `<div class="quiz-feedback correct">✓ Correct. ${escapeHtml(q.feedback || '')}</div>`;
+  } else {
+    slot.innerHTML = `<div class="quiz-feedback incorrect">✖ Not quite. ${escapeHtml(q.feedback || '')}</div>`;
+  }
+  wrap.querySelector('.next-btn').style.display = 'inline-block';
+}
+
+function choiceNext(prefix){
+  const state = quizState[prefix];
+  state.idx++;
+  state.answered = false;
+  renderChoiceQuiz(prefix);
+}
+
+/* ============ boot ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  initAllCells();
+  document.getElementById('keyq-quiz').innerHTML = choiceQuizHtml('keyq', KEY_TYPE_QUESTIONS);
+  initChoiceQuiz('keyq', KEY_TYPE_QUESTIONS);
+  document.getElementById('mapq-quiz').innerHTML = choiceQuizHtml('mapq', MAPPING_QUESTIONS);
+  initChoiceQuiz('mapq', MAPPING_QUESTIONS);
+});
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: The Mapping Mapper ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const ZONES = ['table', 'column', 'constraint'];
+  const ITEMS = [
+    { id: 't1', text: 'A strong entity — Employee', zone: 'table' },
+    { id: 't2', text: 'An M:N relationship — Enrolls', zone: 'table' },
+    { id: 't3', text: 'A multivalued attribute — phone', zone: 'table' },
+    { id: 't4', text: 'A weak entity — Address', zone: 'table' },
+    { id: 'c1', text: 'A 1:N relationship — Dept → Employee', zone: 'column' },
+    { id: 'c2', text: 'A simple attribute — name', zone: 'column' },
+    { id: 'c3', text: 'A composite attribute — address(street, city, zip)', zone: 'column' },
+    { id: 'k1', text: 'The primary key of an entity', zone: 'constraint' },
+    { id: 'k2', text: 'Total participation in a 1:N relationship', zone: 'constraint' },
+  ];
+  let placed = {}, selected = null, checked = false;
+  const bank = byId('mapbank');
+  if (!bank) return;
+  function keyHtml(){
+    return '<div class="lm-key"><div class="lm-key-head">Correct mapping</div>' +
+      ITEMS.map(it => {
+        const ok = placed[it.id] === it.zone;
+        const h = document.querySelector('.lm-zone[data-zone="' + it.zone + '"] .lm-zone-head');
+        const name = h ? h.textContent.split('·')[0].trim() : it.zone;
+        return '<div class="lm-key-row ' + (ok ? 'ok' : 'bad') + '"><span class="lm-key-item">' + (ok ? '✓' : '✗') + ' ' + esc(it.text) + '</span><span class="lm-key-zone">' + esc(name) + '</span></div>';
+      }).join('') + '</div>';
+  }
+  function render(){
+    const rest = ITEMS.filter(it => !placed[it.id]);
+    bank.innerHTML = rest.length ? rest.map(it =>
+      `<div class="lm-chip${selected === it.id ? ' selected' : ''}" data-id="${it.id}">${esc(it.text)}</div>`).join('')
+      : `<span class="lm-hint" style="margin:0;">${checked ? 'All constructs placed and checked.' : 'All constructs placed — press “Check mapping”.'}</span>`;
+    bank.querySelectorAll('.lm-chip').forEach(chip => chip.addEventListener('click', () => {
+      if (checked) return;
+      selected = selected === chip.dataset.id ? null : chip.dataset.id;
+      render();
+    }));
+    ZONES.forEach(z => {
+      byId('mapzone-' + z).innerHTML = ITEMS.filter(it => placed[it.id] === z).map(it => {
+        let cls = 'lm-item';
+        if (checked) cls += it.zone === z ? ' correct' : ' incorrect';
+        return `<div class="${cls}" data-id="${it.id}">${esc(it.text)}</div>`;
+      }).join('');
+      byId('mapzone-' + z).querySelectorAll('.lm-item').forEach(el => el.addEventListener('click', () => {
+        if (checked) return;
+        delete placed[el.dataset.id]; selected = null; render();
+      }));
+    });
+    document.querySelectorAll('.lm-zone').forEach(z => z.classList.toggle('armed', !!selected));
+    byId('mapcheck').disabled = Object.keys(placed).length < ITEMS.length;
+    byId('mapanswer').disabled = !checked;
+    if (!checked) byId('mapscore').textContent = `${Object.keys(placed).length} of ${ITEMS.length} placed`;
+  }
+  document.querySelectorAll('.lm-zone').forEach(z => z.addEventListener('click', () => {
+    if (checked || !selected) return;
+    placed[selected] = z.dataset.zone; selected = null; render();
+  }));
+  byId('mapcheck').addEventListener('click', () => {
+    checked = true;
+    const wrong = ITEMS.filter(it => placed[it.id] !== it.zone);
+    const score = ITEMS.length - wrong.length;
+    byId('mapfeedback').innerHTML = wrong.length === 0
+      ? `<div class="lm-feedback correct">✓ ${score} / ${ITEMS.length}. The algorithm in one line: things with their own identity — strong entities, weak entities, M:N relationships, multivalued attributes — become tables; attributes and foreign keys become columns; keys and participation become constraints.</div>`
+      : `<div class="lm-feedback incorrect">✗ ${score} / ${ITEMS.length}. The red constructs are misplaced — click “Restart” and try again. Ask one question each time: does this thing need its own identity (table), is it a value or a pointer (column), or is it a rule about values (constraint)?</div>`;
+    render();
+    byId('mapscore').textContent = `${score} / ${ITEMS.length} correct`;
+  });
+  byId('mapanswer').addEventListener('click', () => { byId('mapkey').innerHTML = keyHtml(); });
+  byId('maprestart').addEventListener('click', () => {
+    placed = {}; selected = null; checked = false;
+    byId('mapfeedback').innerHTML = ''; byId('mapkey').innerHTML = ''; render();
+  });
+  render();
+})();
+</script>
+
+<script>
+/* ===== ER → Relational Mapper ===== */
+(function () {
+  const byId = id => document.getElementById(id);
+  const STEPS = [
+    { name:'Strong entities', note:'Every strong entity becomes its own table, and its key becomes that table\u2019s primary key. Nothing is copied yet \u2014 this step just mints the tables.' },
+    { name:'1:N \u2192 FK in the child', note:'A 1:N relationship gets no table of its own. The \u201cone\u201d side\u2019s key is copied into the \u201cmany\u201d side as a foreign key \u2014 so each Course records which Professor owns it.' },
+    { name:'M:N \u2192 junction table', note:'An M:N relationship cannot be stored directly. It becomes a new table whose composite primary key is the two parent keys \u2014 each of which is also a foreign key. The junction is where extra facts like a grade live.' },
+    { name:'Done \u2014 a complete schema', note:'Three rules, four tables. No information was lost and no relationship was left implicit: every ER construct is now something the database can enforce.' },
+  ];
+  let i = 0;
+
+  const ENTITIES = ['Professor', 'Course', 'Student'];
+  const RELS = [
+    { text:'Professor 1 ——— N Course', at:2 },
+    { text:'Student  M ——— N Course',   at:3 },
+  ];
+  const TABLES = [
+    { name:'Professor', from:1, cols:[{n:'prof_id', tag:'PK'}, {n:'name'}] },
+    { name:'Course',    from:1, cols:[{n:'course_id', tag:'PK'}, {n:'title'}, {n:'prof_id', tag:'FK → Professor(prof_id)', fk:true, at:2}] },
+    { name:'Student',   from:1, cols:[{n:'student_id', tag:'PK'}, {n:'name'}] },
+    { name:'Enrollment',from:3, cols:[{n:'student_id', tag:'PK, FK → Student', fk:true, at:3}, {n:'course_id', tag:'PK, FK → Course', fk:true, at:3}, {n:'grade'}] },
+  ];
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function renderRail(){
+    byId('ert-rail').innerHTML = STEPS.map((s, k) =>
+      '<div class="qstep-node' + (k === i ? ' active' : (k < i ? ' done' : '')) + '" data-k="' + k + '"><span class="qstep-idx">' + (k + 1) + '</span>' + esc(s.name) + '</div>'
+    ).join('');
+    byId('ert-rail').querySelectorAll('.qstep-node').forEach(n => n.addEventListener('click', () => { i = +n.dataset.k; render(); }));
+    byId('ert-count').textContent = 'Step ' + (i + 1) + ' of ' + STEPS.length;
+    byId('ert-back').disabled = i === 0;
+    byId('ert-next').disabled = i === STEPS.length - 1;
+  }
+
+  function renderER(){
+    const step = i + 1;
+    const onEnt = new Set();
+    if (step === 1 || step === 4) ENTITIES.forEach(e => onEnt.add(e));
+    if (step === 2) { onEnt.add('Professor'); onEnt.add('Course'); }
+    if (step === 3) { onEnt.add('Student'); onEnt.add('Course'); }
+    let html = ENTITIES.map(e => '<div class="ert-entity' + (onEnt.has(e) ? ' on' : '') + '">' + e + '</div>').join('');
+    html += RELS.map(r => '<div class="ert-rel' + (r.at === step ? ' on' : '') + '">' + esc(r.text) + (r.at === step ? '  ← mapping now' : '') + '</div>').join('');
+    byId('ert-er').innerHTML = html;
+  }
+
+  function renderSchema(){
+    const step = i + 1;
+    byId('ert-schema').innerHTML = TABLES.filter(t => t.from <= step).map(t => {
+      const isNew = t.from === step;
+      const cols = t.cols.filter(c => !c.at || c.at <= step).map(c => {
+        const hot = c.at === step ? ' hot' : '';
+        const fk = c.fk ? ' fk' : '';
+        return '<div class="ert-col' + hot + fk + '"><span>' + esc(c.n) + '</span><span class="ert-tag">' + esc(c.tag || '') + '</span></div>';
+      }).join('');
+      return '<div class="ert-card' + (isNew ? ' new' : '') + '">' +
+        '<div class="ert-card-head"><span>' + esc(t.name) + '</span>' + (isNew ? '<span class="ert-new">new</span>' : '') + '</div>' +
+        cols + '</div>';
+    }).join('');
+  }
+
+  function render(){
+    renderRail();
+    renderER();
+    renderSchema();
+    byId('ert-note').textContent = STEPS[i].note;
+  }
+
+  function init(){
+    if (!byId('ert-rail')) return;
+    byId('ert-back').addEventListener('click', () => { if (i > 0) { i--; render(); } });
+    byId('ert-next').addEventListener('click', () => { if (i < STEPS.length - 1) { i++; render(); } });
+    byId('ert-restart').addEventListener('click', () => { i = 0; render(); });
+    render();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

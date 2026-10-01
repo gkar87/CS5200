@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · DBMS Architecture and Data Independence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --pink:#A73E7A; --pink-soft:#F5E3EE;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:920px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:700px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+table.dbtable{width:100%; border-collapse:collapse; margin:10px 0; font-size:12.5px; background:var(--code-bg); border-radius:6px; overflow:hidden;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); padding:6px 10px; text-align:left; border-bottom:1px solid var(--code-rule); font-weight:600;}
+table.dbtable td{padding:6px 10px; border-bottom:1px solid var(--code-rule); color:var(--code-text); background:var(--code-bg);}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+/* ---- generic widget shell ---- */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.widget-label:first-of-type{margin-top:0;}
+
+/* ---- Data Independence Simulator ---- */
+.dis-tabs{display:flex; gap:8px; margin-bottom:16px;}
+.dis-tab-btn{flex:1; border:1.5px solid var(--rule-strong); background:#fff; color:var(--ink); border-radius:8px; padding:12px; font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:700; cursor:pointer; text-align:center;}
+.dis-tab-btn.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.dis-mode{display:none;}
+.dis-mode.active{display:block;}
+.dis-change-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0;}
+@media (max-width:600px){ .dis-change-grid{grid-template-columns:1fr;} }
+.dis-change-card{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:#fff;}
+.dis-change-card:hover{border-color:var(--blue);}
+.dis-change-card.active{border-color:var(--blue); background:var(--blue-soft);}
+.dis-change-title{font-weight:700; font-size:.95em; font-family:"IBM Plex Mono",monospace;}
+.dis-change-desc{font-size:.82em; color:var(--ink-soft); margin-top:3px;}
+.dis-flow{margin-top:18px;}
+.dis-schema-card{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:14px 16px; margin-bottom:6px; transition:border-color .2s, background .2s;}
+.dis-schema-card.changed{border-color:var(--rust); background:var(--rust-soft);}
+.dis-schema-card.shielded{border-color:var(--green); background:var(--green-soft);}
+.dis-schema-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+.dis-schema-head .left{display:flex; align-items:center; gap:8px;}
+.dis-schema-name{font-weight:700; font-size:1em;}
+.dis-schema-tag{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700;}
+.dis-schema-tag.changed{color:var(--rust);}
+.dis-schema-tag.shielded{color:var(--green);}
+.dis-schema-desc{font-size:.85em; color:var(--ink-soft); margin-bottom:8px;}
+.dis-schema-meta{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-soft); margin-bottom:6px;}
+.dis-arrow{text-align:center; font-size:18px; color:var(--ink-soft); margin:2px 0;}
+.dis-impact{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px; margin-top:14px;}
+.dis-impact-row{display:flex; gap:10px; margin-bottom:10px; align-items:flex-start;}
+.dis-impact-row:last-child{margin-bottom:0;}
+.dis-impact-badge{flex-shrink:0; font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px;}
+.dis-impact-badge.shielded{background:var(--green-soft); color:var(--green);}
+.dis-impact-badge.affected{background:var(--rust-soft); color:var(--rust);}
+.dis-progress-row{display:flex; justify-content:space-between; align-items:center; margin-top:18px; font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.dis-progressbar{height:5px; background:var(--rule); border-radius:3px; margin-top:6px; overflow:hidden;}
+.dis-progressbar-fill{height:100%; background:var(--blue); transition:width .3s ease;}
+.dis-mastered{margin-top:12px; display:none;}
+.dis-mastered.show{display:block;}
+
+/* ===== Play-and-learn widget kit (stepper · lab · mapper) =====
+   One visual language for every interactive in the deck. Reuse these
+   class names verbatim; only the data arrays change per lecture.       */
+/* --- A. Stepper widget --- */
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;}
+.qstep-layer.external{background:var(--blue-soft); color:var(--blue);}
+.qstep-layer.conceptual{background:var(--amber-soft); color:var(--amber);}
+.qstep-layer.internal{background:var(--purple-soft); color:var(--purple);}
+.qstep-layer.span{background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+/* --- C. Layer mapper widget --- */
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip:hover{border-color:var(--blue);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+@media (max-width:620px){ .lm-zones{grid-template-columns:1fr;} }
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:130px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.external .lm-zone-head{color:var(--blue);}
+.lm-zone.conceptual .lm-zone-head{color:var(--amber);}
+.lm-zone.internal .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-answer-btn{background:transparent; color:var(--blue); border:1px solid var(--blue); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-answer-btn:hover:not(:disabled){background:var(--blue-soft);}
+.lm-answer-btn:disabled{color:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed;}
+.lm-key{margin-top:14px; border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:14px 16px;}
+.lm-key-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+.lm-key-row{display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:6px 0; border-bottom:1px dashed var(--rule); font-size:.9em;}
+.lm-key-row:last-child{border-bottom:none;}
+.lm-key-item{flex:1;}
+.lm-key-zone{font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:700; white-space:nowrap;}
+.lm-key-row.ok .lm-key-zone{color:var(--green);}
+.lm-key-row.bad .lm-key-zone{color:var(--rust);}
+.lm-key-row.bad .lm-key-item{color:var(--rust);}
+
+/* ---- Data Independence Tester quiz (mirrors adt-/nfd- pattern) ---- */
+.dit-quiz{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:18px 0;}
+.dit-quiz-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+.dit-dots{display:inline-flex; gap:6px; align-items:center;}
+.dit-dots .dot{width:9px; height:9px; border-radius:50%; background:var(--rule-strong); display:inline-block;}
+.dit-dots .dot.current{background:var(--ink);}
+.dit-dots .dot.correct{background:var(--green);}
+.dit-dots .dot.incorrect{background:var(--rust);}
+.dit-dots-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-right:8px;}
+.dit-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft);}
+.dit-score b{color:var(--ink); font-size:1.1em;}
+.dit-progressbar{height:3px; background:var(--rule); border-radius:2px; margin:10px 0 18px; overflow:hidden;}
+.dit-progressbar-fill{height:100%; background:var(--blue); transition:width .2s ease;}
+.dit-scenario-card{background:#fff; border:1px solid var(--rule); border-radius:12px; padding:22px 24px;}
+.dit-scenario-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:10px;}
+.dit-scenario-text{font-size:1.05em; margin-bottom:6px;}
+.dit-scenario-text code{background:var(--paper-raised); padding:1px 5px; border-radius:4px;}
+.dit-pick-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:18px 0 10px;}
+.dit-options-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:600px){ .dit-options-grid{grid-template-columns:1fr;} }
+.dit-option-card{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+.dit-option-card:hover{border-color:var(--blue);}
+.dit-option-card.selected{border-color:var(--blue); background:var(--blue-soft);}
+.dit-option-card.correct{border-color:var(--green); background:var(--green-soft);}
+.dit-option-card.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.dit-option-card.disabled{cursor:default;}
+.dit-option-title{font-weight:700; font-size:.98em; font-family:"IBM Plex Mono",monospace;}
+.dit-option-hint{font-size:.8em; color:var(--ink-soft); margin-top:4px;}
+.dit-check-btn{margin-top:18px; padding:10px 20px; border-radius:8px; border:none; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13px; cursor:pointer;}
+.dit-check-btn:disabled{background:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.dit-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.dit-feedback.correct{background:var(--green-soft); color:var(--green);}
+.dit-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.btn.secondary.dit-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.dit-next-btn{margin-top:14px;}
+.dit-quiz-done{text-align:center; padding:24px;}
+.dit-quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical runnable cell (shared) ===== */
+.cell{background:var(--code-bg); border:1px solid var(--code-rule); border-radius:8px; margin:14px 0; overflow:hidden;}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule); font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--code-text);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75; font-family:"IBM Plex Mono",monospace;}
+.cell textarea{width:100%; min-height:0; resize:none; overflow:hidden; display:block; background:var(--code-bg); color:var(--code-text); border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; line-height:1.55; outline:none; tab-size:2;}
+.cell textarea:focus{outline:2px solid var(--blue); outline-offset:-2px;}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.cell .btn{background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace;}
+.cell .btn:hover{opacity:.9;}
+.cell .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.cell .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none; background:var(--code-bg);}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-zone.conceptual .lm-zone-head{color:#7A560F;}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">The Layered Design</a>
+      <a href="#three-schema-model">The ANSI/SPARC Three-Schema Model</a>
+      <a href="#external-level">1. The External Level</a>
+      <a href="#conceptual-level">2. The Conceptual Level</a>
+      <a href="#internal-level">3. The Internal Level</a>
+      <div class="grp">Data Independence</div>
+      <a href="#data-independence">Understanding Data Independence</a>
+      <a href="#data-independence-simulator">Data Independence Simulator</a>
+      <div class="grp">Architecture</div>
+      <a href="#engine-room">The Engine Room: DBMS Components</a>
+      <a href="#query-lifecycle-stepper">Life of a Query: Stepper</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-life-of-query">Life of a Query</a>
+      <a href="#worked-logical-break">A Logical Change That Breaks Independence</a>
+      <a href="#worked-data-dictionary">Data Dictionary in Action</a>
+      <div class="grp">Apply It</div>
+      <a href="#layer-mapper">The Layer Mapper</a>
+      <a href="#data-independence-tester">Data Independence Tester</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+          <div class="grp">2026 Status</div>
+      <a href="#in-2026">In 2026: What Has Changed</a>
+</nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>DBMS Architecture and Data Independence</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">A modern database is not one program. It is a stack of layers, each one carefully hidden from the others. A student querying grades in a browser has no idea whether the data lives on a laptop SSD, a cloud object store, or across a hundred replicas in three continents. That indifference is not accidental — it is architecture. The layered design that makes it possible was formalized in the 1970s and remains the single most important idea in database engineering today.</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>The Layered Design</h2>
+      <p>That indifference is enabled by a specific design principle: separation of concerns across three schema levels. The user sees one thing, the DBA reasons about another, and the storage engine handles a third — each layer talks only to its neighbors. This is called the <strong>ANSI/SPARC three-schema architecture</strong>, and once you internalize it, most seemingly-magical DBMS behavior stops being magic.</p>
+    </section>
+
+    <section id="three-schema-model">
+      <div class="kicker">Foundations</div>
+      <h2>The ANSI/SPARC Three-Schema Model</h2>
+      <p>The three layers, from what the user sees down to how bytes are stored:</p>
+      <table class="compare">
+        <thead><tr><th>Layer</th><th>What it defines</th><th>Typical mechanism</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><strong>External</strong></td><td>What each user or app sees</td><td><code>CREATE VIEW</code></td><td>Student portal shows grades; registrar dashboard shows enrollment totals</td></tr>
+          <tr><td><strong>Conceptual</strong></td><td>The single source of truth: all tables, columns, keys, constraints</td><td><code>CREATE TABLE</code>, <code>ALTER TABLE</code></td><td><code>Student(id PK, name, gpa)</code>, <code>Course(cid PK, title)</code></td></tr>
+          <tr><td><strong>Internal</strong></td><td>How the bytes are actually stored</td><td>Indexes, buffer pool, storage engine</td><td>B-tree on <code>Student.id</code>, pages on SSD</td></tr>
+        </tbody>
+      </table>
+      <p>The interface between External ↔ Conceptual is where <strong>logical data independence</strong> lives — the conceptual schema can evolve without breaking apps that read through views. The interface between Conceptual ↔ Internal is where <strong>physical data independence</strong> lives — the storage engine can swap indexes, shard, or migrate to new hardware without touching a single SQL query.</p>
+      <p>The goal of this architecture is to separate the user's view of the data from the physical reality of how that data is managed. To achieve this, the model is divided into three distinct levels, or schemas. A schema is simply a description of the data structure.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The three-schema architecture: the external level of user views, the conceptual level of the integrated logical schema, and the internal level of physical storage, with mappings between them." font-family="IBM Plex Mono, monospace">
+          <text x="340" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#4A564F">EXTERNAL SCHEMA — WHAT EACH USER SEES</text>
+          <g font-size="10" fill="#1E2A25">
+            <rect x="95" y="45" width="120" height="58" rx="8" fill="#8FC1F2" stroke="#1E2A25" stroke-width="1.5"/>
+            <circle cx="155" cy="65" r="9" fill="#1E2A25"/><path d="M140,90 Q155,75 170,90 Z" fill="#1E2A25"/>
+            <text x="155" y="40" text-anchor="middle" font-weight="700">Student View</text>
+
+            <rect x="280" y="45" width="120" height="58" rx="8" fill="#fff" stroke="#1E2A25" stroke-width="1.5"/>
+            <circle cx="340" cy="65" r="9" fill="none" stroke="#1E2A25" stroke-width="1.4"/><path d="M325,90 Q340,75 355,90 Z" fill="none" stroke="#1E2A25" stroke-width="1.4"/>
+            <text x="340" y="40" text-anchor="middle" font-weight="700">Transcript View</text>
+
+            <rect x="465" y="45" width="120" height="58" rx="8" fill="#fff" stroke="#1E2A25" stroke-width="1.5"/>
+            <rect x="500" y="58" width="50" height="32" rx="3" fill="none" stroke="#1E2A25" stroke-width="1.4"/><line x1="515" y1="90" x2="535" y2="90" stroke="#1E2A25" stroke-width="1.4"/>
+            <text x="525" y="40" text-anchor="middle" font-weight="700">Registration View</text>
+          </g>
+
+          <g stroke="#1E2A25" stroke-width="1.4" fill="#1E2A25" marker-end="url(#dasarrow)">
+            <path d="M155,103 L245,150"/>
+            <path d="M340,103 L340,150"/>
+            <path d="M525,103 L430,150"/>
+          </g>
+          <defs><marker id="dasarrow" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#1E2A25"/></marker></defs>
+
+          <rect x="220" y="158" width="240" height="50" rx="6" fill="#fff" stroke="#1E2A25" stroke-width="1.8"/>
+          <text x="340" y="188" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">Conceptual Schema</text>
+          <text x="210" y="178" text-anchor="end" font-size="10" fill="#4A564F">Global,</text>
+          <text x="210" y="190" text-anchor="end" font-size="10" fill="#4A564F">Logical View</text>
+
+          <path d="M340,208 L340,241" stroke="#1E2A25" stroke-width="1.4" marker-end="url(#dasarrow)"/>
+
+          <rect x="220" y="246" width="240" height="50" rx="6" fill="#fff" stroke="#1E2A25" stroke-width="1.8"/>
+          <text x="340" y="276" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">Internal Schema</text>
+          <text x="210" y="266" text-anchor="end" font-size="10" fill="#4A564F">Physical Data</text>
+          <text x="210" y="278" text-anchor="end" font-size="10" fill="#4A564F">Structure</text>
+
+          <line x1="460" y1="271" x2="505" y2="271" stroke="#1E2A25" stroke-width="1.4"/>
+          <g transform="translate(505,246)">
+            <path d="M0,8 a25,8 0 1 1 50,0 v34 a25,8 0 1 1 -50,0 Z" fill="#8FC1F2" stroke="#1E2A25" stroke-width="1.5"/>
+            <ellipse cx="25" cy="8" rx="25" ry="8" fill="#B9DAF5" stroke="#1E2A25" stroke-width="1.5"/>
+          </g>
+          <text x="530" y="308" text-anchor="middle" font-size="10" fill="#4A564F">Physical Database</text>
+        </svg>
+        <figcaption>The ANSI/SPARC three-schema architecture separates user views from physical storage.</figcaption>
+      </figure>
+    </section>
+
+    <section id="external-level">
+      <div class="kicker">Foundations</div>
+      <h2>1. The External Level (User Views)</h2>
+      <p>The external level is what the end user sees. In a large organization, different users need different "views" of the same data. Consider a university database. A student logging into the portal needs to see their grades and current schedule, but they should not see the home addresses of their professors or the financial aid status of their classmates. A registrar, however, needs access to enrollment numbers across all courses but doesn't need to see the specific contents of a student's private journals in a creative writing app.</p>
+      <p>At this level, we provide multiple external schemas. Each one is a simplified, tailored version of the database that shows only the data relevant to a specific group of users.</p>
+    </section>
+
+    <section id="conceptual-level">
+      <div class="kicker">Foundations</div>
+      <h2>2. The Conceptual Level (The Community View)</h2>
+      <p>This is the "single source of truth" for the entire database. It describes what data is stored and what the relationships are between different data points. If the external level is about "who sees what," the conceptual level is about "what exists."</p>
+      <p>In our university example, the conceptual schema would define entities like Students, Courses, and Instructors. It would state that a Student has a name, an ID, and a major. It also defines the rules: a Student can enroll in multiple Courses, and a Course is taught by one Instructor. This layer is hidden from the end user but serves as the foundation for all the external views.</p>
+    </section>
+
+    <section id="internal-level">
+      <div class="kicker">Foundations</div>
+      <h2>3. The Internal Level (Physical Storage)</h2>
+      <p>The internal level is where the rubber meets the road. It describes how the data is actually stored on the storage hardware. This includes details like whether the data is stored in sorted order, what compression techniques are used, and what kind of indexing structures (like B-trees or Hash tables) are used to make searching faster.</p>
+      <p>While the conceptual level says "we have a list of students," the internal level says "the student list is stored in a file named <code>std_data.db</code> on the SSD, using 64-byte blocks and a clustered index on the ID column."</p>
+    </section>
+
+    <section id="data-independence">
+      <div class="kicker">Data Independence</div>
+      <h2>Understanding Data Independence</h2>
+      <p>The primary benefit of the three-schema model is data independence. This is the ability to change the schema at one level without having to change the schema at the levels above it. There are two types: logical and physical.</p>
+
+      <h3>Logical Data Independence</h3>
+      <p>Logical data independence is the capacity to change the conceptual schema without changing the external schemas or application programs.</p>
+      <p>Imagine our university decides it needs to start tracking "Middle Names" for all students. The database administrator adds a <code>middle_name</code> column to the Students table at the conceptual level. Because of logical data independence, the existing "Student Portal" application (an external view) doesn't break. It simply continues to show the first and last names. The application only needs to be updated if and when the developers decide they actually want to display that new middle name.</p>
+
+      <h3>Physical Data Independence</h3>
+      <p>Physical data independence is the capacity to change the internal schema without changing the conceptual or external schemas.</p>
+      <p>Suppose the university database is getting slow. The administrator decides to move the data from a local SSD to a distributed cloud storage tier and changes the indexing strategy from a simple list to a complex B+ tree. These are major physical changes. However, the conceptual schema (the definition of Students and Courses) remains exactly the same. The SQL queries written by the developers don't change. The database engine handles the physical mapping behind the scenes, so the "what" stays the same even though the "how" has been completely overhauled.</p>
+
+      <p class="small">Logical independence is generally harder to achieve than physical independence because applications are often tightly coupled to the structure of the data they use. Physical independence, however, is a core strength of any modern DBMS like PostgreSQL, MySQL, or Oracle.</p>
+    </section>
+
+    <section id="data-independence-simulator">
+      <div class="kicker">Data Independence</div>
+      <h2>Data Independence Simulator</h2>
+      <p>Pick a mode, apply a change, and watch which schema layers actually get touched — and which stay shielded. Every change below drives real state through all three layers, not a canned animation.</p>
+
+      <div class="widget">
+        <div class="widget-title">Data Independence Simulator</div>
+        <div class="widget-sub">University Registrar · Three-Schema Architecture · ANSI/SPARC</div>
+
+        <div class="dis-tabs">
+          <button class="dis-tab-btn active" data-mode="logical">Logical Independence</button>
+          <button class="dis-tab-btn" data-mode="physical">Physical Independence</button>
+        </div>
+
+        <div class="dis-mode active" data-mode-panel="logical">
+          <div class="callout"><strong>Logical data independence:</strong> Changes to the conceptual schema do not require changes to external schemas or application programs.</div>
+          <div class="widget-label">Apply a change — watch what gets affected</div>
+          <div class="dis-change-grid" id="dis-logical-changes"></div>
+        </div>
+
+        <div class="dis-mode" data-mode-panel="physical">
+          <div class="callout"><strong>Physical data independence:</strong> Changes to the internal/physical schema (storage, indices) do not affect the conceptual or external schemas.</div>
+          <div class="widget-label">Apply a change — watch what gets affected</div>
+          <div class="dis-change-grid" id="dis-physical-changes"></div>
+        </div>
+
+        <div class="dis-flow">
+          <div class="dis-schema-card" id="dis-external-card"></div>
+          <div class="dis-arrow">↓</div>
+          <div class="dis-schema-card" id="dis-conceptual-card"></div>
+          <div class="dis-arrow">↓</div>
+          <div class="dis-schema-card" id="dis-internal-card"></div>
+        </div>
+
+        <div class="widget-label">Impact Analysis</div>
+        <div class="dis-impact" id="dis-impact"></div>
+
+        <div class="dis-progress-row">
+          <span>Explore <span id="dis-explored-count">0</span> of 6 changes</span>
+        </div>
+        <div class="dis-progressbar"><div class="dis-progressbar-fill" id="dis-progressbar-fill" style="width:0%"></div></div>
+        <div class="dis-mastered callout green" id="dis-mastered">✓ You've explored all changes in both modes. Data independence: mastered.</div>
+      </div>
+    </section>
+
+    <section id="engine-room">
+      <div class="kicker">Architecture</div>
+      <h2>The Engine Room: Major DBMS Components</h2>
+      <p>To maintain these layers and provide data independence, a DBMS is not just one program. It is a suite of specialized components working together. When you send a query to a database, it passes through several hands before the data reaches your screen.</p>
+
+      <h3>The Query Processor</h3>
+      <p>This is the "brain" of the DBMS. It takes your high-level request (usually in SQL) and figures out how to execute it.</p>
+      <ul>
+        <li><strong>Parser:</strong> The parser checks your SQL for syntax errors. It ensures the tables and columns you mentioned actually exist.</li>
+        <li><strong>Query Planner (Optimizer):</strong> There are often hundreds of ways to retrieve the same data. The planner looks at the available indexes and data statistics to choose the most efficient path. It is the difference between searching every page of a book and using the index at the back.</li>
+        <li><strong>Executor:</strong> Once a plan is chosen, the executor runs the steps. It asks the lower-level components for specific pieces of data.</li>
+      </ul>
+
+      <h3>The Storage Manager</h3>
+      <p>While the Query Processor handles the "what," the Storage Manager handles the "where."</p>
+      <ul>
+        <li><strong>Buffer Manager:</strong> Accessing a physical disk is slow. Accessing RAM is fast. The Buffer Manager decides which parts of the database should stay in memory (the "buffer pool") and which can stay on the disk. If you ask for a student's record, the Buffer Manager first checks if it's already in RAM.</li>
+        <li><strong>Storage Manager:</strong> This component talks directly to the operating system to write and read bits from the disk. It manages space allocation and ensures that the data is organized as described in the internal schema.</li>
+      </ul>
+
+      <h3>The Transaction Manager</h3>
+      <p>In a real-world database, hundreds of people might be changing data at the same time. The Transaction Manager ensures that the database remains consistent. If two people try to book the last seat on a flight at the same microsecond, the Transaction Manager makes sure only one succeeds and that the database doesn't end up in an "impossible" state. It handles the ACID properties (Atomicity, Consistency, Isolation, and Durability) that make databases reliable.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 680 175" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The internal DBMS pipeline: a query is parsed, optimized, executed against stored data, and returned as a result." font-family="IBM Plex Mono, monospace">
+          <text x="20" y="75" font-size="11" font-weight="700" fill="#1E2A25">SQL Query</text>
+          <path d="M82,72 L120,72" stroke="#1E2A25" stroke-width="1.4" marker-end="url(#erarrow)"/>
+
+          <rect x="125" y="50" width="90" height="46" rx="6" fill="#fff" stroke="#1E2A25" stroke-width="1.5"/>
+          <text x="170" y="78" text-anchor="middle" font-size="12" font-weight="700" fill="#1E2A25">Parser</text>
+          <path d="M215,72 L248,72" stroke="#1E2A25" stroke-width="1.4" marker-end="url(#erarrow)"/>
+
+          <rect x="253" y="50" width="90" height="46" rx="6" fill="#F6B199" stroke="#1E2A25" stroke-width="1.5"/>
+          <text x="298" y="78" text-anchor="middle" font-size="12" font-weight="700" fill="#1E2A25">Optimizer</text>
+          <path d="M343,72 L376,72" stroke="#1E2A25" stroke-width="1.4" marker-end="url(#erarrow)"/>
+          <text x="375" y="40" font-size="8" fill="#4A564F">Execution Plan</text>
+
+          <rect x="381" y="50" width="90" height="46" rx="6" fill="#fff" stroke="#1E2A25" stroke-width="1.5"/>
+          <text x="426" y="78" text-anchor="middle" font-size="12" font-weight="700" fill="#1E2A25">Executor</text>
+          <path d="M471,72 L504,72" stroke="#1E2A25" stroke-width="1.4" marker-end="url(#erarrow)"/>
+
+          <rect x="509" y="4" width="90" height="36" rx="6" fill="#fff" stroke="#1E2A25" stroke-width="1.5"/>
+          <text x="554" y="26" text-anchor="middle" font-size="12" font-weight="700" fill="#1E2A25">RAM</text>
+
+          <rect x="509" y="50" width="90" height="46" rx="6" fill="#fff" stroke="#1E2A25" stroke-width="1.5"/>
+          <text x="554" y="70" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1E2A25">Buffer</text>
+          <text x="554" y="83" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1E2A25">Manager</text>
+
+          <path d="M535,50 L535,40" stroke="#1E2A25" stroke-width="1.3" marker-end="url(#erarrow2)"/>
+          <path d="M573,40 L573,50" stroke="#1E2A25" stroke-width="1.3" marker-end="url(#erarrow2)"/>
+
+          <rect x="509" y="106" width="90" height="46" rx="6" fill="#fff" stroke="#1E2A25" stroke-width="1.5"/>
+          <text x="554" y="126" text-anchor="middle" font-size="10" font-weight="700" fill="#1E2A25">Storage</text>
+          <text x="554" y="138" text-anchor="middle" font-size="10" font-weight="700" fill="#1E2A25">Manager</text>
+          <path d="M535,96 L535,106" stroke="#1E2A25" stroke-width="1.3" marker-end="url(#erarrow3)"/>
+          <path d="M573,106 L573,96" stroke="#1E2A25" stroke-width="1.3" marker-end="url(#erarrow3)"/>
+          <text x="554" y="164" text-anchor="middle" font-size="9" fill="#4A564F">(Disk)</text>
+
+          <rect x="240" y="18" width="130" height="86" rx="8" fill="none" stroke="#1E2A25" stroke-width="1.3" stroke-dasharray="4,3"/>
+          <text x="305" y="12" text-anchor="middle" font-size="10" fill="#4A564F">Transaction Manager</text>
+          <text x="305" y="116" text-anchor="middle" font-size="9" fill="#4A564F">Oversight role for</text>
+          <text x="305" y="127" text-anchor="middle" font-size="9" fill="#4A564F">Transaction Control</text>
+
+          <defs>
+            <marker id="erarrow" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#1E2A25"/></marker>
+            <marker id="erarrow2" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#1E2A25"/></marker>
+            <marker id="erarrow3" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#1E2A25"/></marker>
+          </defs>
+        </svg>
+        <figcaption>The internal components of a DBMS work together to transform a user query into a physical disk operation.</figcaption>
+      </figure>
+
+      <h3>Example: Watch the optimizer choose a plan</h3>
+      <p>The planner's output is not a black box — every SQLite-family engine can show it. Run the cell below and read the plan text. With no index the engine must <strong>SCAN</strong> every row; after a single <code>CREATE INDEX</code> the very same SQL becomes a <strong>SEARCH</strong> that touches only the qualifying rows. The <code>CREATE INDEX</code> is a purely internal-schema change, and the answer set is identical before and after.</p>
+      <div class="cell" data-cell="explain_plan">
+        <div class="cell-head"><span class="cell-title">explain_plan.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="query-lifecycle-stepper">
+      <div class="kicker">Architecture</div>
+      <h2>Life of a Query: Stepper</h2>
+      <p>The engine-room diagram is a picture. This is the same pipeline you can walk. Step through the seven stages and watch which layer owns the work at each one — and what artifact each stage hands to the next. Notice that the SQL text only ever changes shape, never meaning: the same three rows come out the bottom.</p>
+      <div class="schema-line">SELECT name, gpa FROM Students WHERE gpa &gt; 3.5 ORDER BY gpa DESC;</div>
+
+      <div class="widget">
+        <div class="widget-title">Life of a Query Stepper</div>
+        <div class="widget-sub">Step through the DBMS components · click any stage to jump</div>
+        <div class="qstep-rail" id="qstep-rail"></div>
+        <div class="qstep-body" id="qstep-body"></div>
+        <div class="qstep-controls">
+          <button class="btn secondary" id="qstep-back">◀ Back</button>
+          <button class="qstep-next-btn" id="qstep-next">Next step ▶</button>
+          <button class="qstep-restart-btn" id="qstep-restart">↺ Restart</button>
+          <span class="qstep-count" id="qstep-count"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="worked-life-of-query">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Life of a Query</h2>
+      <p>To make the architecture concrete, trace what happens when a student clicks "View My Grades" in a portal. The application issues:</p>
+      <div class="schema-line">SELECT c.title, e.grade
+FROM enrollment e JOIN course c ON e.course_id = c.id
+WHERE e.student_id = 8412;</div>
+      <p>Watch how the request passes through each layer:</p>
+      <ul>
+        <li><strong>External schema (portal).</strong> The portal only knows the view <code>MyGrades(title, grade)</code>. The <code>student_id = 8412</code> filter is injected server-side from the logged-in session — the student never types their own ID. This is where user-level authorization lives.</li>
+        <li><strong>Conceptual schema (DBA's world).</strong> The DBMS resolves <code>enrollment</code> and <code>course</code> to their base tables, checks foreign-key relationships, and confirms the join is legal. The conceptual schema knows nothing about disks — it's pure logic.</li>
+        <li><strong>Query processor.</strong> The parser builds an AST. The planner sees an index on <code>enrollment(student_id)</code> and estimates the join costs. It chooses Index Scan on <code>enrollment</code> → Nested Loop Join with <code>course</code> via primary key lookup.</li>
+        <li><strong>Buffer manager.</strong> The executor asks for <code>enrollment</code> page 47. Buffer manager checks RAM — cache hit, returns immediately. It then asks for <code>course</code> page 12 — cache miss, reads from SSD into a free frame, pins it.</li>
+        <li><strong>Storage manager.</strong> Under the buffer manager, the storage layer knows only "give me 8KB starting at offset 393,216 of <code>enrollment.dat</code>." It uses whatever file-system syscalls (or raw block reads) are configured.</li>
+        <li><strong>Result assembly.</strong> Rows flow back up the pipeline: internal → conceptual (typed tuples) → external (columns renamed to match the view).</li>
+      </ul>
+      <p>If the DBA later swaps the SSD for NVMe and replaces the B-tree index with a hash index on <code>student_id</code>, only step 3's plan and step 5's I/O change. Steps 1, 2, 4 are untouched. That is physical data independence demonstrated in a single query trace.</p>
+    </section>
+
+    <section id="worked-logical-break">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: A Logical Change That Breaks Independence</h2>
+      <p>Logical independence is real, but it's not automatic. Here's a case where careless conceptual-schema evolution does break the external layer.</p>
+      <p>Original conceptual schema:</p>
+      <div class="schema-line">Student(id, name, gpa)</div>
+      <p>External view used by the portal:</p>
+      <div class="schema-line">CREATE VIEW StudentSummary AS
+SELECT * FROM Student;</div>
+      <p>The DBA now splits <code>Student</code> into <code>Student(id, name)</code> and <code>AcademicRecord(student_id, gpa, term)</code> — a reasonable change, because GPA now varies by term. The view breaks: <code>SELECT *</code> on <code>Student</code> no longer returns <code>gpa</code>.</p>
+      <p>The fix — and the discipline logical independence really demands — is to write views explicitly, not with <code>SELECT *</code>:</p>
+      <div class="schema-line">CREATE VIEW StudentSummary AS
+SELECT s.id, s.name, ar.gpa
+FROM Student s
+LEFT JOIN AcademicRecord ar ON ar.student_id = s.id
+WHERE ar.term = current_term();</div>
+      <div class="cell" data-cell="view_shield">
+        <div class="cell-head"><span class="cell-title">view_shield.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+      <p>Now the underlying conceptual schema can change (add columns, split tables, denormalize for performance) and as long as the view definition is updated to preserve the same external contract, the portal keeps working. <strong>Logical independence is a design discipline enforced through views, not a free property of the DBMS.</strong></p>
+    </section>
+
+    <section id="worked-data-dictionary">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Data Dictionary in Action</h2>
+      <p>The data dictionary (aka system catalog) is itself stored in tables — you can query the DBMS's understanding of your own schema. In PostgreSQL:</p>
+      <div class="schema-line">-- What columns does the enrollment table have, and their types?
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'enrollment';
+
+-- Which indexes exist on enrollment?
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE tablename = 'enrollment';
+
+-- Which foreign keys point at the enrollment table (dependencies)?
+SELECT tc.table_name, kcu.column_name, ccu.table_name AS references_table
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu USING (constraint_name)
+JOIN information_schema.constraint_column_usage ccu USING (constraint_name)
+WHERE tc.constraint_type = 'FOREIGN KEY'
+  AND ccu.table_name = 'enrollment';</div>
+      <p>This is not magic — it is the same conceptual/internal separation applied recursively. <code>information_schema</code> is a set of views over lower-level catalog tables (<code>pg_class</code>, <code>pg_attribute</code>, <code>pg_index</code>, <code>pg_constraint</code>). The DBMS eats its own dog food: the metadata that describes your tables is itself managed as tables.</p>
+      <p>Why does this matter in practice?</p>
+      <ul>
+        <li><strong>Zero-downtime migration tools</strong> (Flyway, Alembic, Sqitch) rely on the catalog to inspect the current schema and diff it against the target. Without a queryable dictionary, every migration would have to trust the developer's understanding of the current state.</li>
+        <li><strong>ORMs</strong> (SQLAlchemy, Prisma, Rails Active Record) introspect the catalog to auto-generate model classes and validate migrations. Their <code>reflect</code> operation is a pure <code>information_schema</code> query.</li>
+        <li><strong>AI query assistants</strong> in modern tooling (Cursor, DataGrip, cloud SQL editors) autocomplete column names and suggest joins by reading the catalog at connection time.</li>
+        <li><strong>Security auditors</strong> run scripted checks against the catalog to detect tables missing constraints, columns without <code>NOT NULL</code>, or missing foreign keys — treating schema quality as a first-class metric.</li>
+      </ul>
+      <p>Every one of these tools exists because the DBMS exposes its own architecture as SQL-queryable data. It is a beautiful recursion: the layered design of the DBMS is itself described using the very tables the DBMS manages.</p>
+
+      <h3>Example: query the catalog yourself</h3>
+      <p>You don't need PostgreSQL to see this. SQLite keeps its entire data dictionary in one place — <code>sqlite_master</code> — and exposes column metadata through <code>pragma_table_info()</code>. Run the cell below: you are reading the DBMS's own description of its internal schema, using nothing but SQL.</p>
+      <div class="cell" data-cell="catalog_query">
+        <div class="cell-head"><span class="cell-title">catalog_query.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="layer-mapper">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: The Layer Mapper</h2>
+      <p>Every artifact in a database system belongs to exactly one of the three ANSI/SPARC layers. Select an artifact from the bank, then click the layer that owns it. You can click a placed artifact to send it back. Check your mapping once all nine are placed.</p>
+
+      <div class="widget">
+        <div class="widget-title">The Layer Mapper</div>
+        <div class="widget-sub">External · Conceptual · Internal — where does each artifact live?</div>
+        <div class="widget-label">Artifacts to place</div>
+        <div class="lm-bank" id="lm-bank"></div>
+        <div class="lm-zones">
+          <div class="lm-zone external" data-zone="external">
+            <div class="lm-zone-head">External · what users see</div>
+            <div id="lm-drop-external"></div>
+          </div>
+          <div class="lm-zone conceptual" data-zone="conceptual">
+            <div class="lm-zone-head">Conceptual · what exists</div>
+            <div id="lm-drop-conceptual"></div>
+          </div>
+          <div class="lm-zone internal" data-zone="internal">
+            <div class="lm-zone-head">Internal · how it is stored</div>
+            <div id="lm-drop-internal"></div>
+          </div>
+        </div>
+        <div class="lm-hint">Tip: click an artifact, then click a layer. Click a placed artifact to return it to the bank.</div>
+        <div class="qstep-controls">
+          <button class="lm-check-btn" id="lm-check">Check mapping</button>
+          <button class="lm-answer-btn" id="lm-answer" disabled>Show correct mapping</button>
+          <button class="lm-restart-btn" id="lm-restart">↺ Restart</button>
+          <span class="lm-score" id="lm-score"></span>
+        </div>
+        <div id="lm-feedback"></div>
+        <div id="lm-key"></div>
+      </div>
+    </section>
+
+    <section id="data-independence-tester">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Data Independence Tester</h2>
+      <p>Predict what breaks (or doesn't) when the DBMS is changed at the internal, conceptual, or external layer.</p>
+      <div id="dit-quiz-mount"></div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. Storage tier migration + index change</h4>
+        <p>A company migrates its user database from a local SSD to a cloud-managed storage tier and changes the primary index on the <code>users</code> table from a B-tree to a hash index. No application code changes. What kind of independence is this, and which layers were touched?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>This is <strong>physical data independence</strong>. Only the <strong>Internal</strong> schema is touched — the storage location and index structure both live there. The <strong>Conceptual</strong> schema (the definition of <code>users</code> and its columns) and the <strong>External</strong> schema (any views/apps) are untouched, because application code queries against the conceptual schema, never against the physical index type directly.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Which app breaks?</h4>
+        <p>An HR team adds a <code>manager_id</code> column to the <code>employee</code> table so that the org chart can be represented in the DB. Two existing applications use <code>employee</code>:</p>
+        <p>App A runs <code>SELECT id, name, salary FROM employee</code>.<br>App B runs <code>SELECT * FROM employee</code>.</p>
+        <p>Which application breaks, and what design principle does this illustrate?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>App A is shielded — it names the exact columns it needs, so an added column is invisible to it. App B is the one at risk: <code>SELECT *</code> now returns an extra <code>manager_id</code> column it never asked for, which breaks any code that consumes results positionally (by column index) or assumes a fixed column count.</p>
+            <p>This illustrates that <strong>logical data independence is a discipline, not a free property</strong> — exactly the lesson of the "A Logical Change That Breaks Independence" worked example above. Naming columns explicitly (or reading through a view) preserves independence; <code>SELECT *</code> throws it away.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Trace the query through the architecture</h4>
+        <p>Walk through the DBMS components a query touches and label which layer of the ANSI/SPARC model each component belongs to. The query is <code>SELECT AVG(salary) FROM employee WHERE dept = 'Eng'</code>.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <ul>
+              <li>The SQL text itself is written against the <strong>Conceptual</strong> schema (the <code>employee</code> table as the DBA defined it).</li>
+              <li><strong>Parser</strong> — Conceptual level: confirms <code>employee</code> and <code>dept</code>/<code>salary</code> exist in the conceptual schema and the syntax is valid.</li>
+              <li><strong>Query Planner/Optimizer</strong> — the Conceptual ↔ Internal boundary: it looks at internal-level statistics and indexes to decide between a full scan and an index scan on <code>dept</code>.</li>
+              <li><strong>Executor, Buffer Manager, Storage Manager</strong> — all <strong>Internal</strong> level: running the chosen plan, checking RAM, and reading pages from disk.</li>
+              <li>The final <code>AVG(salary)</code> value flows back up: Internal (raw pages) → Conceptual (a typed tuple) → External (whatever view or app issued the query sees it).</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. Preserving independence through a table split</h4>
+        <p>A DBA proposes moving a rarely-read <code>notes</code> column out of the <code>patient</code> table into a separate <code>patient_notes</code> table to keep the main table smaller and faster to scan. Applications currently query <code>SELECT name, notes FROM patient WHERE id = ?</code>. What must the DBA do to preserve logical data independence?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>Create a view named <code>patient</code> (after renaming the underlying base table, e.g. to <code>patient_core</code>) that <code>JOIN</code>s <code>patient_core(id, name, dob)</code> with <code>patient_notes(patient_id, notes)</code> and exposes exactly the original shape — <code>(id, name, dob, notes)</code>. Existing queries against "patient" keep working unchanged, exactly mirroring the <code>StudentSummary</code> worked example: logical independence is preserved by keeping the external contract stable through a view, not by hoping the app doesn't notice.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>5. Predicting maintenance cost</h4>
+        <p>You are told a database has "no logical data independence" and "high physical data independence." What does this predict about the maintenance cost of the two operations below?</p>
+        <p>(a) Migrating to a new storage engine.<br>(b) Adding a <code>middle_name</code> column to the <code>Student</code> table.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><strong>(a) Cheap and low-risk.</strong> High physical independence means the Internal layer is well-insulated from the Conceptual and External layers — a new storage engine changes only how bytes are laid out, and neither the schema nor the applications need to change.</p>
+            <p><strong>(b) Expensive and risky.</strong> No logical independence means applications are tightly coupled to the exact shape of the conceptual schema (likely via <code>SELECT *</code> or positional column access, as in Practice Problem 2). Adding a column is likely to break those applications, unlike the well-behaved "Middle Names" example in the reading where the portal was properly shielded.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p class="interview-lede">DBMS architecture surfaces in senior-level system-design rounds and in any distributed-systems interview.</p>
+
+        <p><strong>"What database would you pick and why?"</strong> The wrong answer starts with a product name. The right answer starts with the question "what's the workload?" — writes vs. reads, transactional vs. analytical, structured vs. semi-structured, single-region vs. global. Then choose a class of system (row-store OLTP, column-store OLAP, key-value, document, graph, vector) and cite a representative product. Interviewers score you on whether you led with requirements or with tools.</p>
+
+        <p><strong>The ACID trade-off question.</strong> "How would you scale this across regions?" The classic senior tradeoff conversation:</p>
+        <ul>
+          <li>Strict consistency across regions requires synchronous replication, which pays latency on every write (Google Spanner is the famous example, using GPS-and-atomic-clock time synchronization).</li>
+          <li>Eventual consistency (Cassandra, DynamoDB) lets writes complete locally and reconcile later, at the cost of temporary inconsistency.</li>
+          <li>Modern managed databases (Aurora, CockroachDB, Yugabyte) sit in between: strong single-region consistency with tunable cross-region replication.</li>
+        </ul>
+        <p>A candidate who says "we can just use eventual consistency" without discussing which invariants break (double-spending on a wallet, oversold inventory, stale rankings) has not thought hard enough. A candidate who says "we're going to need paxos or raft under the hood to preserve linearizability" is signaling senior-level knowledge.</p>
+
+        <p><strong>The "explain what happens when I run a query" question.</strong> Interviewers use this to test how deep your model of the DBMS actually goes. A weak answer says "it returns results." A strong answer walks through parsing → planning → executor → buffer manager → storage manager → back up the stack, and names the metrics at each layer (plan cost, cache hit ratio, page reads, lock waits). This is the story your reading walks through with the university enrollment query — being able to tell it live is exactly what a staff-level interview requires.</p>
+
+        <p><strong>A very common junior-to-mid promotion question.</strong> "What's the difference between logical and physical data independence, and why do we care?" The right answer: logical independence lets the conceptual schema evolve (add columns, split tables) without breaking apps; physical independence lets storage evolve (SSD → NVMe → cloud object store, B-tree → hash index) without breaking queries. Both are what let a database survive a decade of change. Recognizing this as an architectural property, not a feature, is what promotes you.</p>
+      </div>
+    </section>
+
+    <section id="in-2026">
+      <div class="kicker">2026 Status</div>
+      <h2>In 2026: What Has Changed</h2>
+      <p>The three-schema architecture was designed for mainframes; in 2026 it is the reason cloud databases are swappable.</p>
+      <ul>
+        <li><strong>Managed cloud is the default.</strong> Aurora, Neon, Supabase and Turso are provisioned from a console and reached over a URL; very few teams install a database on a server any more.</li>
+        <li><strong>Serverless branching makes physical independence visible.</strong> Copy-on-write branches let you change the internal schema on a throwaway branch with zero risk to production, then merge it.</li>
+        <li><strong>Columnar engines sit beside row stores.</strong> DuckDB, Snowflake and BigQuery run the same SQL over a completely different internal schema — DuckDB even runs in the browser via WebAssembly.</li>
+        <li><strong>The external schema is now views, row-level security and APIs.</strong> Logical independence is what lets you add a column behind a view without breaking the applications reading it.</li>
+      </ul>
+      <p class="small">The three-schema model is not history — it is the contract that lets a 2026 team swap a storage engine, or reshape a schema, without touching application code.</p>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="1_why_databases_playground.html">← 1. Why Databases?</a>
+        <a class="pgnav-pos" href="index.html">Playground 2 of 15</a>
+        <a class="pgnav-next" href="3_sql_quickstart_playground.html">3. SQL Quickstart →</a>
+      </nav>
+    </footer>
+
+</main>
+</div>
+
+<script>
+function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ============ Data Independence Simulator ============ */
+(function () {
+  const baseExternal = { student_id: ['S001','S002','S003'], name: ['Aiko Tanaka','Liam Osei','Sara Vidal'], major: ['CS','Math','Physics'] };
+  const baseConceptual = {
+    student_id: ['S001','S002'], name: ['Aiko Tanaka','Liam Osei'], major: ['CS','Math'], email: ['aiko@uni.edu','liam@uni.edu'],
+  };
+  const baseInternal = {
+    block: ['0','0'], slot: ['0','1'], student_id: ['S001','S002'], name: ['Aiko Tanaka','Liam Osei'], major: ['CS','Math'], email: ['aiko@uni.edu','liam@uni.edu'],
+  };
+
+  const LOGICAL_CHANGES = [
+    {
+      id: 'add-gpa', title: 'Add gpa column', desc: 'Conceptual schema gains a new GPA attribute',
+      conceptualName: 'Students', conceptualExtra: { gpa: ['3.9', '3.7'] },
+      internalExtra: { gpa: ['3.9', '3.7'] },
+      internalMeta: 'heap file · row-store · /data/students.db',
+      external: { changed: false, desc: "What each user or app sees — e.g. student_view, faculty_view" },
+      conceptual: { changed: true, desc: 'Full logical description of all data and relationships for the university' },
+      internal: { changed: true, desc: 'How data is physically stored: files, indices, block layout' },
+      impact: [
+        { badge: 'shielded', text: 'External views (e.g. student_view) are shielded. The DBMS mapping absorbs the new column — apps see the same interface.' },
+        { badge: 'affected', text: 'The conceptual schema is updated to include the new gpa attribute on the Students relation.' },
+        { badge: 'affected', text: 'The storage engine adds the column to the heap file; existing indices are rebuilt.' },
+      ],
+    },
+    {
+      id: 'rename-table', title: 'Rename table', desc: 'Conceptual table "Students" → "Enrollees"',
+      conceptualName: 'Enrollees', conceptualExtra: {}, internalExtra: {},
+      internalMeta: 'heap file · row-store · /data/students.db',
+      external: { changed: false, desc: "What each user or app sees — e.g. student_view, faculty_view" },
+      conceptual: { changed: true, desc: 'Full logical description of all data and relationships for the university' },
+      internal: { changed: false, desc: 'How data is physically stored: files, indices, block layout' },
+      impact: [
+        { badge: 'shielded', text: 'External views still resolve through the DBMS\'s name mapping — student_view keeps working under the new table name.' },
+        { badge: 'affected', text: 'The conceptual schema\'s table name changes from Students to Enrollees; any DDL referencing the old name must be updated.' },
+        { badge: 'shielded', text: 'A rename is pure metadata — the physical heap file and its bytes don\'t need to move or reorganize.' },
+      ],
+    },
+    {
+      id: 'add-view', title: 'Add new user view', desc: 'New external schema for financial office',
+      conceptualName: 'Students', conceptualExtra: {}, internalExtra: {},
+      internalMeta: 'heap file · row-store · /data/students.db',
+      external: { changed: true, desc: "What each user or app sees — e.g. student_view, faculty_view, financial_view (new)" },
+      conceptual: { changed: false, desc: 'Full logical description of all data and relationships for the university' },
+      internal: { changed: false, desc: 'How data is physically stored: files, indices, block layout' },
+      impact: [
+        { badge: 'affected', text: 'A brand-new external schema (financial_view) is added for the financial office. Existing views like student_view are untouched.' },
+        { badge: 'shielded', text: 'No change to the Students table — a new view doesn\'t require a new conceptual definition.' },
+        { badge: 'shielded', text: 'Views are logical, not physical — no new storage is required.' },
+      ],
+    },
+  ];
+
+  const PHYSICAL_CHANGES = [
+    {
+      id: 'add-index', title: 'Add B-tree index', desc: 'Internal schema: index on student_id',
+      conceptualName: 'Students', conceptualExtra: {}, internalExtra: {},
+      internalMeta: 'heap file · row-store · /data/students.db · +idx_student_id (B-tree)',
+      external: { changed: false, desc: "What each user or app sees — e.g. student_view, faculty_view" },
+      conceptual: { changed: false, desc: 'Full logical description of all data and relationships for the university' },
+      internal: { changed: true, desc: 'How data is physically stored: files, indices, block layout' },
+      impact: [
+        { badge: 'shielded', text: 'External views are unaware an index even exists.' },
+        { badge: 'shielded', text: 'The Students relation\'s columns and relationships are unchanged.' },
+        { badge: 'affected', text: 'The storage engine builds a new B-tree index structure on student_id to speed up lookups.' },
+      ],
+    },
+    {
+      id: 'change-storage', title: 'Change storage format', desc: 'Internal: row-store → columnar store',
+      conceptualName: 'Students', conceptualExtra: {}, internalExtra: {},
+      internalMeta: 'heap file · columnar-store · /data/students.db',
+      external: { changed: false, desc: "What each user or app sees — e.g. student_view, faculty_view" },
+      conceptual: { changed: false, desc: 'Full logical description of all data and relationships for the university' },
+      internal: { changed: true, desc: 'How data is physically stored: files, indices, block layout' },
+      impact: [
+        { badge: 'shielded', text: 'External views still return the same rows and columns to callers.' },
+        { badge: 'shielded', text: 'The Students relation\'s logical definition doesn\'t care how bytes are laid out on disk.' },
+        { badge: 'affected', text: 'Data is reorganized from row-major to column-major layout — a purely physical restructuring.' },
+      ],
+    },
+    {
+      id: 'migrate-disk', title: 'Migrate to new disk', desc: 'Physical file path and block layout change',
+      conceptualName: 'Students', conceptualExtra: {}, internalExtra: {},
+      internalMeta: 'heap file · row-store · /mnt/nvme01/students.db',
+      external: { changed: false, desc: "What each user or app sees — e.g. student_view, faculty_view" },
+      conceptual: { changed: false, desc: 'Full logical description of all data and relationships for the university' },
+      internal: { changed: true, desc: 'How data is physically stored: files, indices, block layout' },
+      impact: [
+        { badge: 'shielded', text: 'External views issue the same queries regardless of which disk backs the data.' },
+        { badge: 'shielded', text: 'The Students relation\'s definition is identical before and after the migration.' },
+        { badge: 'affected', text: 'The file path changes from /data/students.db to /mnt/nvme01/students.db and blocks are re-laid-out on the new device.' },
+      ],
+    },
+  ];
+
+  let currentMode = 'logical';
+  let selected = { logical: null, physical: null };
+  const explored = new Set();
+
+  function renderChangeButtons() {
+    const logEl = document.getElementById('dis-logical-changes');
+    logEl.innerHTML = LOGICAL_CHANGES.map(c => `
+      <div class="dis-change-card ${selected.logical === c.id ? 'active' : ''}" data-id="${c.id}" data-mode="logical">
+        <div class="dis-change-title">${escapeHtml(c.title)}</div>
+        <div class="dis-change-desc">${escapeHtml(c.desc)}</div>
+      </div>`).join('');
+    const physEl = document.getElementById('dis-physical-changes');
+    physEl.innerHTML = PHYSICAL_CHANGES.map(c => `
+      <div class="dis-change-card ${selected.physical === c.id ? 'active' : ''}" data-id="${c.id}" data-mode="physical">
+        <div class="dis-change-title">${escapeHtml(c.title)}</div>
+        <div class="dis-change-desc">${escapeHtml(c.desc)}</div>
+      </div>`).join('');
+    document.querySelectorAll('.dis-change-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const mode = card.dataset.mode;
+        selected[mode] = card.dataset.id;
+        explored.add(card.dataset.id);
+        renderChangeButtons();
+        renderFlow();
+        renderProgress();
+      });
+    });
+  }
+
+  function tableHtml(cols, rows) {
+    let html = '<table class="dbtable"><thead><tr>' + cols.map(c => `<th>${escapeHtml(c)}</th>`).join('') + '</tr></thead><tbody>';
+    for (let i = 0; i < rows[cols[0]].length; i++) {
+      html += '<tr>' + cols.map(c => `<td>${escapeHtml(rows[c][i])}</td>`).join('') + '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function currentChange() {
+    const list = currentMode === 'logical' ? LOGICAL_CHANGES : PHYSICAL_CHANGES;
+    const sel = selected[currentMode];
+    return list.find(c => c.id === sel) || null;
+  }
+
+  function renderFlow() {
+    const chg = currentChange();
+
+    // External card (always the same student_view content)
+    const extCard = document.getElementById('dis-external-card');
+    const extChanged = chg ? chg.external.changed : false;
+    extCard.className = 'dis-schema-card ' + (chg ? (extChanged ? 'changed' : 'shielded') : '');
+    extCard.innerHTML = `
+      <div class="dis-schema-head"><div class="left"><span class="badge blue">External</span><span class="dis-schema-name">External Schema (User Views)</span></div>${chg ? `<span class="dis-schema-tag ${extChanged ? 'changed' : 'shielded'}">${extChanged ? '⚡ Changed' : '✓ Shielded'}</span>` : ''}</div>
+      <div class="dis-schema-desc">${chg ? escapeHtml(chg.external.desc) : 'What each user or app sees — e.g. student_view, faculty_view'}</div>
+      <div class="dis-schema-meta">student_view</div>
+      ${tableHtml(['student_id', 'name', 'major'], baseExternal)}
+    `;
+
+    // Conceptual card
+    const concCard = document.getElementById('dis-conceptual-card');
+    const concChanged = chg ? chg.conceptual.changed : false;
+    const concCols = ['student_id', 'name', 'major', 'email', ...(chg && chg.conceptualExtra ? Object.keys(chg.conceptualExtra) : [])];
+    const concRows = Object.assign({}, baseConceptual, chg ? chg.conceptualExtra : {});
+    concCard.className = 'dis-schema-card ' + (chg ? (concChanged ? 'changed' : 'shielded') : '');
+    concCard.innerHTML = `
+      <div class="dis-schema-head"><div class="left"><span class="badge amber">Conceptual</span><span class="dis-schema-name">Conceptual Schema (Logical Design)</span></div>${chg ? `<span class="dis-schema-tag ${concChanged ? 'changed' : 'shielded'}">${concChanged ? '⚡ Changed' : '✓ Shielded'}</span>` : ''}</div>
+      <div class="dis-schema-desc">${chg ? escapeHtml(chg.conceptual.desc) : 'Full logical description of all data and relationships for the university'}</div>
+      <div class="dis-schema-meta">${chg ? escapeHtml(chg.conceptualName) : 'Students'}</div>
+      ${tableHtml(concCols, concRows)}
+    `;
+
+    // Internal card
+    const intCard = document.getElementById('dis-internal-card');
+    const intChanged = chg ? chg.internal.changed : false;
+    const intCols = ['block', 'slot', 'student_id', 'name', 'major', 'email', ...(chg && chg.internalExtra ? Object.keys(chg.internalExtra) : [])];
+    const intRows = Object.assign({}, baseInternal, chg ? chg.internalExtra : {});
+    intCard.className = 'dis-schema-card ' + (chg ? (intChanged ? 'changed' : 'shielded') : '');
+    intCard.innerHTML = `
+      <div class="dis-schema-head"><div class="left"><span class="badge purple">Internal</span><span class="dis-schema-name">Internal Schema (Physical Storage)</span></div>${chg ? `<span class="dis-schema-tag ${intChanged ? 'changed' : 'shielded'}">${intChanged ? '⚡ Changed' : '✓ Shielded'}</span>` : ''}</div>
+      <div class="dis-schema-desc">${chg ? escapeHtml(chg.internal.desc) : 'How data is physically stored: files, indices, block layout'}</div>
+      <div class="dis-schema-meta">${chg ? escapeHtml(chg.internalMeta) : 'heap file · row-store · /data/students.db'}</div>
+      ${tableHtml(intCols, intRows)}
+    `;
+
+    // Impact analysis
+    const impactEl = document.getElementById('dis-impact');
+    if (!chg) {
+      impactEl.innerHTML = '<p class="small" style="margin:0;">Select a change above to see its impact across the three schema layers.</p>';
+    } else {
+      impactEl.innerHTML = chg.impact.map((row, i) => {
+        const labels = ['External', 'Conceptual', 'Internal'];
+        return `<div class="dis-impact-row"><span class="dis-impact-badge ${row.badge}">${row.badge === 'shielded' ? 'Shielded' : 'Affected'}</span><span><strong>${labels[i]}:</strong> ${escapeHtml(row.text)}</span></div>`;
+      }).join('');
+    }
+  }
+
+  function renderProgress() {
+    const count = explored.size;
+    document.getElementById('dis-explored-count').textContent = count;
+    document.getElementById('dis-progressbar-fill').style.width = (count / 6 * 100) + '%';
+    document.getElementById('dis-mastered').classList.toggle('show', count >= 6);
+  }
+
+  document.querySelectorAll('.dis-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentMode = btn.dataset.mode;
+      document.querySelectorAll('.dis-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.dis-mode').forEach(m => m.classList.toggle('active', m.dataset.modePanel === currentMode));
+      renderFlow();
+    });
+  });
+
+  renderChangeButtons();
+  renderFlow();
+  renderProgress();
+})();
+
+/* ============ Data Independence Tester quiz (dit prefix, mirrors adt-/nfd- engine) ============ */
+const DIT_QUESTIONS = [
+  {
+    scenario: `A DBA adds a new B-tree index on <code>orders.customer_id</code> to speed up a slow lookup. No application code changes. Which type of data independence is being exercised?`,
+    options: [
+      { title: 'Logical data independence', hint: 'Conceptual ↔ external', correct: false },
+      { title: 'Physical data independence', hint: 'Internal ↔ conceptual', correct: true },
+      { title: 'Both logical and physical', correct: false },
+      { title: "Neither — this shouldn't work", correct: false },
+    ],
+    feedback: "✓ Correct. Adding an index is purely an Internal-schema change. The Conceptual schema (the orders table's columns and relationships) and every External view built on it are completely unaffected — that's physical data independence in action.",
+  },
+  {
+    scenario: `An analytics team wants to add a <code>preferred_currency</code> column to <code>customers</code>. The main app reads customers through a view called <code>customer_summary</code> that lists <code>(id, name, email)</code> explicitly (no <code>SELECT *</code>). What breaks?`,
+    options: [
+      { title: 'Nothing breaks', hint: 'The view isolates the app', correct: true },
+      { title: 'The app breaks', hint: 'Because the underlying table changed', correct: false },
+      { title: 'The view breaks', hint: 'Because it references old columns', correct: false },
+      { title: 'Both the view and the app', correct: false },
+    ],
+    feedback: '✓ Correct. Because customer_summary names its columns explicitly instead of using SELECT *, the new preferred_currency column is simply invisible to it. This is logical data independence working exactly as designed — the view is the shield.',
+  },
+  {
+    scenario: `An engineer writes application code that queries <code>SELECT * FROM users</code> and consumes result columns by numeric index (<code>row[3]</code>). Someone adds a <code>middle_name</code> column between <code>email</code> (col 2) and <code>phone</code> (col 3). What happens?`,
+    options: [
+      { title: 'Safe — logical independence protects us', correct: false },
+      { title: 'Silent bug', hint: 'The app now reads middle_name instead of phone', correct: true },
+      { title: 'Loud error', hint: 'App refuses to run', correct: false },
+      { title: 'Depends on the DBMS', correct: false },
+    ],
+    feedback: "✓ Correct. Column order is positional. Inserting middle_name shifts every column after it one slot to the right, so row[3] — which used to be phone — now silently returns middle_name instead. No error is raised; the bug just corrupts data downstream. This is exactly why SELECT * plus positional access destroys logical independence.",
+  },
+  {
+    scenario: `The DBMS gets a query <code>SELECT AVG(salary) FROM employees WHERE dept = 'Eng'</code>. Which component chooses whether to use a full seq scan vs. an index scan?`,
+    options: [
+      { title: 'Parser', hint: 'Validates syntax', correct: false },
+      { title: 'Query planner / optimizer', hint: 'Costs and picks plans', correct: true },
+      { title: 'Executor', hint: 'Runs the chosen plan', correct: false },
+      { title: 'Buffer manager', hint: 'Manages the page cache', correct: false },
+    ],
+    feedback: '✓ Correct. The parser only checks syntax and existence of tables/columns. Choosing between a full scan and an index scan — weighing available indexes against data statistics — is exactly the query planner/optimizer\'s job. The executor just carries out whatever plan the optimizer picked.',
+  },
+  {
+    scenario: `A migration splits the wide <code>patient</code> table into <code>patient(id, name, dob)</code> + <code>patient_notes(patient_id, notes)</code>. Applications currently query <code>SELECT name, notes FROM patient WHERE id = ?</code>. What must the DBA do to keep those apps working without changes?`,
+    options: [
+      { title: 'Add ON DELETE CASCADE', correct: false },
+      { title: 'Create a view named `patient` that JOINs the two new tables and exposes the original shape', correct: true },
+      { title: 'Add a trigger that syncs the two tables', correct: false },
+      { title: 'Nothing — the DBMS handles this automatically', correct: false },
+    ],
+    feedback: "✓ Correct. Rename the base table and create a view called patient that joins the split tables back into the original (id, name, dob, notes) shape. This is the StudentSummary pattern from the worked example — logical independence through a view, not through hoping the app doesn't notice.",
+  },
+  {
+    scenario: `A migration tool like Flyway inspects <code>information_schema.columns</code> to diff the live schema against a target migration file. What layer of the ANSI/SPARC model does <code>information_schema</code> itself describe, and how is it implemented under the hood?`,
+    options: [
+      { title: 'The conceptual schema', hint: 'Implemented as views over internal catalog tables', correct: true },
+      { title: 'The external schema', hint: 'A separate config file', correct: false },
+      { title: 'The internal schema', hint: 'Hardcoded in the DBMS binary', correct: false },
+      { title: "It has no place in the model", hint: 'Catalogs are a separate system', correct: false },
+    ],
+    feedback: "✓ Correct. information_schema describes the conceptual schema — tables, columns, constraints, foreign keys — and it's implemented as a set of views over lower-level catalog tables like pg_class and pg_attribute. The DBMS's own architecture is recursively described using the same conceptual/internal separation it applies to your data.",
+  },
+  {
+    scenario: `The DBMS is ported so its on-disk page size changes from 4 KB to 8 KB, and every data file is rewritten in the new format. Applications that issue the same SQL see no difference at all. Which layer changed, and what does that prove?`,
+    options: [
+      { title: 'The internal schema — physical data independence', hint: 'Internal ↔ conceptual', correct: true },
+      { title: 'The conceptual schema — logical data independence', hint: 'Conceptual ↔ external', correct: false },
+      { title: 'The external schema — a view was rewritten', correct: false },
+      { title: 'Both the internal and conceptual schemas', correct: false },
+    ],
+    feedback: '✓ Correct. Page size and file layout are purely internal: nothing in the conceptual tables or the external views refers to them. This is exactly what physical data independence promises — you can re-engineer storage without rewriting a single query.',
+  },
+  {
+    scenario: `A SQL statement arrives at the DBMS as text. Which order do the query-processor components handle it in?`,
+    options: [
+      { title: 'Parser → Planner/Optimizer → Executor', hint: 'Validate, then choose a plan, then run it', correct: true },
+      { title: 'Planner → Parser → Executor', correct: false },
+      { title: 'Executor → Planner → Parser', correct: false },
+      { title: 'Buffer manager → Parser → Planner', correct: false },
+    ],
+    feedback: '✓ Correct. The parser first checks syntax and that the named tables and columns exist. The planner then costs the alternative plans and picks one. The executor runs the chosen plan, pulling tuples through the storage and buffer layers. Getting the order wrong means optimising a query that does not even parse.',
+  },
+  {
+    scenario: `A DBA adds <code>CHECK (budget &gt;= 0)</code> to the <code>department</code> table. No view changes, no storage format changes, but the rule now applies to every writer. Which ANSI/SPARC layer did the change land in?`,
+    options: [
+      { title: 'The conceptual schema', hint: 'The logical description of what exists', correct: true },
+      { title: 'The external schema', hint: 'A view definition', correct: false },
+      { title: 'The internal schema', hint: 'Pages, indexes, file layout', correct: false },
+      { title: 'The storage manager', hint: 'Reads and writes bytes', correct: false },
+    ],
+    feedback: '✓ Correct. A CHECK constraint is part of the logical description of the data — the conceptual schema — so it is enforced for every program that writes, whatever view they read through. Changing it does not touch the internal storage format, and it needs no external-schema edit.',
+  },
+  {
+    scenario: `Two teams define two different views over the same <code>employee</code> table: HR sees <code>(id, name, salary)</code>, and the org chart sees <code>(id, manager_id)</code>. What are these two views?`,
+    options: [
+      { title: 'Two external schemas over one conceptual schema', hint: 'Different audiences, same data', correct: true },
+      { title: 'Two conceptual schemas', correct: false },
+      { title: 'Two internal schemas', correct: false },
+      { title: 'Two copies of the data on disk', correct: false },
+    ],
+    feedback: '✓ Correct. Each view is an external schema — a tailored window onto one shared conceptual schema. The data is stored once (one internal schema); only the presentation differs per audience. That separation is what lets one team add a column without disturbing the other team\'s view.',
+  },
+];
+
+let ditQuizState = { qi: 0, selected: null, checked: false, results: [] };
+
+function ditDotsHtml() {
+  let html = '';
+  for (let i = 0; i < DIT_QUESTIONS.length; i++) {
+    let cls = 'dot';
+    if (i === ditQuizState.qi) cls += ' current';
+    else if (ditQuizState.results[i] === true) cls += ' correct';
+    else if (ditQuizState.results[i] === false) cls += ' incorrect';
+    html += `<span class="${cls}"></span>`;
+  }
+  return html;
+}
+function ditScoreVal() { return ditQuizState.results.filter(r => r === true).length; }
+function ditQuestionHtml() {
+  const q = DIT_QUESTIONS[ditQuizState.qi];
+  const pct = (ditQuizState.qi / DIT_QUESTIONS.length) * 100;
+  const optsHtml = q.options.map((o, i) => {
+    let cls = 'dit-option-card';
+    if (ditQuizState.checked) {
+      cls += ' disabled';
+      if (o.correct) cls += ' correct';
+      else if (i === ditQuizState.selected) cls += ' incorrect';
+    } else if (i === ditQuizState.selected) cls += ' selected';
+    return `<div class="${cls}" data-idx="${i}">
+      <div class="dit-option-title">${escapeHtml(o.title)}</div>
+      ${o.hint ? `<div class="dit-option-hint">${escapeHtml(o.hint)}</div>` : ''}
+    </div>`;
+  }).join('');
+  return `
+    <div class="dit-quiz-head">
+      <div><span class="dit-dots-label">Scenario</span><span class="dit-dots">${ditDotsHtml()}</span></div>
+      <div class="dit-score">Score: <b>${ditScoreVal()} / ${DIT_QUESTIONS.length}</b></div>
+    </div>
+    <div class="dit-progressbar"><div class="dit-progressbar-fill" style="width:${pct}%"></div></div>
+    <div class="dit-scenario-card">
+      <div class="dit-scenario-label">Scenario</div>
+      <div class="dit-scenario-text">${q.scenario}</div>
+      <div class="dit-pick-label">Pick the best answer</div>
+      <div class="dit-options-grid" id="dit-options-grid">${optsHtml}</div>
+      <button class="dit-check-btn" id="dit-check-btn" ${ditQuizState.selected === null ? 'disabled' : ''}>Check answer</button>
+      ${ditQuizState.checked ? `<div class="dit-feedback ${q.options[ditQuizState.selected] && q.options[ditQuizState.selected].correct ? 'correct' : 'incorrect'}">${q.feedback}</div><button class="btn dit-next-btn" id="dit-next-btn">${ditQuizState.qi === DIT_QUESTIONS.length - 1 ? 'See score →' : 'Next →'}</button>` : ''}
+    </div>
+  `;
+}
+function ditDoneHtml() {
+  const score = ditScoreVal();
+  return `<div class="dit-quiz-done">
+    <div class="big-score">${score} / ${DIT_QUESTIONS.length}</div>
+    <p>${score === DIT_QUESTIONS.length ? 'Perfect score.' : 'Review the ones you missed above, then try again.'}</p>
+    <button class="btn secondary dit-restart-btn" id="dit-restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+function ditRenderQuiz() {
+  const mount = document.getElementById('dit-quiz-mount');
+  if (ditQuizState.qi >= DIT_QUESTIONS.length) {
+    mount.innerHTML = `<div class="dit-quiz">${ditDoneHtml()}</div>`;
+    document.getElementById('dit-restart-btn').addEventListener('click', () => {
+      ditQuizState = { qi: 0, selected: null, checked: false, results: [] };
+      ditRenderQuiz();
+    });
+    return;
+  }
+  mount.innerHTML = `<div class="dit-quiz">${ditQuestionHtml()}</div>`;
+  document.querySelectorAll('.dit-option-card').forEach(card => {
+    card.addEventListener('click', () => {
+      if (ditQuizState.checked) return;
+      ditQuizState.selected = +card.dataset.idx;
+      ditRenderQuiz();
+    });
+  });
+  const checkBtn = document.getElementById('dit-check-btn');
+  if (checkBtn) checkBtn.addEventListener('click', () => {
+    if (ditQuizState.selected === null) return;
+    ditQuizState.checked = true;
+    ditQuizState.results[ditQuizState.qi] = !!DIT_QUESTIONS[ditQuizState.qi].options[ditQuizState.selected].correct;
+    ditRenderQuiz();
+  });
+  const nextBtn = document.getElementById('dit-next-btn');
+  if (nextBtn) nextBtn.addEventListener('click', () => {
+    ditQuizState.qi++;
+    ditQuizState.selected = null;
+    ditQuizState.checked = false;
+    ditRenderQuiz();
+  });
+}
+document.addEventListener('DOMContentLoaded', ditRenderQuiz);
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ===== Canonical runnable-cell engine (shared by every playground) ===== */
+const CELLS = {
+  view_shield: {
+    setup: `CREATE TABLE Student (id INTEGER PRIMARY KEY, name TEXT, gpa REAL);
+INSERT INTO Student VALUES (1, 'Aiko Tanaka', 3.9), (2, 'Liam Osei', 3.4);
+CREATE VIEW student_summary AS SELECT id, name, gpa FROM Student;`,
+    starter: `-- The portal reads through an explicit view, never SELECT * from the base table:
+SELECT * FROM student_summary;
+
+-- A column is later added to the base table ...
+ALTER TABLE Student ADD COLUMN middle_name TEXT;
+
+-- ... and the view keeps its exact external contract, so the portal is unaffected:
+SELECT * FROM student_summary;
+
+-- Meanwhile SELECT * against the base table has silently changed shape:
+SELECT * FROM Student;` },
+
+  explain_plan: {
+    setup: `CREATE TABLE Students (id INTEGER PRIMARY KEY, name TEXT, gpa REAL);
+INSERT INTO Students VALUES
+  (1, 'Aiko Tanaka', 3.9), (2, 'Liam Osei', 3.4), (3, 'Chen Wei', 3.6),
+  (4, 'Maya Singh', 3.2), (5, 'Eve Novak', 3.7);`,
+    starter: `-- (1) No index yet: the planner has no choice but a full table scan.
+EXPLAIN QUERY PLAN
+SELECT name, gpa FROM Students WHERE gpa > 3.5 ORDER BY gpa DESC;
+
+-- (2) Build an index on gpa. Purely an INTERNAL-schema change.
+CREATE INDEX idx_gpa ON Students(gpa);
+
+-- (3) Same SQL. Different physical plan: now a SEARCH, not a SCAN.
+EXPLAIN QUERY PLAN
+SELECT name, gpa FROM Students WHERE gpa > 3.5 ORDER BY gpa DESC;
+
+-- (4) The result is identical before and after — the SQL never knew.
+SELECT name, gpa FROM Students WHERE gpa > 3.5 ORDER BY gpa DESC;` },
+
+  catalog_query: {
+    setup: `CREATE TABLE Dept (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+CREATE TABLE Students (id INTEGER PRIMARY KEY, name TEXT, gpa REAL, dept_id INTEGER REFERENCES Dept(id));
+INSERT INTO Dept VALUES (1, 'CS'), (2, 'Math');
+INSERT INTO Students VALUES (1, 'Aiko Tanaka', 3.9, 1), (2, 'Liam Osei', 3.4, 2), (3, 'Chen Wei', 3.6, 1);
+CREATE INDEX idx_students_gpa ON Students(gpa);
+CREATE VIEW student_summary AS SELECT id, name, gpa FROM Students;`,
+    starter: `-- The data dictionary is itself stored as tables. Ask it what exists:
+SELECT type, name FROM sqlite_master ORDER BY type, name;
+
+-- What columns does Students have, and which are NOT NULL / primary keys?
+-- (Postgres exposes the same thing as information_schema.columns.)
+SELECT cid, name, type, "notnull", pk FROM pragma_table_info('Students');
+
+-- Which indexes exist on Students?
+SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'Students';
+
+-- Every migration tool, ORM and AI SQL assistant reads exactly these rows.` } };
+let SQL = null;
+async function pgModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+function pgEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pgTable(cols, rows){
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of cols) html += `<th>${pgEsc(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const r of rows){ html += '<tr>'; for (const v of r) html += `<td>${v === null ? '<em>NULL</em>' : pgEsc(v)}</td>`; html += '</tr>'; }
+  return html + '</tbody></table>';
+}
+function pgHint(m){
+  m = String(m).toLowerCase();
+  if (m.includes('cannot add a not null column')) return 'SQLite refuses to add a NOT NULL column with no default when rows already exist — the schema change contradicts the current instance.';
+  if (m.includes('not null constraint failed')) return 'A required column was left empty: the row is invalid under the new schema.';
+  if (m.includes('duplicate column name')) return 'That column already exists — Reset first, or edit to add a different one.';
+  return null;
+}
+async function pgRun(setup, main, out){
+  out.innerHTML = ''; out.classList.remove('err'); out.classList.add('show');
+  try{
+    const M = await pgModule();
+    const db = new M.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setup && setup.trim()) db.run(setup);
+    let html = '', had = false;
+    for (const stmt of db.iterateStatements(main)){
+      const cols = stmt.getColumnNames(); const rows = [];
+      while (stmt.step()) rows.push(stmt.get());
+      if (cols.length){ html += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length === 1 ? '' : 's'}</div>` + pgTable(cols, rows); had = true; }
+    }
+    if (!had) html = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    out.innerHTML = html; db.close();
+  } catch(e){
+    const h = pgHint(e.message);
+    out.innerHTML = `<div style="color:#F0A38A;">✖ ${pgEsc(e.message)}${h ? `<br><span style="opacity:.85">${pgEsc(h)}</span>` : ''}</div>`;
+    out.classList.add('err');
+  }
+}
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+function pgWire(cellEl){
+  const spec = CELLS[cellEl.getAttribute('data-cell')]; if (!spec) return;
+  const ta = cellEl.querySelector('textarea');
+  const out = cellEl.querySelector('.cell-output');
+  const run = cellEl.querySelector('.run-btn');
+  const reset = cellEl.querySelector('.reset-btn');
+  ta.value = spec.starter; pgGrow(ta);
+  ta.addEventListener('input', () => pgGrow(ta));
+  ta.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){ e.preventDefault(); pgRun(spec.setup, ta.value, out); } });
+  run.addEventListener('click', () => pgRun(spec.setup, ta.value, out));
+  reset.addEventListener('click', () => { ta.value = spec.starter; pgGrow(ta); out.classList.remove('show', 'err'); out.innerHTML = ''; });
+}
+function pgInit(){ document.querySelectorAll('.cell[data-cell]').forEach(pgWire); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pgInit); else pgInit();
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit (stepper · lab · mapper) — one shared family ===== */
+(function () {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = (id) => document.getElementById(id);
+
+  /* ---------- A. Life of a Query stepper ---------- */
+  const QSTEPS = [
+    { name: 'External Schema', layer: 'external', layerLabel: 'External',
+      action: 'The portal knows only its own view, MyGrades(name, gpa). The student-specific filter is injected server-side from the session — the user never types their own ID. Nothing below this layer is visible here.',
+      artLabel: 'Artifact · the external contract',
+      art: 'VIEW MyGrades(name, gpa)\n  -- the only interface the application sees' },
+
+    { name: 'Parser', layer: 'conceptual', layerLabel: 'Conceptual',
+      action: 'Tokenizes the SQL, builds a parse tree (AST), and checks that Students, name and gpa exist in the conceptual schema. Syntax errors and unknown columns die here, before a single byte of data is touched.',
+      artLabel: 'Artifact · parse tree',
+      art: 'SELECT name, gpa FROM Students\nWHERE gpa > 3.5 ORDER BY gpa DESC\n\n  ->  AST   Project[name, gpa]\n              Sort[gpa DESC]\n                Select[gpa > 3.5]\n                  Students\n  OK: Students, name, gpa resolved in the catalog' },
+
+    { name: 'Query Planner', layer: 'span', layerLabel: 'Conceptual ↔ Internal',
+      action: 'Weighs the alternatives using statistics and the indexes that exist in the internal layer, then emits the cheapest physical plan. This is the only stage that deliberately straddles two layers — which is exactly why the conceptual and internal schemas can evolve independently.',
+      artLabel: 'Artifact · physical plan',
+      art: 'Candidates:\n  • Seq scan Students               ~ 5 pages\n  • Search Students(gpa) via index   ~ 2 pages + 3 lookups\n\nChosen:  SEARCH Students USING INDEX idx_gpa (gpa>?)' },
+
+    { name: 'Executor', layer: 'internal', layerLabel: 'Internal',
+      action: 'Runs the chosen plan by pulling one tuple at a time from the operators below it (the "volcano" iterator model). It asks the buffer manager for pages — never for raw bytes, and never for rows it cannot name.',
+      artLabel: 'Artifact · tuple iterator',
+      art: 'next() -> buffer.fetch(page 47)\nnext() -> buffer.fetch(page 47)   (already pinned)\nnext() -> buffer.fetch(page 12)\n... 3 qualifying tuples produced' },
+
+    { name: 'Buffer Manager', layer: 'internal', layerLabel: 'Internal',
+      action: 'Keeps a pool of pages in RAM (the buffer pool). Every request is a cache lookup first; a miss reads from the storage manager and pins the page. This is why the very same query can be orders of magnitude faster the second time it runs.',
+      artLabel: 'Artifact · buffer-pool log',
+      art: 'page 47  MISS -> read from disk, pin\npage 47  HIT\npage 12  MISS -> read from disk, pin\npage  3  HIT\ncache hit ratio so far: 50%' },
+
+    { name: 'Storage Manager', layer: 'internal', layerLabel: 'Internal',
+      action: 'Knows nothing about students. It translates "page 47" into a byte offset in a file — or a block read from the device — according to the internal schema, using OS file-system calls or raw I/O.',
+      artLabel: 'Artifact · physical I/O',
+      art: 'read /data/students.db  offset 393216  len 8192\nread /data/students.db  offset  98304  len 8192\n-- pure bytes; no notion of rows or columns' },
+
+    { name: 'Result Assembly', layer: 'external', layerLabel: 'External',
+      action: 'Tuples flow back up the stack: internal (bytes) → conceptual (typed rows) → external (renamed to the view\'s columns). The portal renders three rows and has no idea whether they came from page 47 of a local file or a replica on another continent.',
+      artLabel: 'Artifact · result set',
+      art: 'name          gpa\nAiko Tanaka   3.9\nEve Novak     3.7\nChen Wei      3.6\n\n3 rows returned to MyGrades(name, gpa)' },
+  ];
+
+  let qs = 0;
+  const qstepRail = byId('qstep-rail');
+  const qstepBody = byId('qstep-body');
+  function qstepRailRender() {
+    qstepRail.innerHTML = QSTEPS.map((s, i) => {
+      const cls = 'qstep-node' + (i === qs ? ' active' : (i < qs ? ' done' : ''));
+      return `<div class="${cls}" data-i="${i}"><span class="qstep-idx">STEP ${i + 1}</span>${esc(s.name)}</div>`;
+    }).join('');
+    qstepRail.querySelectorAll('.qstep-node').forEach(n =>
+      n.addEventListener('click', () => { qs = +n.dataset.i; qstepRender(); }));
+  }
+  function qstepRender() {
+    const s = QSTEPS[qs];
+    qstepBody.innerHTML =
+      `<div class="qstep-head"><div class="qstep-name">${esc(s.name)}</div>` +
+      `<div class="qstep-layer ${s.layer}">${esc(s.layerLabel)}</div></div>` +
+      `<div class="qstep-action">${esc(s.action)}</div>` +
+      `<div class="qstep-art"><span class="art-label">${esc(s.artLabel)}</span>${esc(s.art)}</div>`;
+    qstepRailRender();
+    byId('qstep-count').textContent = `Stage ${qs + 1} of ${QSTEPS.length}`;
+    byId('qstep-back').disabled = qs === 0;
+    byId('qstep-next').disabled = qs === QSTEPS.length - 1;
+  }
+  if (qstepBody) {
+    byId('qstep-back').addEventListener('click', () => { if (qs > 0) { qs--; qstepRender(); } });
+    byId('qstep-next').addEventListener('click', () => { if (qs < QSTEPS.length - 1) { qs++; qstepRender(); } });
+    byId('qstep-restart').addEventListener('click', () => { qs = 0; qstepRender(); });
+    qstepRender();
+  }
+
+  /* ---------- C. Layer Mapper ---------- */
+  const LM_ITEMS = [
+    { id: 'v1', text: 'CREATE VIEW student_view AS ...', zone: 'external' },
+    { id: 'v2', text: 'Student portal API: GET /me/grades', zone: 'external' },
+    { id: 'v3', text: 'Registrar dashboard: enrollment totals', zone: 'external' },
+    { id: 'c1', text: 'CREATE TABLE Student(id, name, gpa)', zone: 'conceptual' },
+    { id: 'c2', text: 'FOREIGN KEY Student.dept_id -> Dept.id', zone: 'conceptual' },
+    { id: 'c3', text: 'Column data types and NOT NULL rules', zone: 'conceptual' },
+    { id: 'i1', text: 'B-tree index on Student.id', zone: 'internal' },
+    { id: 'i2', text: '8 KB buffer pool of cached pages', zone: 'internal' },
+    { id: 'i3', text: 'File /data/students.db on NVMe, 64-byte blocks', zone: 'internal' },
+  ];
+  const LM_ZONES = ['external', 'conceptual', 'internal'];
+  let lmPlaced = {};   // id -> zone
+  let lmSelected = null;
+  let lmChecked = false;
+  function lmKeyHtml() {
+    return '<div class="lm-key"><div class="lm-key-head">Correct mapping</div>' +
+      LM_ITEMS.map(it => {
+        const ok = lmPlaced[it.id] === it.zone;
+        const h = document.querySelector('.lm-zone[data-zone="' + it.zone + '"] .lm-zone-head');
+        const name = h ? h.textContent.split('·')[0].trim() : it.zone;
+        return '<div class="lm-key-row ' + (ok ? 'ok' : 'bad') + '"><span class="lm-key-item">' + (ok ? '✓' : '✗') + ' ' + esc(it.text) + '</span><span class="lm-key-zone">' + esc(name) + '</span></div>';
+      }).join('') + '</div>';
+  }
+  function lmRender() {
+    const banked = LM_ITEMS.filter(it => !lmPlaced[it.id]);
+    byId('lm-bank').innerHTML = banked.length ? banked.map(it =>
+      `<div class="lm-chip ${lmSelected === it.id ? 'selected' : ''}" data-id="${it.id}">${esc(it.text)}</div>`).join('')
+      : `<span class="small">${lmChecked ? 'All artifacts placed and checked.' : 'All artifacts placed — press “Check mapping”.'}</span>`;
+    byId('lm-bank').querySelectorAll('.lm-chip').forEach(chip =>
+      chip.addEventListener('click', () => {
+        if (lmChecked) return;
+        lmSelected = lmSelected === chip.dataset.id ? null : chip.dataset.id;
+        lmRender();
+      }));
+
+    LM_ZONES.forEach(zone => {
+      const inZone = LM_ITEMS.filter(it => lmPlaced[it.id] === zone);
+      byId('lm-drop-' + zone).innerHTML = inZone.map(it => {
+        let cls = 'lm-item';
+        if (lmChecked) cls += it.zone === zone ? ' correct' : ' incorrect';
+        return `<div class="${cls}" data-id="${it.id}">${esc(it.text)}</div>`;
+      }).join('');
+      byId('lm-drop-' + zone).querySelectorAll('.lm-item').forEach(el =>
+        el.addEventListener('click', () => {
+          if (lmChecked) return;
+          delete lmPlaced[el.dataset.id]; lmSelected = null; lmRender();
+        }));
+    });
+
+    document.querySelectorAll('.lm-zone').forEach(z =>
+      z.classList.toggle('armed', !!lmSelected));
+
+    const placedCount = Object.keys(lmPlaced).length;
+    byId('lm-check').disabled = placedCount < LM_ITEMS.length;
+    byId('lm-answer').disabled = !lmChecked;
+    byId('lm-score').textContent = `${placedCount} of ${LM_ITEMS.length} placed`;
+  }
+  if (byId('lm-bank')) {
+    document.querySelectorAll('.lm-zone').forEach(z =>
+      z.addEventListener('click', () => {
+        if (lmChecked || !lmSelected) return;
+        lmPlaced[lmSelected] = z.dataset.zone;
+        lmSelected = null;
+        lmRender();
+      }));
+    byId('lm-check').addEventListener('click', () => {
+      lmChecked = true;
+      const wrong = LM_ITEMS.filter(it => lmPlaced[it.id] !== it.zone);
+      const score = LM_ITEMS.length - wrong.length;
+      byId('lm-feedback').innerHTML = wrong.length === 0
+        ? `<div class="lm-feedback correct">✓ ${score} / ${LM_ITEMS.length}. Every artifact is in the right layer: views and APIs are external, tables and constraints are conceptual, indexes and storage are internal.</div>`
+        : `<div class="lm-feedback incorrect">✗ ${score} / ${LM_ITEMS.length}. The red items are misplaced — click “Restart” to try again. Remember: a view or an API contract is <em>external</em>; a table definition or a constraint is <em>conceptual</em>; anything about bytes, indexes, or the buffer pool is <em>internal</em>.</div>`;
+      lmRender();
+      byId('lm-score').textContent = `${score} / ${LM_ITEMS.length} correct`;
+    });
+    byId('lm-answer').addEventListener('click', () => { byId('lm-key').innerHTML = lmKeyHtml(); });
+    byId('lm-restart').addEventListener('click', () => {
+      lmPlaced = {}; lmSelected = null; lmChecked = false;
+      byId('lm-feedback').innerHTML = ''; byId('lm-key').innerHTML = '';
+      lmRender();
+    });
+    lmRender();
+  }
+})();
+</script>
+
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

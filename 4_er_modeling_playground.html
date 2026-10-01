@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · ER Modeling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #EEF0EA;
+    --paper-raised: #F6F7F2;
+    --ink: #1E2A25;
+    --ink-soft: #4A564F;
+    --rule: #C9CFC2;
+    --rule-strong: #A8B0A0;
+    --blue: #2F5D8A;
+    --blue-soft: #E4EBF2;
+    --amber: #A9781F;
+    --amber-soft: #F4EBD6;
+    --rust: #A1402A;
+    --rust-soft: #F6E4DE;
+    --green: #3D6B4A;
+    --green-soft: #E2EDE3;
+    --purple: #6B4C8A;
+    --purple-soft: #EBE4F2;
+    --code-bg: #16211C;
+    --code-bg-raised: #1E2C24;
+    --code-text: #E7ECE3;
+    --code-rule: #33443A;
+    --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    line-height: 1.6;
+   font-size:17px;}
+  a { color: var(--blue); }
+
+  .layout{ display:flex; min-height:100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{ width:250px; flex-shrink:0; background:var(--paper-raised); border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .sidebar .course{ font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft); border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5; }
+  .sidebar nav a{ display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft); text-decoration:none; margin-bottom:2px; }
+  .sidebar nav a:hover{ background:var(--blue-soft); color:var(--blue); }
+  .sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+  .sidebar nav .grp{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px; }
+  .sidebar .status{ margin-top:20px; padding-top:14px; border-top:1px solid var(--rule); font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); }
+  .sidebar .dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--rust); margin-right:6px; position:relative; top:-1px; }
+  .sidebar .dot.ready{ background:var(--green); }
+
+  /* ---------- Main column ---------- */
+  main{ flex:1; min-width:0; max-width:920px; margin:0 auto; padding:40px 32px 100px; }
+
+  header.hero{ margin-bottom:40px; }
+  header.hero .eyebrow{ font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; }
+  header.hero h1{ font-size:2.3em; margin:0 0 8px; }
+  header.hero .byline{ font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px; }
+  header.hero p.lede{ font-size:1.1em; color:var(--ink-soft); max-width:700px; }
+section{ margin:52px 0; scroll-margin-top:20px; }
+section h2{ font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px; }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+section p{ margin:0 0 14px; }
+  section ul, section ol.plain{ font-size: 15.5px; padding-left: 22px; margin: 0 0 16px 0; }
+  section li{ margin-bottom: 6px; }
+  code.inline{
+    font-family: var(--mono);
+    font-size: 0.87em;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .callout{
+    background: var(--amber-soft);
+    border-left: 3px solid var(--amber);
+    padding: 14px 16px;
+    font-size: 14.5px;
+    margin: 0 0 20px 0;
+  }
+  .callout strong{ color: var(--amber); }
+  .callout.blue{ background: var(--blue-soft); border-left-color: var(--blue); }
+  .callout.blue strong{ color: var(--blue); }
+
+  /* ---------- Reference cards ---------- */
+  .schema-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px,1fr));
+    gap: 10px;
+    margin: 0 0 20px 0;
+  }
+  .schema-card{
+    border: 1px solid var(--rule);
+    background: var(--paper-raised);
+    border-radius: 5px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+  }
+  .schema-card .tname{ font-weight:600; color: var(--blue); margin-bottom: 6px; }
+
+  /* ---------- Canonical figure container (shared by every playground) ---------- */
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+  .diagram .diagram-grid{ display:grid; gap:16px; align-items:start; text-align:center; }
+  .erd-toggle{ display:flex; gap:8px; margin-bottom: 14px; justify-content:center; }
+  .erd-toggle button{
+    font-family: var(--mono); font-size: 12px; font-weight:600;
+    padding: 7px 14px; border-radius: 5px; border: 1px solid var(--rule-strong);
+    background: var(--paper); color: var(--ink); cursor:pointer;
+  }
+  .erd-toggle button.active{ background: var(--blue); color:white; border-color:var(--blue); }
+  .erd-toggle button:hover:not(.active){ border-color: var(--blue); }
+
+  /* ---------- Data tables (entity/attribute/relationship tables) ---------- */
+  .datatable{ width:100%; border-collapse: collapse; margin: 0 0 20px 0; font-size: 13.5px; }
+  .datatable th, .datatable td{ border: 1px solid var(--rule); padding: 8px 10px; text-align:left; vertical-align: top; }
+  .datatable th{ background: var(--blue-soft); color: var(--blue); font-family: var(--mono); font-size: 11.5px; font-weight:600; }
+  .datatable td code.inline{ white-space: nowrap; }
+  .datatable tr:nth-child(even) td{ background: var(--paper); }
+
+  /* ---------- Interactive prediction row (Q/A reveal) ---------- */
+  .predict-row{
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--paper-raised);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .predict-row .pq{ font-size: 14.5px; font-weight: 600; margin-bottom: 10px; }
+  .predict-row .pchoices{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 8px; }
+  .predict-row .pchoices button{
+    font-family: var(--mono); font-size: 12px; padding: 7px 13px; border-radius:5px;
+    border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor:pointer;
+  }
+  .predict-row .pchoices button:hover:not(:disabled){ border-color: var(--blue); }
+  .predict-row .pchoices button.correct{ background: var(--green-soft); border-color: var(--green); color: var(--green); }
+  .predict-row .pchoices button.incorrect{ background: var(--rust-soft); border-color: var(--rust); color: var(--rust); }
+  .predict-row .preveal{ font-size: 13.5px; color: var(--ink-soft); display:none; padding-top: 8px; border-top: 1px dashed var(--rule); margin-top: 4px; }
+  .predict-row .preveal.show{ display:block; }
+  .predict-row .preveal strong{ color: var(--ink); }
+
+  /* ---------- Practice problems ---------- */
+  .problem{
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--ink);
+    background: var(--paper-raised);
+    border-radius: 0 6px 6px 0;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .problem .pnum{ font-family: var(--mono); font-size: 11px; color: var(--ink-soft); margin-bottom: 6px; }
+  .problem p{ margin: 0 0 14px 0; }
+  details.answer{ margin-top: 4px; border-top: 1px dashed var(--rule); padding-top: 10px; }
+  details.answer summary{
+    cursor: pointer; list-style:none; font-family: var(--mono); font-size: 12px;
+    color: var(--blue); font-weight: 600; user-select: none;
+  }
+  details.answer summary::-webkit-details-marker{ display:none; }
+  details.answer summary:before{ content:'▸ '; }
+  details.answer[open] summary:before{ content:'▾ '; }
+  details.answer summary:hover{ text-decoration: underline; }
+  details.answer .answer-body{ margin-top: 12px; font-size: 14.5px; }
+
+  /* ---------- Interview note ---------- */
+  .interview-box{
+    background: var(--purple-soft);
+    border: 1px solid var(--purple);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin: 0 0 20px 0;
+  }
+  .interview-box h3{ margin: 0 0 8px 0; font-size: 15px; color: var(--purple); }
+  .interview-box p{ color: var(--ink-soft); font-size: 14px; margin: 0 0 10px 0; }
+  .interview-box p:last-child{ margin-bottom: 0; }
+  .interview-box code.inline{ background: var(--paper-raised); border-color: var(--rule); color: var(--ink); }
+
+  /* ===== Play-and-learn widget kit (stepper · lab · mapper) ===== */
+  .widget{ border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0; }
+  .widget-title{ font-weight:700; font-size:1.15em; margin-bottom:4px; }
+  .widget-sub{ font-size:.9em; color:var(--ink-soft); margin-bottom:18px; }
+  .widget-label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:var(--mono); }
+  .qstep-rail{ display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap; }
+  .qstep-node{ flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:var(--mono); font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3; }
+  .qstep-node:hover{ border-color:var(--blue); }
+  .qstep-node.done{ border-color:var(--green); background:var(--green-soft); color:var(--green); }
+  .qstep-node.active{ border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700; }
+  .qstep-node .qstep-idx{ display:block; font-size:9.5px; opacity:.7; margin-bottom:3px; }
+  .qstep-body{ border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px; }
+  .qstep-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .qstep-name{ font-weight:700; font-size:1.05em; }
+  .qstep-layer{ font-family:var(--mono); font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff; }
+  .qstep-action{ font-size:.95em; margin-bottom:12px; }
+  .qstep-art{ background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:var(--mono); font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto; }
+  .qstep-art .art-label{ display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+  .qstep-controls{ display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap; }
+  .qstep-count{ font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-left:auto; }
+  .qstep-next-btn{ background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:var(--mono); font-size:12.5px; font-weight:600; cursor:pointer; }
+  .qstep-next-btn:hover{ opacity:.9; }
+  .qstep-next-btn:disabled{ background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7; }
+  .qstep-restart-btn{ background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:var(--mono); font-size:12.5px; cursor:pointer; }
+  .qstep-restart-btn:hover{ border-color:var(--blue); color:var(--blue); }
+  .lm-bank{ display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px; }
+  .lm-chip{ border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:var(--mono); font-size:12px; font-weight:600; cursor:pointer; color:var(--ink); }
+  .lm-chip:hover{ border-color:var(--blue); }
+  .lm-chip.selected{ border-color:var(--blue); background:var(--blue-soft); color:var(--blue); }
+  .lm-zones{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .lm-zone{ border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:112px; background:var(--paper); }
+  .lm-zone.armed{ border-style:solid; border-color:var(--blue); background:var(--blue-soft); }
+  .lm-zone-head{ font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px; }
+  .lm-zone.external .lm-zone-head{ color:var(--blue); }
+  .lm-zone.conceptual .lm-zone-head{ color:var(--amber); }
+  .lm-zone.internal .lm-zone-head{ color:var(--purple); }
+  .lm-item{ background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:var(--mono); font-size:11.5px; cursor:pointer; }
+  .lm-item.correct{ border-color:var(--green); background:var(--green-soft); }
+  .lm-item.incorrect{ border-color:var(--rust); background:var(--rust-soft); }
+  .lm-hint{ font-size:.85em; color:var(--ink-soft); margin-top:14px; }
+  .lm-feedback{ margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em; }
+  .lm-feedback.correct{ background:var(--green-soft); color:var(--green); }
+  .lm-feedback.incorrect{ background:var(--rust-soft); color:var(--rust); }
+  .lm-check-btn{ background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:var(--mono); font-size:12.5px; font-weight:600; cursor:pointer; }
+  .lm-check-btn:disabled{ background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7; }
+  .lm-restart-btn{ background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:var(--mono); font-size:12.5px; cursor:pointer; }
+  .lm-restart-btn:hover{ border-color:var(--blue); color:var(--blue); }
+  @media (max-width:680px){ .lm-zones{ grid-template-columns:1fr; } }
+
+  /* ---------- Cardinality quiz + attribute classifier (score-tracked, one at a time) ---------- */
+  .cq{
+    border: 1px solid var(--rule-strong);
+    border-radius: 8px;
+    background: var(--paper-raised);
+    padding: 22px 24px;
+    margin: 4px 0 20px 0;
+  }
+  .cq-header{ display:flex; align-items:baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+  .cq-title{ font-size: 17px; font-weight: 600; }
+  .cq-score{ font-family: var(--mono); font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+  .cq-score strong{ color: var(--blue); font-size: 14px; }
+  .cq-subtitle{ font-size: 13.5px; color: var(--ink-soft); margin: 4px 0 18px 0; }
+  .cq-eyebrow{ font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em; color: var(--blue); margin-bottom: 10px; }
+  .cq-scenario{ font-size: 15px; margin: 0 0 16px 0; }
+  .cq-scenario .entname{ color: var(--blue); font-weight:600; }
+  .cq-pick-label{ font-family: var(--mono); font-size: 11px; color: var(--ink-soft); margin: 0 0 10px 0; }
+  .cq-options{ display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+  .cq-option{
+    text-align:center; padding: 12px 10px; border-radius:6px; border: 1px solid var(--rule-strong);
+    background: var(--paper); color: var(--ink); cursor: pointer;
+    font-family: var(--mono); font-size: 14px; font-weight:600;
+  }
+  .cq-option:hover:not(:disabled){ border-color: var(--blue); }
+  .cq-option:disabled{ cursor:default; }
+  .cq-option.correct{ background: var(--green-soft); border-color: var(--green); color: var(--green); }
+  .cq-option.incorrect{ background: var(--rust-soft); border-color: var(--rust); color: var(--rust); }
+  .cq-feedback{ margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--rule); }
+  .cq-feedback:empty{ display:none; }
+  .cq-verdict{ font-family: var(--mono); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .cq-verdict.right{ color: var(--green); }
+  .cq-verdict.wrong{ color: var(--rust); }
+  .cq-explain{ font-size: 14px; margin: 0; }
+  .cq-next-btn{
+    font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    padding: 9px 16px; border-radius: 5px; border: none;
+    background: var(--blue); color: white; cursor: pointer; margin-top: 14px;
+  }
+  .cq-next-btn:hover{ background: #274d75; }
+  .cq-final{ text-align: center; padding: 30px 10px; }
+  .cq-final-score{ font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+  .cq-retry-btn{
+    font-family: var(--mono); font-size: 13px; padding: 9px 18px; border-radius: 4px;
+    border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor: pointer;
+  }
+  .cq-retry-btn:hover{ border-color: var(--blue); color: var(--blue); }
+
+  /* ---------- Cardinality Interview tool ---------- */
+  .civ{
+    border: 1px solid var(--rule-strong);
+    border-radius: 8px;
+    background: var(--paper-raised);
+    padding: 22px 24px;
+    margin: 4px 0 20px 0;
+  }
+  .civ-picker{ display:flex; gap:8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .civ-picker button{
+    font-family: var(--mono); font-size: 12.5px; font-weight:600;
+    padding: 8px 15px; border-radius: 5px; border: 1px solid var(--rule-strong);
+    background: var(--paper); color: var(--ink); cursor:pointer;
+  }
+  .civ-picker button.active{ background: var(--blue); color:white; border-color:var(--blue); }
+  .civ-picker button:hover:not(.active){ border-color: var(--blue); }
+  .civ-q{ border-top: 1px dashed var(--rule); padding-top: 14px; margin-top: 14px; }
+  .civ-q:first-of-type{ border-top:none; padding-top:0; margin-top:0; }
+  .civ-qtext{ font-size: 14.5px; font-weight: 600; margin: 0 0 10px 0; }
+  .civ-yn{ display:flex; gap:8px; margin-bottom: 10px; }
+  .civ-yn button{
+    font-family: var(--mono); font-size: 12.5px; font-weight:600; padding: 7px 18px;
+    border-radius:5px; border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor:pointer;
+  }
+  .civ-yn button:hover:not(:disabled){ border-color: var(--blue); }
+  .civ-yn button.correct{ background: var(--green-soft); border-color: var(--green); color: var(--green); }
+  .civ-yn button.incorrect{ background: var(--rust-soft); border-color: var(--rust); color: var(--rust); }
+  .civ-reasoning{ font-size: 13.5px; color: var(--ink-soft); display:none; }
+  .civ-reasoning.show{ display:block; }
+  .civ-conclusion{
+    margin-top: 18px; padding: 16px 18px; border-radius: 6px;
+    background: var(--blue-soft); border-left: 3px solid var(--blue);
+    display:none;
+  }
+  .civ-conclusion.show{ display:block; }
+  .civ-conclusion h4{ margin: 0 0 8px 0; font-size: 14px; color: var(--blue); }
+  .civ-conclusion p{ font-size: 14px; margin: 0 0 8px 0; }
+  .civ-conclusion p:last-child{ margin-bottom:0; }
+  .civ-reset-btn{
+    font-family: var(--mono); font-size: 12px; padding: 7px 13px; border-radius: 4px;
+    border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor: pointer;
+    margin-top: 14px;
+  }
+  .civ-reset-btn:hover{ border-color: var(--blue); color: var(--blue); }
+footer{ border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace; }
+
+  @media (max-width: 820px){
+    .layout{ flex-direction:column; }
+    .sidebar{ position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule); }
+    main{ padding: 32px 22px 100px 22px; }
+    header.hero h1{ font-size: 30px; }
+    .cq-options{ grid-template-columns: 1fr 1fr; }
+  }
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b,.callout strong{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+
+/* ===== Live ER Builder ===== */
+.erb-controls{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:0 0 14px;}
+.erb-input,.erb-select{font-family:var(--mono); font-size:12.5px; padding:7px 10px; border:1.5px solid var(--rule-strong); border-radius:6px; background:#fff; color:var(--ink);}
+.erb-input{flex:1; min-width:130px;}
+.erb-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:8px 14px; border-radius:6px; font-family:var(--mono); font-size:12.5px; font-weight:600; cursor:pointer;}
+.erb-btn:hover{opacity:.9;}
+.erb-btn.sec{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.erb-btn.sec:hover{border-color:var(--blue); color:var(--blue);}
+.erb-canvas{position:relative; display:grid; grid-template-columns:repeat(2,1fr); gap:44px 68px; padding:24px; border:1.5px dashed var(--rule-strong); border-radius:10px; background:var(--paper); min-height:240px;}
+.erb-svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:0; overflow:visible;}
+.erb-entity{position:relative; z-index:1; border:1.5px solid var(--ink-soft); border-radius:8px; background:#fff; overflow:hidden;}
+.erb-entity.sel{border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft);}
+.erb-entity-head{font-family:var(--mono); font-weight:700; font-size:12.5px; padding:9px 12px; background:var(--blue-soft); color:var(--blue); display:flex; justify-content:space-between; gap:10px; cursor:pointer;}
+.erb-entity-head .erb-rm-ent{cursor:pointer; color:var(--rust);}
+.erb-attr{font-family:var(--mono); font-size:11.5px; padding:5px 12px; border-top:1px dashed var(--rule); color:var(--ink); display:flex; justify-content:space-between; gap:10px;}
+.erb-attr .erb-rm{cursor:pointer; color:var(--rust);}
+.erb-empty{color:var(--ink-soft); font-size:.9em; align-self:center;}
+.erb-rel-list{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;}
+.erb-rel-chip{font-family:var(--mono); font-size:11.5px; padding:5px 12px; border-radius:20px; background:var(--paper-raised); border:1px solid var(--rule-strong); color:var(--ink);}
+.erb-rel-chip .erb-rm{cursor:pointer; color:var(--rust); margin-left:8px;}
+.erb-note{font-size:.9em; color:var(--ink-soft); margin-top:12px;}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+    <nav id="playgroundNav"></nav>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>ER Modeling</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">Every diagram on this page is real inline SVG, not a picture — and every quiz predicts before it reveals. Nothing here is saved; it resets when you reload.</p>
+    </header>
+
+    <div id="sections"></div>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="3_sql_quickstart_playground.html">← 3. SQL Quickstart</a>
+        <a class="pgnav-pos" href="index.html">Playground 4 of 15</a>
+        <a class="pgnav-next" href="5_eer_inheritance_aggregation_playground.html">5. EER: Inheritance & Aggregation →</a>
+      </nav>
+    </footer>
+  </main>
+</div>
+
+<script>
+/* =========================================================================
+   SVG DIAGRAM TOOLKIT (Chen notation)
+   Small composable helpers so every diagram in this document shares the
+   same visual vocabulary: rectangles for entities (double-bordered when
+   weak), ovals for attributes (double when multivalued, dashed when
+   derived, underlined text when a key), diamonds for relationships
+   (double-bordered for identifying/weak relationships), and single vs.
+   double connecting lines for partial vs. total participation.
+   ========================================================================= */
+
+const PAL = {
+  ink:'#1E2A25', inkSoft:'#4A564F', rule:'#C9CFC2', ruleStrong:'#A8B0A0',
+  blue:'#2F5D8A', blueSoft:'#E4EBF2', amber:'#A9781F', amberSoft:'#F4EBD6',
+  rust:'#A1402A', rustSoft:'#F6E4DE', green:'#3D6B4A', greenSoft:'#E2EDE3',
+  purple:'#6B4C8A', purpleSoft:'#EBE4F2', paper:'#EEF0EA', paperRaised:'#F6F7F2'
+};
+
+function escXml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function svgText(x, y, label, opts){
+  opts = opts || {};
+  const size = opts.size || 12;
+  const weight = opts.weight || 400;
+  const fill = opts.fill || PAL.ink;
+  const anchor = opts.anchor || 'middle';
+  const style = (opts.italic ? 'font-style:italic;' : '') + (opts.underline ? 'text-decoration:underline;' : '');
+  return `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="${size}" font-weight="${weight}" fill="${fill}" font-family="'IBM Plex Mono',monospace" style="${style}">${escXml(label)}</text>`;
+}
+
+function entityBox(x, y, w, h, label, opts){
+  opts = opts || {};
+  let s = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${PAL.paperRaised}" stroke="${PAL.ink}" stroke-width="2"/>`;
+  if (opts.weak){
+    s += `<rect x="${x+5}" y="${y+5}" width="${w-10}" height="${h-10}" fill="none" stroke="${PAL.ink}" stroke-width="1.2"/>`;
+  }
+  s += svgText(x + w/2, y + h/2 + 4, label, { size: 13, weight: 600 });
+  return s;
+}
+
+function attrOval(cx, cy, rx, ry, label, opts){
+  opts = opts || {};
+  let s = `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${PAL.paper}" stroke="${PAL.ink}" stroke-width="1.5" ${opts.derived ? 'stroke-dasharray="4,3"' : ''}/>`;
+  if (opts.multivalued){
+    s += `<ellipse cx="${cx}" cy="${cy}" rx="${rx-4}" ry="${ry-4}" fill="none" stroke="${PAL.ink}" stroke-width="1"/>`;
+  }
+  s += svgText(cx, cy + 4, label, { size: 10.5, underline: !!opts.key });
+  return s;
+}
+
+function relDiamond(cx, cy, w, h, label, opts){
+  opts = opts || {};
+  const pts = `${cx},${cy-h/2} ${cx+w/2},${cy} ${cx},${cy+h/2} ${cx-w/2},${cy}`;
+  let s = `<polygon points="${pts}" fill="${PAL.amberSoft}" stroke="${PAL.ink}" stroke-width="2"/>`;
+  if (opts.weak){
+    const w2 = w-10, h2 = h-10;
+    const pts2 = `${cx},${cy-h2/2} ${cx+w2/2},${cy} ${cx},${cy+h2/2} ${cx-w2/2},${cy}`;
+    s += `<polygon points="${pts2}" fill="none" stroke="${PAL.ink}" stroke-width="1.2"/>`;
+  }
+  s += svgText(cx, cy + 4, label, { size: 11, weight: 600 });
+  return s;
+}
+
+function connLine(x1, y1, x2, y2, opts){
+  opts = opts || {};
+  if (!opts.double){
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${PAL.ink}" stroke-width="1.5"/>`;
+  }
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const ox = -dy/len*2.4, oy = dx/len*2.4;
+  return `<line x1="${x1+ox}" y1="${y1+oy}" x2="${x2+ox}" y2="${y2+oy}" stroke="${PAL.ink}" stroke-width="1.3"/>` +
+         `<line x1="${x1-ox}" y1="${y1-oy}" x2="${x2-ox}" y2="${y2-oy}" stroke="${PAL.ink}" stroke-width="1.3"/>`;
+}
+
+function cardLabel(x, y, label){
+  return `<rect x="${x-9}" y="${y-9}" width="18" height="15" fill="${PAL.paper}"/>` + svgText(x, y+3, label, { size: 11, weight: 600, fill: PAL.blue });
+}
+
+function erdFrame(viewW, viewH, inner, caption){
+  return `<figure class="diagram"><svg viewBox="0 0 ${viewW} ${viewH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${escXml(caption)}" font-family="IBM Plex Mono, monospace">${inner}</svg><figcaption>${escXml(caption)}</figcaption></figure>`;
+}
+
+/* ===================== Diagram 1: attribute types on Student ===================== */
+function diagAttributeTypes(){
+  const box = entityBox(330, 300, 140, 55, 'Student');
+  const boxC = [400, 327];
+  let lines = '';
+  lines += connLine(200,70, boxC[0],boxC[1]);
+  lines += connLine(400,55, boxC[0],boxC[1]);
+  lines += connLine(600,70, boxC[0],boxC[1]);
+  lines += connLine(690,200, boxC[0],boxC[1]);
+  lines += connLine(110,210, boxC[0],boxC[1]);
+  lines += connLine(55,340, 110,210);
+  lines += connLine(140,360, 110,210);
+  lines += connLine(220,340, 110,210);
+  const nodes =
+    attrOval(200,70,55,28,'name') +
+    attrOval(400,55,62,30,'student_id', {key:true}) +
+    attrOval(600,70,55,28,'age', {derived:true}) +
+    attrOval(690,200,64,30,'phone', {multivalued:true}) +
+    attrOval(110,210,64,30,'address') +
+    attrOval(55,340,44,24,'street') +
+    attrOval(140,360,40,22,'city') +
+    attrOval(220,340,38,22,'zip') +
+    box;
+  return erdFrame(800,430, lines+nodes,
+    'Chen notation: underlined = key, dashed = derived, double oval = multivalued, oval-of-ovals = composite.');
+}
+
+/* ===================== Diagram 2: weak entity (Hotel/Room) ===================== */
+function diagWeakEntity(){
+  const lines =
+    connLine(180,107, 235,107) +
+    connLine(345,107, 420,107, {double:true});
+  const nodes =
+    entityBox(40,80,140,55,'Hotel') +
+    relDiamond(290,107,110,70,'has',{weak:true}) +
+    entityBox(420,80,140,55,'Room',{weak:true}) +
+    cardLabel(210,90,'1') + cardLabel(370,90,'N');
+  return erdFrame(600,220, lines+nodes,
+    'Room is a weak entity: it has no meaning without a Hotel to belong to. Double border = weak entity / identifying relationship.');
+}
+
+/* ===================== Diagram 3: degree (unary / binary / ternary) ===================== */
+function diagUnary(){
+  const box = entityBox(60,115,140,55,'Employee');
+  const lines =
+    connLine(90,115, 100,77) +
+    connLine(170,115, 160,77);
+  const nodes = box + relDiamond(130,50,100,55,'manages');
+  const labels = svgText(60,72,'manager',{size:9,fill:PAL.inkSoft,anchor:'end'}) +
+                 svgText(200,72,'subordinate',{size:9,fill:PAL.inkSoft,anchor:'start'});
+  return erdFrame(300,190, lines+nodes+labels, 'Unary: one entity relates to itself.');
+}
+function diagBinary(){
+  const lines = connLine(120,80,145,80) + connLine(235,80,300,80);
+  const nodes = entityBox(15,55,105,50,'Student') + relDiamond(190,80,90,55,'enrolls') + entityBox(300,55,100,50,'Course') +
+    cardLabel(150,68,'1') + cardLabel(270,68,'N');
+  return erdFrame(420,160, lines+nodes, 'Binary: two entities. The most common degree by far.');
+}
+function diagTernary(){
+  const lines = connLine(100,60,150,115) + connLine(280,60,230,115) + connLine(190,230,190,175);
+  const nodes = entityBox(20,20,110,45,'Doctor') + entityBox(250,20,110,45,'Patient') +
+    entityBox(135,230,110,45,'Drug') + relDiamond(190,140,110,65,'prescribes');
+  return erdFrame(380,300, lines+nodes, 'Ternary: three entities in one relationship. Rare, and often better decomposed (see below).');
+}
+
+/* ===================== Diagram 4: Chen vs Crow's Foot ===================== */
+function diagChenSide(){
+  const lines = connLine(120,80,150,80) + connLine(240,80,305,80,{double:true});
+  const nodes = entityBox(15,55,105,50,'Customer') + relDiamond(195,80,90,55,'places') + entityBox(305,55,100,50,'Order') +
+    cardLabel(150,68,'1') + cardLabel(270,68,'N');
+  return `<svg viewBox="0 0 420 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Chen notation: a diamond for the relationship, letters for cardinality, and a double line for total participation." font-family="IBM Plex Mono, monospace">${lines+nodes}</svg>`;
+}
+function diagCrowSide(){
+  const line = connLine(125,80,295,80);
+  const tick1 = `<line x1="134" y1="73" x2="134" y2="87" stroke="${PAL.ink}" stroke-width="1.6"/>`;
+  const tick2 = `<line x1="142" y1="73" x2="142" y2="87" stroke="${PAL.ink}" stroke-width="1.6"/>`;
+  const fork = `<line x1="270" y1="80" x2="295" y2="73" stroke="${PAL.ink}" stroke-width="1.6"/>` +
+               `<line x1="270" y1="80" x2="295" y2="80" stroke="${PAL.ink}" stroke-width="1.6"/>` +
+               `<line x1="270" y1="80" x2="295" y2="87" stroke="${PAL.ink}" stroke-width="1.6"/>`;
+  const zero = `<circle cx="255" cy="80" r="5" fill="${PAL.paperRaised}" stroke="${PAL.ink}" stroke-width="1.6"/>`;
+  const boxes = entityBox(15,55,110,50,'Customer') + entityBox(295,55,110,50,'Order');
+  const label = svgText(210,66,'places',{size:10.5,fill:PAL.inkSoft});
+  return `<svg viewBox="0 0 420 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Crow's Foot notation: no diamond, with the cardinality drawn as symbols on the relationship line itself — two ticks for exactly one, a circle plus a fork for zero or many." font-family="IBM Plex Mono, monospace">${line}${tick1}${tick2}${fork}${zero}${boxes}${label}</svg>`;
+}
+function diagNotationCompare(){
+  return `<figure class="diagram">
+    <div class="diagram-grid" style="grid-template-columns:1fr 1fr;">
+      <div>${diagChenSide()}<figcaption>Chen — diamond for the relationship, letters for cardinality, double line = total participation.</figcaption></div>
+      <div>${diagCrowSide()}<figcaption>Crow's Foot — no diamond; symbols on the line itself. Two ticks = exactly one (Order's side). Circle + fork = zero-or-many (Customer's side).</figcaption></div>
+    </div>
+  </figure>`;
+}
+
+/* ===================== Diagram 5: e-commerce case study ===================== */
+function diagEcommerce(){
+  const lines =
+    connLine(140,230, 275,160) +
+    connLine(275,160, 410,90, {double:true}) +
+    connLine(410,90, 545,160) +
+    connLine(545,160, 680,230) +
+    connLine(140,230, 140,315) +
+    connLine(140,315, 140,400, {double:true});
+  const nodes =
+    entityBox(70,203,140,55,'Customer') +
+    entityBox(340,63,140,55,'Order') +
+    entityBox(610,203,140,55,'Product') +
+    entityBox(70,373,140,55,'Address', {weak:true}) +
+    relDiamond(275,160,110,65,'places') +
+    relDiamond(545,160,110,65,'contains') +
+    relDiamond(140,315,110,65,'ships to', {weak:true}) +
+    cardLabel(195,190,'1') + cardLabel(345,125,'N') +
+    cardLabel(465,125,'M') + cardLabel(615,190,'N') +
+    cardLabel(140,270,'1') + cardLabel(140,362,'N');
+  return erdFrame(820,460, lines+nodes,
+    'Customer/Order is 1:N with Order total. Order/Product is M:N (becomes a junction table in SQL). Address is weak — identified only relative to its Customer.');
+}
+
+/* ===================== Diagram 6: hospital final model ===================== */
+function diagHospital(){
+  const lines =
+    connLine(140,240, 275,160) +
+    connLine(275,160, 410,90, {double:true}) +
+    connLine(680,240, 545,160) +
+    connLine(545,160, 410,90, {double:true}) +
+    connLine(140,240, 275,320) +
+    connLine(275,320, 410,400);
+  const nodes =
+    entityBox(70,213,140,55,'Patient') +
+    entityBox(610,213,140,55,'Doctor') +
+    entityBox(340,63,140,55,'Appointment') +
+    entityBox(340,373,140,55,'Allergy') +
+    relDiamond(275,160,110,65,'has') +
+    relDiamond(545,160,110,65,'sees') +
+    relDiamond(275,320,110,65,'has') +
+    cardLabel(195,195,'1') + cardLabel(355,120,'N') +
+    cardLabel(620,195,'1') + cardLabel(465,120,'N') +
+    cardLabel(195,285,'M') + cardLabel(355,355,'N');
+  return erdFrame(820,470, lines+nodes,
+    'Appointment is promoted to a full (associative) entity because it carries its own attributes (date, time, room). Both its relationships are total on the Appointment side — every appointment needs exactly one patient and one doctor.');
+}
+
+/* ===================== Diagram 7: ternary vs two binaries (pharmacy) ===================== */
+function diagPharmacyTernary(){
+  const lines = connLine(100,60,150,115) + connLine(280,60,230,115) + connLine(190,230,190,175);
+  const nodes = entityBox(20,20,110,45,'Doctor') + entityBox(250,20,110,45,'Patient') +
+    entityBox(135,230,110,45,'Drug') + relDiamond(190,140,110,65,'prescribes');
+  return erdFrame(380,300, lines+nodes,
+    'Option A — one ternary relationship. (Doctor, Patient, Drug) as a tuple can\'t distinguish two prescriptions of the same drug on different dates.');
+}
+function diagPharmacyBinaries(){
+  const lines =
+    connLine(145,60, 185,95) + connLine(185,95, 245,150) +
+    connLine(145,240, 185,195) + connLine(185,195, 245,150) +
+    connLine(395,150, 455,150);
+  const nodes =
+    entityBox(15,35,130,50,'Doctor') +
+    entityBox(15,215,130,50,'Patient') +
+    entityBox(245,120,150,60,'Prescription') +
+    entityBox(515,120,140,60,'Drug') +
+    relDiamond(185,95,80,45,'writes') +
+    relDiamond(185,195,80,45,'receives') +
+    relDiamond(455,150,80,45,'of') +
+    cardLabel(168,62,'1') + cardLabel(228,120,'N') +
+    cardLabel(168,242,'1') + cardLabel(228,192,'N') +
+    cardLabel(405,138,'N') + cardLabel(505,138,'1');
+  return erdFrame(680,300, lines+nodes,
+    'Option B — Prescription becomes its own entity with a real ID, date, and dosage. Two prescriptions of the same drug to the same patient are now two distinguishable rows.');
+}
+</script>
+
+<script>
+/* =========================================================================
+   QUIZ DATA
+   ========================================================================= */
+
+/* ---- Cardinality quiz: 10 directional business rules ---- */
+const CARDINALITY_QUESTIONS = [
+  {
+    prompt: `Consider the relationship from <strong>Citizen</strong> to <strong>SSN</strong>: each citizen has exactly one SSN, and each SSN belongs to exactly one citizen.`,
+    options: [ {label:'1:1',correct:true}, {label:'1:N',correct:false}, {label:'N:1',correct:false}, {label:'M:N',correct:false} ],
+    explanation: `<strong>1:1.</strong> Neither side can have more than one of the other — that's the definition of one-to-one.`
+  },
+  {
+    prompt: `Consider the relationship from <strong>Department</strong> to <strong>Employee</strong>: a department has many employees, but each employee belongs to exactly one department.`,
+    options: [ {label:'1:1',correct:false}, {label:'1:N',correct:true}, {label:'N:1',correct:false}, {label:'M:N',correct:false} ],
+    explanation: `<strong>1:N.</strong> One Department relates to many Employees. The direction named first (Department) is the "one" side here.`
+  },
+  {
+    prompt: `Now the <em>reverse</em> direction — from <strong>Employee</strong> to <strong>Department</strong> (same underlying fact as the previous question).`,
+    options: [ {label:'1:1',correct:false}, {label:'1:N',correct:false}, {label:'N:1',correct:true}, {label:'M:N',correct:false} ],
+    explanation: `<strong>N:1.</strong> Same fact, opposite direction: many Employees relate to one Department. This is why "1:N" and "N:1" aren't different relationships — they're the same line read from opposite ends.`
+  },
+  {
+    prompt: `Consider the relationship from <strong>Student</strong> to <strong>Course</strong>: a student enrolls in many courses, and a course has many enrolled students.`,
+    options: [ {label:'1:1',correct:false}, {label:'1:N',correct:false}, {label:'N:1',correct:false}, {label:'M:N',correct:true} ],
+    explanation: `<strong>M:N.</strong> Many on both sides. This is the classic case that needs a junction table in the relational schema — see the SQL Quickstart's <code class="inline">enrollments</code> table.`
+  },
+  {
+    prompt: `Consider the relationship from <strong>Order</strong> to <strong>LineItem</strong>: an order typically has many line items, and each line item belongs to exactly one order.`,
+    options: [ {label:'1:1',correct:false}, {label:'1:N',correct:true}, {label:'N:1',correct:false}, {label:'M:N',correct:false} ],
+    explanation: `<strong>1:N.</strong> One Order, many LineItems, each LineItem pinned to a single Order.`
+  },
+  {
+    prompt: `Consider the relationship from <strong>Country</strong> to <strong>HeadOfState</strong>: each country currently has exactly one head of state, and each head of state leads exactly one country.`,
+    options: [ {label:'1:1',correct:true}, {label:'1:N',correct:false}, {label:'N:1',correct:false}, {label:'M:N',correct:false} ],
+    explanation: `<strong>1:1.</strong> Note the word "currently" — cardinality describes the rule at a point in time; history (past leaders) would need its own table.`
+  },
+  {
+    prompt: `Consider the relationship from <strong>Playlist</strong> to <strong>Song</strong>: a playlist can contain many songs, and a song can appear on many playlists.`,
+    options: [ {label:'1:1',correct:false}, {label:'1:N',correct:false}, {label:'N:1',correct:false}, {label:'M:N',correct:true} ],
+    explanation: `<strong>M:N.</strong> Same shape as Student/Course — many-to-many, resolved with a junction table (e.g. <code class="inline">playlist_songs</code>) in the relational schema.`
+  },
+  {
+    prompt: `Consider the relationship from <strong>Laptop</strong> to <strong>Employee</strong>: many laptops can be assigned to one employee over time, but each laptop is assigned to exactly one employee at a time.`,
+    options: [ {label:'1:1',correct:false}, {label:'1:N',correct:false}, {label:'N:1',correct:true}, {label:'M:N',correct:false} ],
+    explanation: `<strong>N:1.</strong> Read the direction carefully: from Laptop's point of view, many laptops point at one employee. (From Employee's point of view, it would be 1:N — same fact, opposite direction, just like Q2/Q3.)`
+  },
+  {
+    prompt: `Consider the relationship from <strong>Employee</strong> to <strong>Project</strong>: an employee can be staffed on several projects, and each project is staffed by several employees.`,
+    options: [ {label:'1:1',correct:false}, {label:'1:N',correct:false}, {label:'N:1',correct:false}, {label:'M:N',correct:true} ],
+    explanation: `<strong>M:N.</strong> Many on both sides — the tell is "several … and several." Like Student/Course, this resolves into a junction table such as <code class="inline">staffing(employee_id, project_id)</code>, and only there can attributes of the assignment (role, hours) live.`
+  },
+  {
+    prompt: `Now read the reverse direction — from <strong>Order</strong> to <strong>Customer</strong> (the same underlying fact as Customer→Order).`,
+    options: [ {label:'1:1',correct:false}, {label:'1:N',correct:false}, {label:'N:1',correct:true}, {label:'M:N',correct:false} ],
+    explanation: `<strong>N:1.</strong> Many orders point at one customer. This is the mirror of Q2/Q3: "a customer places many orders" (1:N from Customer) and "an order belongs to one customer" (N:1 from Order) describe one and the same line, and a drawing should only ever show it once, with the crow's foot on the Order end.`
+  },
+];
+
+/* ---- Attribute classifier: Practice Problem 3's Book entity ---- */
+const ATTRIBUTE_QUESTIONS = [
+  {
+    prompt: `Classify this attribute of a <strong>Book</strong> entity: <strong>ISBN</strong>`,
+    options: [ {label:'Simple',correct:false}, {label:'Key',correct:true}, {label:'Derived',correct:false}, {label:'Multivalued',correct:false}, {label:'Composite',correct:false} ],
+    explanation: `<strong>Key.</strong> ISBN uniquely identifies a book — it's the primary key candidate.`
+  },
+  {
+    prompt: `Classify this attribute: <strong>Title</strong>`,
+    options: [ {label:'Simple',correct:true}, {label:'Key',correct:false}, {label:'Derived',correct:false}, {label:'Multivalued',correct:false}, {label:'Composite',correct:false} ],
+    explanation: `<strong>Simple.</strong> A single, atomic piece of data — one book, one title, stored directly.`
+  },
+  {
+    prompt: `Classify this attribute: <strong>Authors</strong> (a book can have several)`,
+    options: [ {label:'Simple',correct:false}, {label:'Key',correct:false}, {label:'Derived',correct:false}, {label:'Multivalued',correct:true}, {label:'Composite',correct:false} ],
+    explanation: `<strong>Multivalued.</strong> A single book instance can have more than one value for this attribute — several co-authors on one book.`
+  },
+  {
+    prompt: `Classify this attribute: <strong>Publication date</strong>`,
+    options: [ {label:'Simple',correct:true}, {label:'Key',correct:false}, {label:'Derived',correct:false}, {label:'Multivalued',correct:false}, {label:'Composite',correct:false} ],
+    explanation: `<strong>Simple.</strong> One date value, stored directly — not calculated, not made of parts you'd query separately.`
+  },
+  {
+    prompt: `Classify this attribute: <strong>Age of book in years</strong>`,
+    options: [ {label:'Simple',correct:false}, {label:'Key',correct:false}, {label:'Derived',correct:true}, {label:'Multivalued',correct:false}, {label:'Composite',correct:false} ],
+    explanation: `<strong>Derived.</strong> You'd calculate this from Publication date and today's date rather than storing it — stored, it would go stale the moment it's saved.`
+  },
+  {
+    prompt: `Classify this attribute: <strong>Publisher address</strong> (street, city, zip)`,
+    options: [ {label:'Simple',correct:false}, {label:'Key',correct:false}, {label:'Derived',correct:false}, {label:'Multivalued',correct:false}, {label:'Composite',correct:true} ],
+    explanation: `<strong>Composite.</strong> It's a group of related sub-parts (street, city, zip) that make sense both together and individually — exactly like the Address example on the Student diagram above.`
+  },
+  {
+    prompt: `Classify this attribute: <strong>Genre tags</strong>`,
+    options: [ {label:'Simple',correct:false}, {label:'Key',correct:false}, {label:'Derived',correct:false}, {label:'Multivalued',correct:true}, {label:'Composite',correct:false} ],
+    explanation: `<strong>Multivalued.</strong> One book can carry several genre tags at once (e.g. "sci-fi" and "mystery") — same pattern as Authors.`
+  },
+  {
+    prompt: `Classify this attribute: <strong>Warehouse location</strong> (building, floor, aisle)`,
+    options: [ {label:'Simple',correct:false}, {label:'Key',correct:false}, {label:'Derived',correct:false}, {label:'Multivalued',correct:false}, {label:'Composite',correct:true} ],
+    explanation: `<strong>Composite.</strong> Three related sub-parts that mean something both together and on their own — the same shape as Publisher address. You can query the whole location or just the aisle, which is exactly what makes it composite rather than a single opaque string.`
+  },
+  {
+    prompt: `Classify this attribute: <strong>Days until due</strong> (today's date vs. the due date)`,
+    options: [ {label:'Simple',correct:false}, {label:'Key',correct:false}, {label:'Derived',correct:true}, {label:'Multivalued',correct:false}, {label:'Composite',correct:false} ],
+    explanation: `<strong>Derived.</strong> It's a function of the due date and the current date, so storing it would guarantee it goes stale overnight. Store the due date; compute the countdown. (Age of book in years is the same idea.)`
+  },
+  {
+    prompt: `Classify this attribute: <strong>Illustrators</strong> (a book can have several)`,
+    options: [ {label:'Simple',correct:false}, {label:'Key',correct:false}, {label:'Derived',correct:false}, {label:'Multivalued',correct:true}, {label:'Composite',correct:false} ],
+    explanation: `<strong>Multivalued.</strong> One book, many illustrators — a set of values per book, just like Authors and Genre tags. In the relational schema each becomes its own child table keyed by the book, never a comma-separated column.`
+  },
+];
+
+/* ---- Cardinality Interview scenarios: the four-question method ---- */
+const CIV_SCENARIOS = {
+  customerAddress: {
+    label: 'Customer & Address', entityA: 'Customer', entityB: 'Address',
+    questions: [
+      { q: 'Can one Customer relate to many Addresses?', answer: true, reasoning: 'A customer can save multiple shipping addresses.' },
+      { q: 'Can one Address relate to many Customers?', answer: false, reasoning: "Each stored address is owned by exactly one customer — you don't share address rows across accounts." },
+      { q: 'Must every Customer participate (have at least one saved Address)?', answer: false, reasoning: 'A new customer may have zero saved addresses.' },
+      { q: 'Must every Address participate (belong to a Customer)?', answer: true, reasoning: 'An address without a customer has no meaning.' },
+    ],
+    conclusion: {
+      cardinality: '1:N, from Customer to Address',
+      participation: 'Customer partial, Address total',
+      weak: 'Yes — an address\'s meaning depends entirely on which customer owns it. It would be identified by (CustomerID, AddressLabel), not by anything intrinsic to the address itself.'
+    }
+  },
+  customerOrder: {
+    label: 'Customer & Order', entityA: 'Customer', entityB: 'Order',
+    questions: [
+      { q: 'Can one Customer relate to many Orders?', answer: true, reasoning: 'A customer places many orders over time.' },
+      { q: 'Can one Order relate to many Customers?', answer: false, reasoning: 'Each order belongs to exactly one customer.' },
+      { q: 'Must every Customer participate (have placed at least one Order)?', answer: false, reasoning: 'Some customers browse and never buy.' },
+      { q: 'Must every Order participate (belong to a Customer)?', answer: true, reasoning: 'An orphan order — one with no customer — is a data-integrity bug, not a valid state.' },
+    ],
+    conclusion: {
+      cardinality: '1:N, from Customer to Order',
+      participation: 'Customer partial, Order total',
+      weak: 'No — same shape (1:N) as Customer/Address, but Order has its own natural ID and means something on its own. Weakness is about identity, not participation.'
+    }
+  },
+  employeeParking: {
+    label: 'Employee & Parking Spot', entityA: 'Employee', entityB: 'ParkingSpot',
+    questions: [
+      { q: 'Can one Employee relate to many ParkingSpots (at the same time)?', answer: false, reasoning: 'Each employee is assigned at most one spot at a time.' },
+      { q: 'Can one ParkingSpot relate to many Employees (at the same time)?', answer: false, reasoning: 'Each spot is assigned to at most one employee at a time.' },
+      { q: 'Must every Employee participate (have an assigned spot)?', answer: false, reasoning: "It's a limited perk — not everyone gets one." },
+      { q: 'Must every ParkingSpot participate (be assigned to someone)?', answer: false, reasoning: 'Some spots are reserved for visitors and never assigned to an employee.' },
+    ],
+    conclusion: {
+      cardinality: '1:1, between Employee and ParkingSpot',
+      participation: 'Both partial',
+      weak: "No. Contrast this with Address: a parking spot has its own identifying number (e.g. \"B-14\") that means something whether or not it's currently assigned. 1:1 doesn't automatically imply a weak entity — identity and participation are separate questions."
+    }
+  },
+  bookChapter: {
+    label: 'Book & Chapter', entityA: 'Book', entityB: 'Chapter',
+    questions: [
+      { q: 'Can one Book relate to many Chapters?', answer: true, reasoning: 'A book has many chapters.' },
+      { q: 'Can one Chapter relate to many Books?', answer: false, reasoning: 'Each chapter belongs to exactly one book.' },
+      { q: 'Must every Book participate (have at least one Chapter on record)?', answer: true, reasoning: "Design choice for this catalog: a book isn't considered complete in the system until its chapters are entered." },
+      { q: 'Must every Chapter participate (belong to a Book)?', answer: true, reasoning: 'A chapter numbered "3" means nothing without knowing which book — chapters can\'t exist without a parent.' },
+    ],
+    conclusion: {
+      cardinality: '1:N, from Book to Chapter',
+      participation: 'Both total (by the design choice above)',
+      weak: 'Yes — same pattern as Address. Chapter is identified by (BookID, ChapterNumber), not by anything of its own. This is exactly Practice Problem 4(d) below.'
+    }
+  },
+};
+</script>
+
+<script>
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---- Widget container markup (populated by the ENGINE script) ---- */
+function choiceQuizHtml(prefix, title, subtitle, total){
+  return `
+  <div class="cq" id="${prefix}">
+    <div class="cq-header">
+      <div class="cq-title">${title}</div>
+      <div class="cq-score">Score: <strong id="${prefix}Score">0</strong> / <span id="${prefix}Total">${total}</span></div>
+    </div>
+    <p class="cq-subtitle">${subtitle}</p>
+    <div id="${prefix}Questions"></div>
+    <div class="cq-final" id="${prefix}Final" style="display:none;">
+      <div class="cq-final-score"></div>
+      <button class="cq-retry-btn" id="${prefix}Retry">↺ Try again</button>
+    </div>
+  </div>`;
+}
+
+function civWidgetHtml(){
+  return `
+  <div class="civ" id="civ">
+    <div class="civ-picker">
+      <button data-scenario="customerAddress" class="active">Customer & Address</button>
+      <button data-scenario="customerOrder">Customer & Order</button>
+      <button data-scenario="employeeParking">Employee & Parking Spot</button>
+      <button data-scenario="bookChapter">Book & Chapter</button>
+    </div>
+    <div id="civBody"></div>
+    <button class="civ-reset-btn" id="civReset">↺ Reset this scenario</button>
+  </div>`;
+}
+
+const SECTIONS = [
+
+{
+  id: 'overview', title: 'Entities and Attributes', kicker: 'Foundations',
+  html: `
+  <p>Before you write your first line of SQL, someone has to decide what the database is <em>about</em>. Which things does it track? How do those things relate? Which facts are optional, and which are non-negotiable? That decision is the entity-relationship model — get it right and the rest of the system almost builds itself.</p>
+  <p>An <strong>entity</strong> is a thing you track — Student, Customer, Product. We distinguish an <strong>entity type</strong> (the category, drawn as a rectangle) from an <strong>entity instance</strong> (one specific example, like "John Doe"). Entities are described by <strong>attributes</strong>, drawn as ovals connected to the entity.</p>
+  <p>Attributes come in four flavors, and the diagram below shows all four on one entity:</p>
+  ${diagAttributeTypes()}
+  <div class="schema-grid">
+    <div class="schema-card"><div class="tname">Simple</div>One atomic value — a name, a birthdate.</div>
+    <div class="schema-card"><div class="tname">Composite</div>A group of related sub-parts — an Address made of Street/City/Zip.</div>
+    <div class="schema-card"><div class="tname">Multivalued</div>Can hold more than one value per instance — several phone numbers for one person.</div>
+    <div class="schema-card"><div class="tname">Derived</div>Calculated from other data, not stored — Age from Birthdate.</div>
+  </div>`
+},
+
+{
+  id: 'keys', title: 'Identifying Things with Keys', kicker: 'Foundations',
+  html: `
+  <p>Every entity instance needs to be unique. A <strong>primary key</strong> is an attribute (or group of attributes) guaranteed unique for every record — usually an ID. In a diagram, the key is <u>underlined</u> (see <code class="inline">student_id</code> above).</p>
+  <p>Some entities can't stand on their own. A <strong>weak entity</strong> can't be uniquely identified by its own attributes alone — it depends on a relationship with another entity. "Room 201" means nothing until you know which Hotel it belongs to.</p>
+  ${diagWeakEntity()}
+  <div class="callout"><strong>Notation:</strong> weak entities get a double-bordered rectangle; the relationship that identifies them gets a double-bordered diamond. A weak entity's real primary key is a composite: (parent's key, weak entity's own partial key) — e.g. Room would be identified by <code class="inline">(hotel_id, room_number)</code>, not <code class="inline">room_number</code> alone.</div>`
+},
+
+{
+  id: 'degree', title: 'Relationships and Degree', kicker: 'Foundations',
+  html: `
+  <p>Relationships are the verbs connecting your entities — a Student <em>enrolls in</em> a Course. The <strong>degree</strong> of a relationship is how many entities participate in it.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+    ${diagUnary()}
+    ${diagBinary()}
+    ${diagTernary()}
+  </div>
+  <p>Binary is by far the most common. Unary (self-referencing) relationships show up whenever an entity relates to its own type — an Employee managing other Employees. Ternary relationships are rare, and — as the Pharmacy worked example below shows — often better decomposed into an associative entity plus binaries.</p>`
+},
+
+{
+  id: 'cardinality', title: 'Cardinality and Participation', kicker: 'Foundations',
+  html: `
+  <p><strong>Cardinality</strong> tells you how many instances of one entity can associate with instances of another:</p>
+  <div class="schema-grid">
+    <div class="schema-card"><div class="tname">1:1</div>Each A relates to exactly one B, and vice versa. A person has one SSN.</div>
+    <div class="schema-card"><div class="tname">1:N</div>One A relates to many B, but each B relates to only one A. A department has many employees.</div>
+    <div class="schema-card"><div class="tname">M:N</div>Many A relate to many B. A student takes many courses; a course has many students.</div>
+  </div>
+  <p><strong>Participation</strong> is a separate question: must an entity take part in the relationship at all? <strong>Total participation</strong> (a double line in Chen notation) means every instance must be involved. <strong>Partial participation</strong> (single line) means it's optional. Every Book must be written by an Author (total), but an Author might exist in the system without a Book currently listed (partial).</p>
+  <div class="callout blue"><strong>Common confusion:</strong> cardinality (how many) and participation (whether it's required) are independent. A relationship can be 1:1 with both sides optional, or M:N with one side mandatory — the four questions in the Cardinality Interview tool further down keep these two questions properly separated.</div>
+  <p>Eight business rules below. Each is phrased directionally — read carefully which entity comes first.</p>
+  ${choiceQuizHtml('cardq', 'Cardinality Predictor', 'Pick the cardinality that matches each business rule, read in the stated direction.', CARDINALITY_QUESTIONS.length)}`
+},
+
+{
+  id: 'notation', title: 'Notation Styles: Chen vs. Crow\'s Foot', kicker: 'Foundations',
+  html: `
+  <p><strong>Chen notation</strong> is the traditional academic style — rectangles, ovals, and diamonds, excellent for conceptual clarity. <strong>Crow's Foot notation</strong> is the industry standard for physical design — more compact, no diamonds, with the relationship's cardinality drawn directly on the connecting line using symbols: a circle for "zero," a tick for "one," and a three-pronged fork for "many."</p>
+  ${diagNotationCompare()}
+  <p>Every diagram elsewhere on this page uses Chen notation, for the same reason the source reading does: it keeps attributes, keys, and participation visually explicit while you're still deciding what the model even is. Crow's Foot is what you'll see in most real database design tools once the model is settled and you're drawing the physical schema.</p>`
+},
+
+{
+  id: 'erd-design-steps', title: 'Building an ER Model, Step by Step', kicker: 'Foundations',
+  html: `
+  <p>Every modeling exercise follows the same eight moves. Step through them once and the diagrams on the rest of this page stop looking like guesswork.</p>
+  <div class="widget">
+    <div class="widget-title">Build an ER Model</div>
+    <div class="widget-sub">requirements prose → a complete conceptual schema</div>
+    <div class="qstep-rail" id="erdstep-rail"></div>
+    <div class="qstep-body" id="erdstep-body"></div>
+    <div class="qstep-controls">
+      <button class="qstep-restart-btn" id="erdstep-back">◀ Back</button>
+      <button class="qstep-next-btn" id="erdstep-next">Next step ▶</button>
+      <button class="qstep-restart-btn" id="erdstep-restart">↺ Restart</button>
+      <span class="qstep-count" id="erdstep-count"></span>
+    </div>
+  </div>`
+},
+
+{
+  id: 'er-builder', title: 'Build an ER Model, Live', kicker: 'Foundations',
+  html: `
+  <p>Reading diagrams is not the same as making them. Add entities, attach attributes, and connect a relationship with a cardinality &mdash; the diagram redraws itself, with the cardinality drawn on the connector exactly where you'll be expected to place it.</p>
+  <div class="widget">
+    <div class="widget-title">The Live ER Builder</div>
+    <div class="widget-sub">add an entity · click it · add its attributes · connect two entities with a cardinality</div>
+
+    <div class="erb-controls">
+      <input class="erb-input" id="erb-entity-name" placeholder="New entity name (e.g. Customer)" />
+      <button class="erb-btn" id="erb-add-entity">＋ Add entity</button>
+    </div>
+    <div class="erb-controls">
+      <input class="erb-input" id="erb-attr-name" placeholder="New attribute (click an entity first)" />
+      <button class="erb-btn sec" id="erb-add-attr">＋ Add attribute</button>
+    </div>
+    <div class="erb-controls">
+      <select class="erb-select" id="erb-rel-from"></select>
+      <select class="erb-select" id="erb-rel-card"><option>1 : 1</option><option selected>1 : N</option><option>M : N</option></select>
+      <select class="erb-select" id="erb-rel-to"></select>
+      <button class="erb-btn" id="erb-add-rel">＋ Connect</button>
+    </div>
+
+    <div class="erb-canvas" id="erb-canvas"><svg class="erb-svg" id="erb-svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Live ER diagram canvas that redraws as you add entities and relationships."></svg></div>
+    <div class="erb-rel-list" id="erb-rel-list"></div>
+    <div class="erb-note" id="erb-note">Add your first entity to begin. Click an entity's title bar to select it before adding attributes.</div>
+  </div>`
+},
+
+{
+  id: 'ecommerce', title: 'Case Study: Modeling an E-Commerce Store', kicker: 'Case Study',
+  html: `
+  <p>Requirements: Customers place Orders (1:N, Order total); Orders contain Products (M:N); Customers have multiple shipping Addresses, and an Address cannot exist without a Customer.</p>
+  <p>Customer and Product are strong entities. Order is strong too, but with a total-participation requirement toward Customer. Address is weak — it's identified relative to its owning Customer, not on its own.</p>
+  ${diagEcommerce()}
+  <div class="callout"><strong>Bridge to SQL:</strong> the M:N between Order and Product can't be stored directly in a relational table — it becomes a junction table (commonly called <code class="inline">order_items</code>) with a composite key <code class="inline">(order_id, product_id)</code>, exactly the pattern the SQL Quickstart's <code class="inline">enrollments</code> table demonstrates.</div>`
+},
+
+{
+  id: 'hospital', title: 'Worked Example: Modeling from Requirements Prose', kicker: 'Worked Examples',
+  html: `
+  <p>Real ER modeling starts from a messy paragraph, not a clean spec:</p>
+  <div class="callout blue">"A hospital treats patients. Each patient has an ID, name, date of birth, and one or more phone numbers. Doctors see patients during appointments. An appointment happens on a specific date at a specific time, in a specific room. A patient can be seen by many doctors over their history; a doctor sees many patients per day. Every appointment must have exactly one doctor and one patient. The hospital tracks patient allergies; a patient may have zero, one, or many allergies, and the same allergy (e.g., 'penicillin') can affect many patients."</div>
+  <p><strong>Is Appointment a relationship or an entity?</strong> It has its own descriptive attributes (Date, Time, Room) — a strong hint to promote it to a full associative entity, connected to Patient and Doctor by two separate 1:N relationships, rather than drawing one Patient–Doctor diamond directly.</p>
+  <p><strong>Is Allergy weak?</strong> No — "penicillin" stands on its own as shared vocabulary; it's the <em>relationship</em> (HasAllergy) that varies per patient, not the allergy's identity. Contrast with Address in the e-commerce case study, which has no meaning outside its owning customer.</p>
+  <table class="datatable">
+    <tr><th>Entity</th><th>Attributes</th><th>Notes</th></tr>
+    <tr><td>Patient</td><td><code class="inline">patient_id</code> (PK), first_name, last_name, dob, phone numbers, age</td><td>phones is multivalued → own child table. age is derived, not stored.</td></tr>
+    <tr><td>Doctor</td><td><code class="inline">doctor_id</code> (PK), name, specialty</td><td>Strong entity, no dependencies.</td></tr>
+    <tr><td>Appointment</td><td><code class="inline">appointment_id</code> (PK), date, time, room</td><td>Associative entity — has its own attributes and can repeat for the same (patient, doctor) pair.</td></tr>
+    <tr><td>Allergy</td><td><code class="inline">allergy_name</code> (PK), severity</td><td>Strong, shared vocabulary. Not weak — the name has meaning on its own.</td></tr>
+  </table>
+  ${diagHospital()}
+  <p>Notice how the <em>questions</em> were the actual design work — drawing rectangles wasn't the hard part.</p>`
+},
+
+{
+  id: 'civ-section', title: 'Worked Example: The Cardinality Interview', kicker: 'Worked Examples',
+  html: `
+  <p>The single most common ER mistake is misjudged cardinality. Here's a structured way to get it right — for any candidate relationship between entities A and B, ask four questions:</p>
+  <ol class="plain">
+    <li>Can one A relate to many Bs?</li>
+    <li>Can one B relate to many As?</li>
+    <li>Must every A participate in the relationship?</li>
+    <li>Must every B participate?</li>
+  </ol>
+  <p>Questions 1–2 settle the <em>cardinality</em>. Questions 3–4 settle <em>participation</em> — a separate axis. Sometimes the answers also reveal that one side is a <em>weak entity</em>, but that's a third, independent question about identity, not just participation. Pick a scenario below and answer each question yourself before revealing the book's reasoning.</p>
+  ${civWidgetHtml()}`
+},
+
+{
+  id: 'ternary-vs-binary', title: 'Worked Example: Ternary vs. Two Binaries', kicker: 'Worked Examples',
+  html: `
+  <p>A pharmacy tracks patient, drug, doctor — a doctor prescribes a drug to a patient. Two ways to model "prescribes":</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+    <div>${diagPharmacyTernary()}</div>
+    <div>${diagPharmacyBinaries()}</div>
+  </div>
+  <p><strong>Option A</strong> captures "Dr. Smith prescribed penicillin to Alice" as one fact — but the tuple (Smith, Alice, Penicillin) is unique, so it can't distinguish two separate prescriptions of the same drug on different dates. <strong>Option B</strong> promotes Prescription to its own entity with a real ID, date, dosage, and refill count — two prescriptions of the same drug to the same patient are now two distinguishable rows.</p>
+  <div class="callout"><strong>Rule of thumb:</strong> if the relationship needs its own attributes or its own identity, decompose the ternary into an associative entity plus binaries. Pure ternaries are rare in practice — they show up mainly when three entities must <em>simultaneously</em> participate for the fact to make sense (e.g., "Teacher teaches Course in Room" during a specific term).</div>`
+},
+
+{
+  id: 'interview', title: 'In the Interview', kicker: 'Apply It',
+  html: `
+  <p>ER modeling is the fluency test for schema design in every system-design round. The archetypal question: "design the data model for Twitter in the next 20 minutes." Interviewers watch three specific things:</p>
+  <div class="interview-box">
+    <h3>Speed at identifying entities</h3>
+    <p>For Twitter: User, Tweet, Follow, Like, Retweet. Taking more than three minutes to name these leaves no time for the interesting parts.</p>
+    <h3>Confidence with cardinality</h3>
+    <p>User ↔ Follow is M:N. Tweet ↔ Like is M:N. User ↔ Tweet (authorship) is 1:N. Hesitating on any of these invites a probe.</p>
+    <h3>Handling the tricky entities</h3>
+    <p>Is Follow a relationship or an entity? Since it can be timestamped and has its own delete lifecycle, model it as an associative entity, not just an M:N link — recognizing this unprompted is a strong signal.</p>
+  </div>
+  <p>Follow-up questions to expect: <em>How do you model retweets so a retweet-of-a-retweet still points at the original?</em> (Self-referencing FK on Tweet.) <em>How do you enforce a user can only follow another once?</em> (<code class="inline">UNIQUE</code> constraint on <code class="inline">(follower_id, followee_id)</code> in the Follow entity.)</p>
+  <p>The senior twist is about scale: "This model looks correct, but Twitter has 500M users." The answer isn't a different ER model — it's "normalize for writes, denormalize for reads." The normalized model stays the source of truth; read-heavy paths (home timelines) get fed by denormalized projections, often maintained by streaming pipelines.</p>
+  <p><strong>Practice pattern:</strong> take five apps you use daily and sketch the core ER model of each in ten minutes — six entities, all cardinalities, weak entities where they apply, at least one associative entity. Ten reps of this is worth more than any interview book.</p>`
+},
+
+{
+  id: 'attribute-quiz', title: 'Try It Yourself: Attribute Classifier', kicker: 'Apply It',
+  html: `
+  <p>Classify each attribute of a <code class="inline">Book</code> entity in a bookstore system. This is Practice Problem 3 below, played one attribute at a time.</p>
+  ${choiceQuizHtml('attrq', 'Attribute Classifier', 'simple · composite · multivalued · derived · key', ATTRIBUTE_QUESTIONS.length)}`
+},
+
+{
+  id: 'practice', title: 'Practice Problems', kicker: 'Apply It',
+  html: `
+  <div class="problem">
+    <div class="pnum">Problem 1</div>
+    <p>A ride-sharing app has Rider, Driver, and Ride. Every ride has exactly one rider and one driver, and records pickup time, dropoff time, and fare. Should Ride be modeled as (a) a relationship between Rider and Driver, or (b) an entity with two 1:N relationships? Justify.</p>
+    <details class="answer"><summary>Show answer</summary><div class="answer-body">
+      <p>(b) — an entity. The same test as Appointment in the hospital example: Ride carries its own descriptive attributes (pickup time, dropoff time, fare) that don't belong to either Rider or Driver alone, and a given Rider/Driver pair can share more than one Ride over time (each needs its own identity). Model it as <code class="inline">Ride(ride_id PK, pickup_time, dropoff_time, fare, rider_id FK, driver_id FK)</code>, connected to Rider and Driver by two 1:N relationships, both total on the Ride side.</p>
+    </div></details>
+  </div>
+
+  <div class="problem">
+    <div class="pnum">Problem 2</div>
+    <p>A university tracks Student and Advisor. Every student must have at least one advisor; a student can have multiple advisors (double majors); a faculty member may or may not currently be advising anyone; each advising relationship records a start date and is between one student and one faculty member. Answer the four cardinality questions and produce the cardinality + participation for <em>advises</em>.</p>
+    <details class="answer"><summary>Show answer</summary><div class="answer-body">
+      <p>Q1 (one Advisor → many Students?): Yes. Q2 (one Student → many Advisors?): Yes — this is the double-major case. Q3 (must every Advisor participate?): No — some faculty advise no one currently. Q4 (must every Student participate?): Yes — every student needs at least one advisor.</p>
+      <p><strong>Conclusion:</strong> M:N (both Q1 and Q2 are yes), Advisor partial, Student total. Because the fact itself carries an attribute (start date), <em>advises</em> should be modeled as an associative entity — <code class="inline">Advising(student_id, advisor_id, start_date)</code> with a composite key — the same pattern as resolving any M:N relationship that has its own data.</p>
+    </div></details>
+  </div>
+
+  <div class="problem">
+    <div class="pnum">Problem 3</div>
+    <p>Classify each attribute of a Book entity in a bookstore system: ISBN; Title; Authors (a book can have several); Publication date; Age of book in years; Publisher address (street, city, zip); Genre tags.</p>
+    <details class="answer"><summary>Show answer</summary><div class="answer-body">
+      <p>ISBN — <strong>key</strong>. Title — <strong>simple</strong>. Authors — <strong>multivalued</strong>. Publication date — <strong>simple</strong>. Age of book in years — <strong>derived</strong> (from publication date). Publisher address — <strong>composite</strong> (street/city/zip). Genre tags — <strong>multivalued</strong>.</p>
+      <p>Try the interactive version above if you want to be quizzed one at a time instead.</p>
+    </div></details>
+  </div>
+
+  <div class="problem">
+    <div class="pnum">Problem 4</div>
+    <p>Decide whether each situation is (i) a weak entity, (ii) a strong entity with total participation, or (iii) a multivalued attribute: (a) A LineItem on an Order — quantity and unit price, only meaningful as part of an order. (b) An Email field on a User — zero or more per user. (c) A Payment on an Invoice — method, amount, date, can happen many times per invoice; each payment has a globally unique receipt number. (d) A Chapter in a Book — numbered 1, 2, 3 within each book.</p>
+    <details class="answer"><summary>Show answer</summary><div class="answer-body">
+      <p>(a) <strong>Weak entity.</strong> LineItem needs quantity and unit price of its own — too much structure for a mere attribute — and it's meaningless outside its parent Order, identified by <code class="inline">(order_id, line_number)</code>.</p>
+      <p>(b) <strong>Multivalued attribute.</strong> No independent structure — just zero-or-more plain values hanging off User.</p>
+      <p>(c) <strong>Strong entity with total participation</strong> (toward Invoice) — the receipt number being <em>globally</em> unique, independent of which invoice it belongs to, is the tell. That's real independent identity, not identity borrowed from a parent — which is exactly what distinguishes "strong with total participation" from "weak."</p>
+      <p>(d) <strong>Weak entity</strong> — same shape as LineItem and as Address in the e-commerce case study. Identified by <code class="inline">(book_id, chapter_number)</code>.</p>
+    </div></details>
+  </div>
+
+  <div class="problem">
+    <div class="pnum">Problem 5</div>
+    <p>An ER diagram claims Employee participates in a <em>manages</em> relationship with itself (a unary relationship). Sketch two different real-world constraints this could encode, and explain how the diagram must differ to distinguish them.</p>
+    <details class="answer"><summary>Show answer</summary><div class="answer-body">
+      <p><strong>Reading 1 — strict hierarchy (1:N):</strong> one manager oversees many employees, but each employee has exactly one manager. Drawn with cardinality 1 on the "manager" role and N on the "subordinate" role — an org chart.</p>
+      <p><strong>Reading 2 — matrix/dotted-line reporting (M:N):</strong> an employee can report to multiple managers (e.g., a functional manager and a project manager), and a manager oversees multiple employees. Drawn with cardinality M and N on both roles.</p>
+      <p>The diagram must label the two <em>roles</em> the same entity plays (manager vs. subordinate) — without role labels, a unary relationship is genuinely ambiguous about which end is which. The cardinality letters (1/N vs M/N) are what distinguish a strict hierarchy from a matrix org, and in a real system this ambiguity becomes a live bug the moment someone tries to model a dotted-line report against a schema built for reading 1.</p>
+    </div></details>
+  </div>`
+},
+  {
+    id: 'in-2026', title: "In 2026: What Has Changed", kicker: '2026 Status',
+    html: `
+      <p>Schemas in 2026 are rarely purely relational, but ER thinking is still how you find the constraints a hybrid schema hides.</p>
+      <ul>
+        <li><strong>Hybrid schemas are normal.</strong> Most 2026 schemas mix relational tables with JSON or array columns; ER thinking is still what surfaces the constraints those columns hide.</li>
+        <li><strong>Event and append-only tables</strong> (immutable facts plus derived views) are now as common as mutable row tables, and they need the same cardinality discipline.</li>
+        <li><strong>Where ER pays off:</strong> catching a missing key, a wrong cardinality or a redundant attribute before it ships. <strong>Where it does not:</strong> genuinely schemaless blobs whose shape you do not control.</li>
+        <li><strong>The diagram is usually code now</strong> — dbdiagram, Mermaid ER, or a Prisma/Drizzle schema — which keeps the model and the DDL from drifting apart.</li>
+      </ul>
+      <p class="small">A model is still the cheapest place to find a mistake: a wrong cardinality costs a diagram to fix now and a migration to fix later.</p>`
+  },
+];
+</script>
+
+<script>
+/* =========================================================================
+   ENGINE — render sections, wire nav, wire the three interactive widgets.
+   No async loading needed (no WASM engine here), so everything runs
+   synchronously at DOMContentLoaded time.
+   ========================================================================= */
+
+const NAV_GROUPS = [{label:'Foundations', ids:['overview','keys','degree','cardinality','erd-design-steps','er-builder']},{label:'Case Study', ids:['ecommerce']},{label:'Worked Examples', ids:['hospital','civ-section','ternary-vs-binary']},{label:'Apply It', ids:['attribute-quiz','practice','interview']},{label:'2026 Status', ids:['in-2026']}];
+
+function renderNav(){
+  const nav = document.getElementById('playgroundNav');
+  if (!nav) return;
+  NAV_GROUPS.forEach(g => {
+    const grp = document.createElement('div');
+    grp.className = 'grp';
+    grp.textContent = g.label;
+    nav.appendChild(grp);
+    g.ids.forEach(id => {
+      const sec = SECTIONS.find(s => s.id === id);
+      if (!sec) return;
+      const a = document.createElement('a');
+      a.href = '#' + id;
+      a.textContent = sec.title;
+      nav.appendChild(a);
+    });
+  });
+}
+
+function renderSections(){
+  const container = document.getElementById('sections');
+  SECTIONS.forEach(sec => {
+    const el = document.createElement('section');
+    el.id = sec.id;
+    el.innerHTML = `<div class="kicker">${sec.kicker}</div><h2>${sec.title}</h2>${sec.html}`;
+    container.appendChild(el);
+  });
+  renderNav();
+}
+
+function wireNavHighlight(){
+  const sections = Array.from(document.querySelectorAll('main section'));
+  const links = Array.from(document.querySelectorAll('#playgroundNav a'));
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const link = links.find(a => a.getAttribute('href') === '#' + entry.target.id);
+      if (!link) return;
+      if (entry.isIntersecting){
+        links.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+}
+
+/* ---- Generic one-at-a-time multiple-choice quiz engine ---- */
+const quizState = {};
+
+function choiceQuestionHtml(prefix, q, i, total){
+  const optsHtml = q.options.map((o, oi) =>
+    `<button class="cq-option" data-qi="${i}" data-oi="${oi}">${escapeHtml(o.label)}</button>`
+  ).join('');
+  return `
+  <div class="cq-question" data-index="${i}" style="display:${i===0?'':'none'}">
+    <div class="cq-eyebrow">${i + 1} OF ${total}</div>
+    <p class="cq-scenario">${q.prompt}</p>
+    <p class="cq-pick-label">Pick one</p>
+    <div class="cq-options">${optsHtml}</div>
+    <div class="cq-feedback"></div>
+  </div>`;
+}
+
+function choiceSelectOption(prefix, questions, qi, oi){
+  const q = questions[qi];
+  const qEl = document.querySelector(`#${prefix}Questions .cq-question[data-index="${qi}"]`);
+  const buttons = qEl.querySelectorAll('.cq-option');
+  const chosen = q.options[oi];
+  const correctIndex = q.options.findIndex(o => o.correct);
+
+  buttons.forEach((b, bi) => {
+    b.disabled = true;
+    if (bi === correctIndex) b.classList.add('correct');
+    else if (bi === oi) b.classList.add('incorrect');
+  });
+
+  if (chosen.correct){
+    quizState[prefix].score++;
+    document.getElementById(prefix + 'Score').textContent = quizState[prefix].score;
+  }
+
+  const isLast = qi === questions.length - 1;
+  qEl.querySelector('.cq-feedback').innerHTML = `
+    <div class="cq-verdict ${chosen.correct ? 'right' : 'wrong'}">${chosen.correct ? 'Correct.' : 'Not quite.'}</div>
+    <p class="cq-explain">${q.explanation}</p>
+    <button class="cq-next-btn">${isLast ? 'See final score →' : 'Next →'}</button>`;
+  qEl.querySelector('.cq-next-btn').addEventListener('click', () => choiceNext(prefix, questions, qi));
+}
+
+function choiceNext(prefix, questions, qi){
+  if (qi < questions.length - 1){
+    document.querySelector(`#${prefix}Questions .cq-question[data-index="${qi}"]`).style.display = 'none';
+    document.querySelector(`#${prefix}Questions .cq-question[data-index="${qi + 1}"]`).style.display = '';
+  } else {
+    document.getElementById(prefix + 'Questions').style.display = 'none';
+    const finalEl = document.getElementById(prefix + 'Final');
+    finalEl.style.display = '';
+    finalEl.querySelector('.cq-final-score').textContent = `You scored ${quizState[prefix].score} / ${questions.length}.`;
+  }
+}
+
+function choiceRenderAll(prefix, questions){
+  const container = document.getElementById(prefix + 'Questions');
+  container.innerHTML = questions.map((q, i) => choiceQuestionHtml(prefix, q, i, questions.length)).join('');
+  container.style.display = '';
+  document.getElementById(prefix + 'Final').style.display = 'none';
+  container.querySelectorAll('.cq-option').forEach(btn => {
+    btn.addEventListener('click', () => choiceSelectOption(prefix, questions, Number(btn.dataset.qi), Number(btn.dataset.oi)));
+  });
+  quizState[prefix] = { score: 0 };
+  document.getElementById(prefix + 'Score').textContent = '0';
+}
+
+function initChoiceQuiz(prefix, questions){
+  if (!document.getElementById(prefix)) return;
+  choiceRenderAll(prefix, questions);
+  document.getElementById(prefix + 'Retry').addEventListener('click', () => choiceRenderAll(prefix, questions));
+}
+
+/* ---- Cardinality Interview tool ---- */
+let civCurrentKey = 'customerAddress';
+let civAnswered = new Set();
+
+function civQuestionHtml(idx, q){
+  return `
+  <div class="civ-q" data-index="${idx}">
+    <p class="civ-qtext">${idx + 1}. ${escapeHtml(q.q)}</p>
+    <div class="civ-yn">
+      <button data-answer="true">Yes</button>
+      <button data-answer="false">No</button>
+    </div>
+    <p class="civ-reasoning">${escapeHtml(q.reasoning)}</p>
+  </div>`;
+}
+
+function civAnswerClick(key, btn){
+  const qEl = btn.closest('.civ-q');
+  const idx = Number(qEl.dataset.index);
+  const scenario = CIV_SCENARIOS[key];
+  const q = scenario.questions[idx];
+  const buttons = qEl.querySelectorAll('.civ-yn button');
+  buttons.forEach(b => {
+    b.disabled = true;
+    const bVal = b.dataset.answer === 'true';
+    if (bVal === q.answer) b.classList.add('correct');
+    else if (b === btn) b.classList.add('incorrect');
+  });
+  qEl.querySelector('.civ-reasoning').classList.add('show');
+  civAnswered.add(idx);
+  if (civAnswered.size === scenario.questions.length){
+    civShowConclusion(key);
+  }
+}
+
+function civShowConclusion(key){
+  const scenario = CIV_SCENARIOS[key];
+  const el = document.getElementById('civConclusion');
+  el.innerHTML = `
+    <h4>Conclusion</h4>
+    <p><strong>Cardinality:</strong> ${escapeHtml(scenario.conclusion.cardinality)}</p>
+    <p><strong>Participation:</strong> ${escapeHtml(scenario.conclusion.participation)}</p>
+    <p><strong>Weak entity?</strong> ${scenario.conclusion.weak}</p>`;
+  el.classList.add('show');
+}
+
+function civRenderScenario(key){
+  civCurrentKey = key;
+  civAnswered = new Set();
+  const scenario = CIV_SCENARIOS[key];
+  const container = document.getElementById('civBody');
+  container.innerHTML = scenario.questions.map((q, i) => civQuestionHtml(i, q)).join('') +
+    `<div class="civ-conclusion" id="civConclusion"></div>`;
+  container.querySelectorAll('.civ-yn button').forEach(btn => {
+    btn.addEventListener('click', () => civAnswerClick(key, btn));
+  });
+}
+
+function civSwitchScenario(key){
+  document.querySelectorAll('.civ-picker button').forEach(b => b.classList.toggle('active', b.dataset.scenario === key));
+  civRenderScenario(key);
+}
+
+function civInit(){
+  const root = document.getElementById('civ');
+  if (!root) return;
+  root.querySelectorAll('.civ-picker button').forEach(btn => {
+    btn.addEventListener('click', () => civSwitchScenario(btn.dataset.scenario));
+  });
+  document.getElementById('civReset').addEventListener('click', () => civRenderScenario(civCurrentKey));
+  civSwitchScenario('customerAddress');
+}
+
+function boot(){
+  renderSections();
+  wireNavHighlight();
+  initChoiceQuiz('cardq', CARDINALITY_QUESTIONS);
+  initChoiceQuiz('attrq', ATTRIBUTE_QUESTIONS);
+  civInit();
+}
+
+boot();
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: Build an ER model ===== */
+function erdStepsInit(){
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const STEPS = [
+    { name: '1 · Find the nouns', tag: 'entities',
+      action: 'Read the requirements and circle every thing the system must remember. Each survives as an entity — a rectangle. Something you only ever compute (a total, an age from a birthdate) is not an entity.',
+      artLabel: 'Artifact · candidate entities',
+      art: '"customers place orders and orders contain products"\n\n  -> CUSTOMER, ORDER, PRODUCT, ADDRESS' },
+    { name: '2 · Find the verbs', tag: 'relationships',
+      action: 'Every way two entities interact becomes a relationship — a diamond in Chen notation. Name it with a verb, and give it a direction.',
+      artLabel: 'Artifact · relationships',
+      art: 'Customer --creates----> Order\nOrder    --contains---> Product\nCustomer --ships to---> Address' },
+    { name: '3 · Set cardinality', tag: '1:N · M:N · 1:1',
+      action: 'For each relationship ask how many entities sit on each side. Read the sentence in both directions — "one customer places many orders" and "one order belongs to exactly one customer" — before writing anything down.',
+      artLabel: 'Artifact · cardinalities',
+      art: 'Customer : Order    = 1 : N\nOrder    : Product  = M : N   <- needs resolving\nCustomer : Address  = 1 : N' },
+    { name: '4 · Set participation', tag: 'total vs partial',
+      action: 'Now ask whether participation is mandatory. An order cannot exist without an owner (total on the Order side); a customer may have no shipping address yet (partial). Participation is a different fact from cardinality, and exam questions love the difference.',
+      artLabel: 'Artifact · participation',
+      art: 'Order -> Customer   TOTAL   (every order needs an owner)\nCustomer -> Address  PARTIAL (a customer may have none)\n\n  drawn as a double line for TOTAL membership' },
+    { name: '5 · Assign attributes', tag: 'key · composite · multivalued · derived',
+      action: 'Give every entity a key first, then add its simple attributes. Composite (address), multivalued (phone), and derived (age) attributes are drawn differently because each one forces a different decision when you map to tables.',
+      artLabel: 'Artifact · attributes',
+      art: 'CUSTOMER( customer_id KEY, name, email,\n          age[derived], phone[multivalued] )\nADDRESS ( [street, city, zip] composite )' },
+    { name: '6 · Model weak entities', tag: 'existence-dependent',
+      action: 'If a thing cannot be identified — or even exist — without its owner, it is weak: a double rectangle, a dashed identifying relationship, and a partial key. Address is weak relative to Customer.',
+      artLabel: 'Artifact · weak entity',
+      art: 'Customer ==identifies==> [#Address]\n         (double rect)        partial key: addr_no\n\n  Address without a Customer is meaningless.' },
+    { name: '7 · Resolve M:N', tag: 'associative entity',
+      action: 'An M:N relationship that carries its own attributes — a quantity, a timestamp, an added-by — cannot stay a diamond. Promote it to a real associative entity with a composite key.',
+      artLabel: 'Artifact · associative entity',
+      art: 'Order --contains--> Product   (M:N, carries qty)\n         |\n         v\nORDER_LINE( order_id, product_id, qty )\n  KEY = (order_id, product_id)' },
+    { name: '8 · Review for redundancy', tag: 'the two-question test',
+      action: 'Ask of every attribute "whose fact is this?", and of every relationship "does this duplicate one I already drew?". Redundant edges are how a model drifts out of sync with the data it describes.',
+      artLabel: 'Artifact · review',
+      art: 'Order.total  <- is it a stored fact, or SUM(qty * price)?\n\n  Keep it only if you deliberately cache it.\n  Otherwise: a derived value, not an attribute.' },
+  ];
+  let i = 0;
+  const rail = byId('erdstep-rail'), body = byId('erdstep-body');
+  if (!body) return;
+  function railRender(){
+    rail.innerHTML = STEPS.map((s, k) =>
+      `<div class="qstep-node${k === i ? ' active' : (k < i ? ' done' : '')}" data-i="${k}"><span class="qstep-idx">STEP ${k + 1}</span>${esc(s.name)}</div>`).join('');
+    rail.querySelectorAll('.qstep-node').forEach(n => n.addEventListener('click', () => { i = +n.dataset.i; render(); }));
+  }
+  function render(){
+    const s = STEPS[i];
+    body.innerHTML =
+      `<div class="qstep-head"><div class="qstep-name">${esc(s.name)}</div><div class="qstep-layer">${esc(s.tag)}</div></div>` +
+      `<div class="qstep-action">${esc(s.action)}</div>` +
+      `<div class="qstep-art"><span class="art-label">${esc(s.artLabel)}</span>${esc(s.art)}</div>`;
+    railRender();
+    byId('erdstep-count').textContent = `Step ${i + 1} of ${STEPS.length}`;
+    byId('erdstep-back').disabled = i === 0;
+    byId('erdstep-next').disabled = i === STEPS.length - 1;
+  }
+  byId('erdstep-back').addEventListener('click', () => { if (i > 0) { i--; render(); } });
+  byId('erdstep-next').addEventListener('click', () => { if (i < STEPS.length - 1) { i++; render(); } });
+  byId('erdstep-restart').addEventListener('click', () => { i = 0; render(); });
+  render();
+}
+erdStepsInit();
+</script>
+
+<script>
+/* ===== Live ER Builder ===== */
+(function () {
+  const byId = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  let entities = [], rels = [], selected = null, seq = 0;
+  const uid = () => 'e' + (++seq);
+
+  function addEntity(){
+    const inp = byId('erb-entity-name');
+    const name = (inp.value || '').trim();
+    if (!name) { byId('erb-note').textContent = 'Type a name first, then add the entity.'; return; }
+    entities.push({ id: uid(), name, attrs: [] });
+    inp.value = '';
+    selected = entities[entities.length - 1].id;
+    render();
+  }
+
+  function addAttr(){
+    if (!selected) { byId('erb-note').textContent = 'Click an entity\u2019s title bar to select it, then add an attribute.'; return; }
+    const inp = byId('erb-attr-name');
+    const name = (inp.value || '').trim();
+    if (!name) return;
+    const e = entities.find(x => x.id === selected);
+    if (e) e.attrs.push(name);
+    inp.value = '';
+    render();
+  }
+
+  function addRel(){
+    const f = byId('erb-rel-from').value, t = byId('erb-rel-to').value;
+    if (!f || !t || f === t) { byId('erb-note').textContent = 'Pick two different entities to connect.'; return; }
+    rels.push({ from: f, to: t, card: byId('erb-rel-card').value });
+    render();
+  }
+
+  function nameOf(id){ const e = entities.find(x => x.id === id); return e ? e.name : '?'; }
+
+  function renderSelects(){
+    ['erb-rel-from', 'erb-rel-to'].forEach((id, k) => {
+      const sel = byId(id);
+      const prev = sel.value;
+      sel.innerHTML = entities.map(e => '<option value="' + e.id + '">' + esc(e.name) + '</option>').join('');
+      if (entities.length > 1 && !sel.value) sel.selectedIndex = k === 0 ? 0 : 1;
+      else if (prev) sel.value = prev;
+    });
+  }
+
+  function renderCanvas(){
+    const canvas = byId('erb-canvas');
+    canvas.querySelectorAll('.erb-entity, .erb-empty').forEach(n => n.remove());
+    if (!entities.length){
+      const ph = document.createElement('div');
+      ph.className = 'erb-empty';
+      ph.textContent = 'No entities yet \u2014 add one above and the diagram starts here.';
+      canvas.appendChild(ph);
+      byId('erb-svg').innerHTML = '';
+      return;
+    }
+    entities.forEach(e => {
+      const box = document.createElement('div');
+      box.className = 'erb-entity' + (selected === e.id ? ' sel' : '');
+      box.dataset.id = e.id;
+      box.innerHTML = '<div class="erb-entity-head"><span>' + esc(e.name) + '</span><span class="erb-rm-ent" title="remove entity">✕</span></div>' +
+        e.attrs.map((a, k) => '<div class="erb-attr"><span>' + esc(a) + '</span><span class="erb-rm" data-k="' + k + '" title="remove attribute">✕</span></div>').join('');
+      box.querySelector('.erb-entity-head').addEventListener('click', ev => {
+        if (ev.target.classList.contains('erb-rm-ent')) return;
+        selected = selected === e.id ? null : e.id;
+        render();
+      });
+      box.querySelector('.erb-rm-ent').addEventListener('click', ev => {
+        ev.stopPropagation();
+        entities = entities.filter(x => x.id !== e.id);
+        rels = rels.filter(r => r.from !== e.id && r.to !== e.id);
+        if (selected === e.id) selected = null;
+        render();
+      });
+      box.querySelectorAll('.erb-attr .erb-rm').forEach(x => x.addEventListener('click', () => {
+        e.attrs.splice(+x.dataset.k, 1); render();
+      }));
+      canvas.appendChild(box);
+    });
+    drawRels();
+  }
+
+  function drawRels(){
+    const canvas = byId('erb-canvas'), svg = byId('erb-svg');
+    const cRect = canvas.getBoundingClientRect();
+    svg.setAttribute('viewBox', '0 0 ' + cRect.width + ' ' + cRect.height);
+    svg.setAttribute('width', cRect.width);
+    svg.setAttribute('height', cRect.height);
+    const boxes = {};
+    canvas.querySelectorAll('.erb-entity').forEach(b => {
+      const r = b.getBoundingClientRect();
+      boxes[b.dataset.id] = { left: r.left - cRect.left, right: r.right - cRect.left, top: r.top - cRect.top, bottom: r.bottom - cRect.top };
+    });
+    let html = '<defs><marker id="erb-arrow" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#4A564F"/></marker></defs>';
+    rels.forEach(r => {
+      const a = boxes[r.from], b = boxes[r.to];
+      if (!a || !b) return;
+      const ca = { x: (a.left + a.right) / 2, y: (a.top + a.bottom) / 2 };
+      const cb = { x: (b.left + b.right) / 2, y: (b.top + b.bottom) / 2 };
+      const dx = cb.x - ca.x, dy = cb.y - ca.y;
+      const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+      let p1, p2;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        p1 = { x: dx > 0 ? a.right : a.left, y: clamp((a.top + a.bottom) / 2 + dy / 4, a.top + 12, a.bottom - 12) };
+        p2 = { x: dx > 0 ? b.left : b.right, y: clamp((b.top + b.bottom) / 2 - dy / 4, b.top + 12, b.bottom - 12) };
+      } else {
+        p1 = { x: clamp((a.left + a.right) / 2 + dx / 4, a.left + 24, a.right - 24), y: dy > 0 ? a.bottom : a.top };
+        p2 = { x: clamp((b.left + b.right) / 2 - dx / 4, b.left + 24, b.right - 24), y: dy > 0 ? b.top : b.bottom };
+      }
+      const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+      const w = r.card.length * 7.5 + 16;
+      html += '<line x1="' + p1.x + '" y1="' + p1.y + '" x2="' + p2.x + '" y2="' + p2.y + '" stroke="#4A564F" stroke-width="1.6" marker-end="url(#erb-arrow)"/>';
+      html += '<rect x="' + (mx - w / 2) + '" y="' + (my - 12) + '" width="' + w + '" height="24" rx="6" fill="#EEF0EA" stroke="#A8B0A0"/>';
+      html += '<text x="' + mx + '" y="' + (my + 4) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="700" fill="#1E2A25">' + esc(r.card) + '</text>';
+    });
+    svg.innerHTML = html;
+  }
+
+  function render(){
+    renderSelects();
+    renderCanvas();
+    byId('erb-rel-list').innerHTML = rels.length
+      ? rels.map((r, k) => '<span class="erb-rel-chip">' + esc(nameOf(r.from)) + ' ' + esc(r.card) + ' ' + esc(nameOf(r.to)) + '<span class="erb-rm" data-k="' + k + '" title="remove">✕</span></span>').join('')
+      : '<span class="erb-empty">No relationships yet \u2014 pick two entities and a cardinality, then connect.</span>';
+    byId('erb-rel-list').querySelectorAll('.erb-rm').forEach(x => x.addEventListener('click', () => { rels.splice(+x.dataset.k, 1); render(); }));
+    byId('erb-note').textContent = entities.length
+      ? (selected ? 'Selected: ' + nameOf(selected) + '. Add attributes to it, or click its title bar again to deselect.'
+                  : 'Click an entity\u2019s title bar to select it, then add attributes or connect it to another entity.')
+      : 'Add your first entity to begin.';
+  }
+
+  function init(){
+    if (!byId('erb-canvas')) return;
+    byId('erb-add-entity').addEventListener('click', addEntity);
+    byId('erb-add-attr').addEventListener('click', addAttr);
+    byId('erb-add-rel').addEventListener('click', addRel);
+    byId('erb-entity-name').addEventListener('keydown', ev => { if (ev.key === 'Enter') addEntity(); });
+    byId('erb-attr-name').addEventListener('keydown', ev => { if (ev.key === 'Enter') addAttr(); });
+    render();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

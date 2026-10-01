@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · Window Functions and Views</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --pink:#A73E7A; --pink-soft:#F5E3EE;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:920px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:700px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:hover{opacity:.9;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip:hover{border-color:var(--blue);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.lm-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-answer-btn{background:transparent; color:var(--blue); border:1px solid var(--blue); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-answer-btn:hover:not(:disabled){background:var(--blue-soft);}
+.lm-answer-btn:disabled{color:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed;}
+.lm-key{margin-top:14px; border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:14px 16px;}
+.lm-key-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+.lm-key-row{display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:6px 0; border-bottom:1px dashed var(--rule); font-size:.9em;}
+.lm-key-row:last-child{border-bottom:none;}
+.lm-key-item{flex:1;}
+.lm-key-zone{font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:700; white-space:nowrap;}
+.lm-key-row.ok .lm-key-zone{color:var(--green);}
+.lm-key-row.bad .lm-key-zone{color:var(--rust);}
+.lm-key-row.bad .lm-key-item{color:var(--rust);}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+/* ===== Ranking function explorer ===== */
+.rfe-modes{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
+.rfe-sql{font-family:"IBM Plex Mono",monospace; background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-size:12.5px; line-height:1.6; white-space:pre-wrap; margin:6px 0 18px;}
+.rfe-sql .k{color:#7FB3E0;}
+.rfe-sql .k2{color:#F0A38A;}
+.rfe-sql .k3{color:#C9A0E8;}
+table.rfe-tbl{width:100%; border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-size:12.5px;}
+table.rfe-tbl th{text-align:left; padding:8px 10px; border-bottom:2px solid var(--ink); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); font-weight:700;}
+table.rfe-tbl td{padding:7px 10px; border-bottom:1px solid var(--rule); color:var(--ink);}
+table.rfe-tbl td.rfe-idx{color:var(--ink-soft); width:34px;}
+table.rfe-tbl th.rfe-rkcol,table.rfe-tbl td.rfe-rkcol{text-align:center; width:110px;}
+.rfe-bar{display:inline-block; height:8px; border-radius:4px; background:#BFDCEE; margin-right:8px; vertical-align:middle;}
+.rfe-tie{font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 6px; border-radius:10px; background:var(--rust-soft); color:var(--rust); margin-left:8px;}
+.rfe-rk{display:inline-flex; align-items:center; justify-content:center; width:25px; height:25px; border-radius:50%; font-size:11.5px; font-weight:700; color:#fff; font-family:"IBM Plex Mono",monospace;}
+.rfe-rk.rn{background:var(--blue);}
+.rfe-rk.rank{background:var(--purple);}
+.rfe-rk.dense{background:var(--rust);}
+.rfe-how{border:1.5px solid var(--ink); border-radius:10px; background:#fff; padding:18px 20px; margin-top:22px;}
+.rfe-how h4{margin:0 0 10px; font-size:1.05em;}
+.rfe-how p{margin:0 0 14px; font-size:.94em;}
+.rfe-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.rfe-card{border:1.5px solid var(--rule); border-radius:8px; padding:11px 12px; background:var(--paper);}
+.rfe-card.active{border-color:var(--blue); background:var(--blue-soft);}
+.rfe-card strong{display:block; font-family:"IBM Plex Mono",monospace; font-size:11.5px; margin-bottom:6px;}
+.rfe-card p{margin:0; font-size:.82em; color:var(--ink-soft);}
+.rfe-done{margin-top:18px;}
+@media (max-width:680px){ .rfe-cards{grid-template-columns:1fr;} }
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+table.dbtable{width:100%; border-collapse:collapse; margin:14px 0; font-size:13px; background:var(--code-bg); border-radius:6px; overflow:hidden;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); padding:8px 12px; text-align:left; border-bottom:1px solid var(--code-rule); font-weight:600;}
+table.dbtable td{padding:8px 12px; border-bottom:1px solid var(--code-rule); color:var(--code-text); background:var(--code-bg);}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+/* ---- generic widget shell ---- */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.widget-label:first-of-type{margin-top:0;}
+
+/* ---- Anomaly Interactive ---- */
+.ai-tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+.ai-tab-btn{border:1.5px solid var(--rule-strong); background:#fff; color:var(--ink); border-radius:20px; padding:8px 16px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.ai-tab-btn.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+.ai-panel{display:none;}
+.ai-panel.active{display:block;}
+.ai-steps{display:flex; gap:18px; margin:14px 0; flex-wrap:wrap; font-size:12.5px; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+.ai-steps .step-num{display:inline-flex; width:18px; height:18px; border-radius:50%; background:var(--rule-strong); color:#fff; align-items:center; justify-content:center; font-size:11px; margin-right:6px;}
+.ai-legend{display:flex; gap:16px; font-size:12px; color:var(--ink-soft); margin:8px 0 14px;}
+.ai-legend .swatch{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:middle;}
+.ai-row-deleted{opacity:.45; text-decoration:line-through;}
+.ai-row-deleted td{background:var(--rust-soft) !important;}
+.ai-row-flag td{background:var(--amber-soft) !important;}
+.ai-action-row{display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap;}
+.ai-result{margin-top:14px; display:none;}
+.ai-result.show{display:block;}
+
+/* ---- Schema & Instance Builder ---- */
+.sib-tabs{display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
+.sib-tab-btn{border:1.5px solid var(--rule-strong); background:#fff; color:var(--ink); border-radius:20px; padding:8px 16px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.sib-tab-btn.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.sib-panel{display:none;}
+.sib-panel.active{display:block;}
+.sib-col-row{display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--rule); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
+.sib-col-row input[type=text]{flex:1; font-family:"IBM Plex Mono",monospace; font-size:13.5px; padding:6px 10px; border:1px solid var(--rule-strong); border-radius:6px;}
+.sib-col-row select{font-family:"IBM Plex Mono",monospace; font-size:12.5px; padding:6px 8px; border:1px solid var(--rule-strong); border-radius:6px; background:#fff;}
+.sib-col-remove{background:transparent; border:1px solid var(--rule-strong); color:var(--ink-soft); border-radius:6px; padding:4px 8px; font-size:14px; cursor:pointer; line-height:1;}
+.sib-col-remove:hover{border-color:var(--rust); color:var(--rust);}
+.sib-add-col-btn{border:1.5px dashed var(--rule-strong); background:transparent; color:var(--ink-soft); border-radius:8px; padding:10px; width:100%; cursor:pointer; font-family:"IBM Plex Mono",monospace; font-size:12.5px; margin:6px 0 14px;}
+.sib-add-col-btn:hover{border-color:var(--blue); color:var(--blue);}
+.sib-row-inputs{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+.sib-row-inputs input{font-family:"IBM Plex Mono",monospace; font-size:13px; padding:7px 10px; border:1px solid var(--rule-strong); border-radius:6px; flex:1; min-width:120px;}
+.sib-error{color:var(--rust); font-size:12.5px; margin:6px 0; font-family:"IBM Plex Mono",monospace; display:none;}
+.sib-error.show{display:block;}
+.sib-rowlist{margin:10px 0;}
+.sib-rowlist-item{font-family:"IBM Plex Mono",monospace; font-size:12.5px; background:#fff; border:1px solid var(--rule); border-radius:6px; padding:6px 10px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;}
+.sib-step-nav{display:flex; gap:10px; margin-top:16px;}
+
+/* ---- Anomaly Diagnostic Tester quiz (mirrors act-/nfd- pattern) ---- */
+.adt-quiz{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:18px 0;}
+.adt-quiz-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+.adt-dots{display:inline-flex; gap:6px; align-items:center;}
+.adt-dots .dot{width:9px; height:9px; border-radius:50%; background:var(--rule-strong); display:inline-block;}
+.adt-dots .dot.current{background:var(--ink);}
+.adt-dots .dot.correct{background:var(--green);}
+.adt-dots .dot.incorrect{background:var(--rust);}
+.adt-dots-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-right:8px;}
+.adt-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft);}
+.adt-score b{color:var(--ink); font-size:1.1em;}
+.adt-progressbar{height:3px; background:var(--rule); border-radius:2px; margin:10px 0 18px; overflow:hidden;}
+.adt-progressbar-fill{height:100%; background:var(--blue); transition:width .2s ease;}
+.adt-scenario-card{background:#fff; border:1px solid var(--rule); border-radius:12px; padding:22px 24px;}
+.adt-scenario-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:10px;}
+.adt-scenario-text{font-size:1.05em; margin-bottom:6px;}
+.adt-scenario-text code{background:var(--paper-raised); padding:1px 5px; border-radius:4px;}
+.adt-pick-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:18px 0 10px;}
+.adt-options-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:600px){ .adt-options-grid{grid-template-columns:1fr;} }
+.adt-option-card{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+.adt-option-card:hover{border-color:var(--blue);}
+.adt-option-card.selected{border-color:var(--blue); background:var(--blue-soft);}
+.adt-option-card.correct{border-color:var(--green); background:var(--green-soft);}
+.adt-option-card.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.adt-option-card.disabled{cursor:default;}
+.adt-option-title{font-weight:700; font-size:.98em; font-family:"IBM Plex Mono",monospace;}
+.adt-option-hint{font-size:.8em; color:var(--ink-soft); margin-top:4px;}
+.adt-check-btn{margin-top:18px; padding:10px 20px; border-radius:8px; border:none; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13px; cursor:pointer;}
+.adt-check-btn:disabled{background:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.adt-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.adt-feedback.correct{background:var(--green-soft); color:var(--green);}
+.adt-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.btn.secondary.adt-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.adt-next-btn{margin-top:14px;}
+.adt-quiz-done{text-align:center; padding:24px;}
+.adt-quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical runnable cell (shared) ===== */
+.cell{background:var(--code-bg); border:1px solid var(--code-rule); border-radius:8px; margin:14px 0; overflow:hidden;}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule); font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--code-text);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75; font-family:"IBM Plex Mono",monospace;}
+.cell textarea{width:100%; min-height:0; resize:none; overflow:hidden; display:block; background:var(--code-bg); color:var(--code-text); border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; line-height:1.55; outline:none; tab-size:2;}
+.cell textarea:focus{outline:2px solid var(--blue); outline-offset:-2px;}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.cell .btn{background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace;}
+.cell .btn:hover{opacity:.9;}
+.cell .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.cell .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none; background:var(--code-bg);}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+    <nav>
+      <div class="grp">Foundations</div>
+      <a href="#windows-vs-groupby">Windows vs. GROUP BY</a>
+      <a href="#over-clause">The OVER Clause</a>
+      <div class="grp">Windows</div>
+      <a href="#running-totals">Running Totals</a>
+      <a href="#ranking">Ranking Functions</a>
+      <a href="#ranking-explorer">Ranking Function Explorer</a>
+      <a href="#top-n">Top-N Per Group</a>
+      <a href="#frames">ROWS vs. RANGE</a>
+      <a href="#lag-lead">LAG and LEAD</a>
+      <a href="#over-stepper">The OVER Clause, Step by Step</a>
+      <a href="#window-pipeline">Composing a Pipeline</a>
+      <div class="grp">Views</div>
+      <a href="#views">Views as Interfaces</a>
+      <a href="#with-check-option">The View Boundary</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-collapse">Preserve or Collapse?</a>
+      <a href="#worked-ties">Choosing a Ranking Function</a>
+      <div class="grp">Apply It</div>
+      <a href="#window-diagnostic">Window &amp; View Diagnostic</a>
+      <a href="#window-mapper">Windows, GROUP BY, or a View?</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+      <div class="grp">2026 Status</div>
+      <a href="#modern-landscape">The Modern Database Landscape</a>
+    </nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>Window Functions and Views</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">For most of this course, an aggregate has meant a collapsed answer: ask for a total, and the rows you started with are gone. But a huge class of real questions needs both at once — every row, <em>and</em> a value computed over a group of rows. Window functions answer exactly that. And a view answers a different recurring need: giving many callers one stable, named query instead of asking each of them to reconstruct it. Together they are the last two pieces of the SQL you will write by hand.</p>
+    </header>
+    <section id="windows-vs-groupby">
+      <div class="kicker">Foundations</div>
+      <h2>Windows Preserve Rows; GROUP BY Collapses Them</h2>
+      <p>Every aggregate you have written so far — <code>SUM</code>, <code>COUNT</code>, <code>AVG</code> — went with a <code>GROUP BY</code>, and <code>GROUP BY</code> does exactly one thing: it collapses each group of rows into a single output row. Ask for the total revenue per region and you get one row per region. The individual sales are gone.</p>
+      <p>That collapse is often the right answer, but sometimes you need to keep the detail <em>and</em> attach a group-level value to it. "Show each sale, and next to it the total for that sale's region" is impossible with a plain <code>GROUP BY</code> without a join back to a grouped subquery. A <strong>window function</strong> does it directly: it computes across a set of related rows while leaving every original row in place.</p>
+      <p>The picture below makes the choice concrete with a six-row sales table — a <code>customer</code> column and an <code>amount</code> column. Branch left and you collapse three customers into three rows; branch right and you keep all six rows, each one annotated with its own customer's total.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 760 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A six-row customer and amount table branches two ways: GROUP BY collapses it to one row per customer, while a window function keeps all six rows and adds each customer's total to every row." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="wc-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2F5D8A"/></marker>
+          </defs>
+
+          <!-- ===== the source table ===== -->
+          <rect x="290" y="26" width="160" height="164" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <rect x="290" y="26" width="160" height="26" fill="#F6F7F2"/>
+          <line x1="370" y1="26" x2="370" y2="190" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="290" y1="52" x2="450" y2="52" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="290" y1="75" x2="450" y2="75" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="290" y1="98" x2="450" y2="98" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="290" y1="121" x2="450" y2="121" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="290" y1="144" x2="450" y2="144" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="290" y1="167" x2="450" y2="167" stroke="#C9CFC2" stroke-width="1"/>
+          <rect x="290" y="26" width="160" height="164" fill="none" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="330" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">customer</text>
+          <text x="410" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">amount</text>
+          <text x="330" y="68" text-anchor="middle" font-size="11.5" fill="#1E2A25">Ava</text>
+          <text x="410" y="68" text-anchor="middle" font-size="11.5" fill="#1E2A25">10</text>
+          <text x="330" y="91" text-anchor="middle" font-size="11.5" fill="#1E2A25">Ava</text>
+          <text x="410" y="91" text-anchor="middle" font-size="11.5" fill="#1E2A25">20</text>
+          <text x="330" y="114" text-anchor="middle" font-size="11.5" fill="#1E2A25">Ben</text>
+          <text x="410" y="114" text-anchor="middle" font-size="11.5" fill="#1E2A25">15</text>
+          <text x="330" y="137" text-anchor="middle" font-size="11.5" fill="#1E2A25">Cy</text>
+          <text x="410" y="137" text-anchor="middle" font-size="11.5" fill="#1E2A25">5</text>
+          <text x="330" y="160" text-anchor="middle" font-size="11.5" fill="#1E2A25">Cy</text>
+          <text x="410" y="160" text-anchor="middle" font-size="11.5" fill="#1E2A25">30</text>
+          <text x="330" y="183" text-anchor="middle" font-size="11.5" fill="#1E2A25">Cy</text>
+          <text x="410" y="183" text-anchor="middle" font-size="11.5" fill="#1E2A25">8</text>
+
+          <!-- ===== the two branches ===== -->
+          <line x1="320" y1="194" x2="200" y2="236" stroke="#2F5D8A" stroke-width="2.2" marker-end="url(#wc-arrow)"/>
+          <line x1="440" y1="194" x2="560" y2="236" stroke="#2F5D8A" stroke-width="2.2" marker-end="url(#wc-arrow)"/>
+
+          <text x="190" y="250" text-anchor="middle" font-size="14" font-weight="700" fill="#1E2A25">GROUP BY</text>
+          <text x="190" y="268" text-anchor="middle" font-size="12" fill="#4A564F">(collapses)</text>
+          <text x="570" y="250" text-anchor="middle" font-size="14" font-weight="700" fill="#1E2A25">WINDOW FUNCTION</text>
+          <text x="570" y="268" text-anchor="middle" font-size="12" fill="#4A564F">(keeps all rows)</text>
+
+          <!-- ===== left: collapsed ===== -->
+          <rect x="110" y="290" width="160" height="89" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <rect x="110" y="290" width="160" height="26" fill="#F6F7F2"/>
+          <line x1="190" y1="290" x2="190" y2="379" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="110" y1="316" x2="270" y2="316" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="110" y1="337" x2="270" y2="337" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="110" y1="358" x2="270" y2="358" stroke="#C9CFC2" stroke-width="1"/>
+          <rect x="110" y="290" width="160" height="89" fill="none" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="150" y="307" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1E2A25">customer</text>
+          <text x="230" y="307" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1E2A25">amount</text>
+          <text x="150" y="330" text-anchor="middle" font-size="11.5" fill="#1E2A25">Ava</text>
+          <text x="230" y="330" text-anchor="middle" font-size="11.5" fill="#1E2A25">30</text>
+          <text x="150" y="351" text-anchor="middle" font-size="11.5" fill="#1E2A25">Ben</text>
+          <text x="230" y="351" text-anchor="middle" font-size="11.5" fill="#1E2A25">15</text>
+          <text x="150" y="372" text-anchor="middle" font-size="11.5" fill="#1E2A25">Cy</text>
+          <text x="230" y="372" text-anchor="middle" font-size="11.5" fill="#1E2A25">43</text>
+          <text x="190" y="400" text-anchor="middle" font-size="11" fill="#4A564F">one row per group</text>
+
+          <!-- ===== right: annotated ===== -->
+          <rect x="465" y="290" width="245" height="140" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <rect x="465" y="290" width="245" height="26" fill="#F6F7F2"/>
+          <line x1="545" y1="290" x2="545" y2="430" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="625" y1="290" x2="625" y2="430" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="465" y1="316" x2="710" y2="316" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="465" y1="335" x2="710" y2="335" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="465" y1="354" x2="710" y2="354" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="465" y1="373" x2="710" y2="373" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="465" y1="392" x2="710" y2="392" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="465" y1="411" x2="710" y2="411" stroke="#C9CFC2" stroke-width="1"/>
+          <rect x="465" y="290" width="245" height="140" fill="none" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="505" y="307" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1E2A25">customer</text>
+          <text x="585" y="307" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1E2A25">amount</text>
+          <text x="667" y="306" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1E2A25">total_per_cust</text>
+          <text x="505" y="329" text-anchor="middle" font-size="11.5" fill="#1E2A25">Ava</text>
+          <text x="585" y="329" text-anchor="middle" font-size="11.5" fill="#1E2A25">10</text>
+          <text x="667" y="329" text-anchor="middle" font-size="11.5" fill="#1E2A25">30</text>
+          <text x="505" y="348" text-anchor="middle" font-size="11.5" fill="#1E2A25">Ava</text>
+          <text x="585" y="348" text-anchor="middle" font-size="11.5" fill="#1E2A25">20</text>
+          <text x="667" y="348" text-anchor="middle" font-size="11.5" fill="#1E2A25">30</text>
+          <text x="505" y="367" text-anchor="middle" font-size="11.5" fill="#1E2A25">Ben</text>
+          <text x="585" y="367" text-anchor="middle" font-size="11.5" fill="#1E2A25">15</text>
+          <text x="667" y="367" text-anchor="middle" font-size="11.5" fill="#1E2A25">15</text>
+          <text x="505" y="386" text-anchor="middle" font-size="11.5" fill="#1E2A25">Cy</text>
+          <text x="585" y="386" text-anchor="middle" font-size="11.5" fill="#1E2A25">5</text>
+          <text x="667" y="386" text-anchor="middle" font-size="11.5" fill="#1E2A25">43</text>
+          <text x="505" y="405" text-anchor="middle" font-size="11.5" fill="#1E2A25">Cy</text>
+          <text x="585" y="405" text-anchor="middle" font-size="11.5" fill="#1E2A25">30</text>
+          <text x="667" y="405" text-anchor="middle" font-size="11.5" fill="#1E2A25">43</text>
+          <text x="505" y="424" text-anchor="middle" font-size="11.5" fill="#1E2A25">Cy</text>
+          <text x="585" y="424" text-anchor="middle" font-size="11.5" fill="#1E2A25">8</text>
+          <text x="667" y="424" text-anchor="middle" font-size="11.5" fill="#1E2A25">43</text>
+          <text x="587" y="452" text-anchor="middle" font-size="11" fill="#4A564F">per-row + per-group context</text>
+
+          <text x="380" y="492" text-anchor="middle" font-size="15" font-weight="700" fill="#A1402A">collapse OR annotate — pick one</text>
+        </svg>
+        <figcaption><code>GROUP BY</code> replaces every group with one row; a window function keeps every row and annotates it with the group's total.</figcaption>
+      </figure>
+
+      <p>Read the two queries below side by side. The first returns two rows (one per region). The second returns four — every sale — with the region total repeated beside it.</p>
+      <div class="cell" data-cell="collapse_vs_preserve">
+        <div class="cell-head"><span class="cell-title">collapse_vs_preserve.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Four rows in, four rows out. Keep that sentence in mind: it is the entire difference between a window function and a grouped aggregate.</p>
+    </section>
+
+    <section id="over-clause">
+      <div class="kicker">Foundations</div>
+      <h2>The OVER Clause</h2>
+      <p>A window function is written like an aggregate with a suffix. <code>SUM(amount)</code> is an aggregate; <code>SUM(amount) OVER (...)</code> is a window function. The word <code>OVER</code> is what turns one into the other, and everything inside the parentheses describes <em>which rows the function is allowed to see</em>.</p>
+      <p>The <code>OVER</code> clause has three independent parts, and the third is the one people forget:</p>
+      <table class="compare">
+        <thead><tr><th>Clause</th><th>What it does</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>PARTITION BY</code></td><td>Splits the table into independent groups. The function restarts for each group.</td><td><code>PARTITION BY region</code></td></tr>
+          <tr><td><code>ORDER BY</code></td><td>Orders rows <em>within</em> each partition — this is what makes running totals and ranks possible.</td><td><code>ORDER BY sale_date</code></td></tr>
+          <tr><td>Frame</td><td>Narrows the window to a slice relative to the current row, e.g. the last three rows.</td><td><code>ROWS BETWEEN 2 PRECEDING AND CURRENT ROW</code></td></tr>
+        </tbody>
+      </table>
+      <div class="callout purple"><strong>Order of evaluation.</strong> Window functions are computed <em>after</em> <code>WHERE</code> and <code>GROUP BY</code>, but <em>before</em> the final <code>ORDER BY</code>. That single fact explains why you cannot put a window function in a <code>WHERE</code> clause — the value does not exist yet when <code>WHERE</code> runs.</div>
+      <p>An empty <code>OVER ()</code> means "the whole result set": every row sees every other row. Adding <code>ORDER BY</code> turns the window from "all rows" into "all rows up to and including the current one." Adding <code>PARTITION BY</code> resets that accumulation for each group.</p>
+    </section>
+    <section id="running-totals">
+      <div class="kicker">Windows</div>
+      <h2>Running Totals</h2>
+      <p>The canonical first window function is a running total. Remove <code>PARTITION BY</code> and keep only an <code>ORDER BY</code> inside the <code>OVER</code>, and the frame defaults to "from the start of the partition up to the current row." Each row therefore sees itself and everything ordered before it — and summing that gives a running total.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A five-day sales table where running_total grows 10, 30, 60, 65, 80 because each row adds its own sale to every sale before it." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="ws-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#A1402A"/></marker>
+            <marker id="ws-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2F5D8A"/></marker>
+          </defs>
+
+          <text x="360" y="62" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">Window Functions: SUM(sale) OVER (ORDER BY day)</text>
+          <line x1="600" y1="58" x2="500" y2="108" stroke="#2F5D8A" stroke-width="2" marker-end="url(#ws-blue)"/>
+
+          <!-- ===== the table ===== -->
+          <rect x="150" y="110" width="420" height="180" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <rect x="150" y="110" width="420" height="30" fill="#F6F7F2"/>
+          <line x1="250" y1="110" x2="250" y2="290" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="370" y1="110" x2="370" y2="290" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="150" y1="140" x2="570" y2="140" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="150" y1="170" x2="570" y2="170" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="150" y1="200" x2="570" y2="200" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="150" y1="230" x2="570" y2="230" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="150" y1="260" x2="570" y2="260" stroke="#C9CFC2" stroke-width="1"/>
+          <rect x="150" y="110" width="420" height="180" fill="none" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="200" y="130" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1E2A25">day</text>
+          <text x="310" y="130" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1E2A25">sale</text>
+          <text x="470" y="130" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1E2A25">running_total</text>
+          <text x="200" y="160" text-anchor="middle" font-size="11.5" fill="#1E2A25">Mon</text>
+          <text x="310" y="160" text-anchor="middle" font-size="11.5" fill="#1E2A25">10</text>
+          <text x="470" y="160" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1E2A25">10</text>
+          <text x="200" y="190" text-anchor="middle" font-size="11.5" fill="#1E2A25">Tue</text>
+          <text x="310" y="190" text-anchor="middle" font-size="11.5" fill="#1E2A25">20</text>
+          <text x="470" y="190" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1E2A25">30</text>
+          <text x="200" y="220" text-anchor="middle" font-size="11.5" fill="#1E2A25">Wed</text>
+          <text x="310" y="220" text-anchor="middle" font-size="11.5" fill="#1E2A25">30</text>
+          <text x="470" y="220" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1E2A25">60</text>
+          <text x="200" y="250" text-anchor="middle" font-size="11.5" fill="#1E2A25">Thu</text>
+          <text x="310" y="250" text-anchor="middle" font-size="11.5" fill="#1E2A25">5</text>
+          <text x="470" y="250" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1E2A25">65</text>
+          <text x="200" y="280" text-anchor="middle" font-size="11.5" fill="#1E2A25">Fri</text>
+          <text x="310" y="280" text-anchor="middle" font-size="11.5" fill="#1E2A25">15</text>
+          <text x="470" y="280" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1E2A25">80</text>
+
+          <!-- ===== the per-row increment, feeding the running total ===== -->
+          <text x="610" y="160" font-size="13" font-weight="700" fill="#A1402A">+10</text>
+          <text x="610" y="190" font-size="13" font-weight="700" fill="#A1402A">+20</text>
+          <text x="610" y="220" font-size="13" font-weight="700" fill="#A1402A">+30</text>
+          <text x="610" y="250" font-size="13" font-weight="700" fill="#A1402A">+5</text>
+          <text x="610" y="280" font-size="13" font-weight="700" fill="#A1402A">+15</text>
+          <line x1="592" y1="155" x2="570" y2="155" stroke="#A1402A" stroke-width="2" marker-end="url(#ws-arrow)"/>
+          <line x1="592" y1="185" x2="570" y2="185" stroke="#A1402A" stroke-width="2" marker-end="url(#ws-arrow)"/>
+          <line x1="592" y1="215" x2="570" y2="215" stroke="#A1402A" stroke-width="2" marker-end="url(#ws-arrow)"/>
+          <line x1="592" y1="245" x2="570" y2="245" stroke="#A1402A" stroke-width="2" marker-end="url(#ws-arrow)"/>
+          <line x1="592" y1="275" x2="570" y2="275" stroke="#A1402A" stroke-width="2" marker-end="url(#ws-arrow)"/>
+
+          <text x="360" y="340" text-anchor="middle" font-size="16" font-weight="700" fill="#A1402A">SUM(sale) OVER (ORDER BY day)</text>
+          <text x="360" y="368" text-anchor="middle" font-size="15" fill="#1E2A25">each row sees everything before it</text>
+        </svg>
+        <figcaption>How a running total accumulates values row by row using an ordered window.</figcaption>
+      </figure>
+
+      <div class="cell" data-cell="running_total">
+        <div class="cell-head"><span class="cell-title">running_total.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Now add <code>PARTITION BY department</code> inside the <code>OVER</code>. The running total resets at the first row of each department and starts climbing again — because a partition is an independent window, not a continued one.</p>
+    </section>
+
+    <section id="ranking">
+      <div class="kicker">Windows</div>
+      <h2>Ranking: ROW_NUMBER, RANK, and DENSE_RANK</h2>
+      <p>Three window functions produce ranks, and the only thing that separates them is how they treat a tie. Given the same <code>ORDER BY</code>:</p>
+      <ul>
+        <li><code>ROW_NUMBER()</code> always produces a unique sequence: 1, 2, 3, 4, 5. Ties are broken arbitrarily, so it is <em>not</em> stable unless you add a tie-breaker column.</li>
+        <li><code>RANK()</code> gives tied rows the same rank and then <em>skips</em> the ranks it used up, leaving a gap.</li>
+        <li><code>DENSE_RANK()</code> gives tied rows the same rank and does <em>not</em> skip — the next distinct value gets the very next rank.</li>
+      </ul>
+      <div class="cell" data-cell="rank_functions">
+        <div class="cell-head"><span class="cell-title">rank_functions.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p>With scores <code>100, 100, 90, 80, 80</code> the three columns read: <code>ROW_NUMBER</code> gives <code>1,2,3,4,5</code>; <code>RANK</code> gives <code>1,1,3,4,4</code>; <code>DENSE_RANK</code> gives <code>1,1,2,3,3</code>. "Same rank, skip" versus "same rank, do not skip" is the whole specification.</p>
+    </section>
+    <section id="ranking-explorer">
+      <div class="kicker">Windows</div>
+      <h2>Ranking Function Explorer</h2>
+      <p>The three ranking functions only disagree when the data has ties — and then they disagree loudly. Below is a single 100-metre final: eight athletes, four tie groups, and one ordering of the times. Switch between the three functions and watch the same race get numbered three different ways.</p>
+
+      <div class="widget">
+        <div class="widget-title">Ranking function explorer</div>
+        <div class="widget-sub">See how ties are handled differently by each window function.</div>
+
+        <div class="rfe-modes" id="rfe-modes"></div>
+        <div class="rfe-sql" id="rfe-sql"></div>
+        <div id="rfe-table"></div>
+        <div class="rfe-how" id="rfe-how"></div>
+        <div class="rfe-done" id="rfe-done"></div>
+      </div>
+    </section>
+
+    <section id="top-n">
+      <div class="kicker">Windows</div>
+      <h2>Top-N Per Group</h2>
+      <p>"The two most expensive products in each category" is awkward in plain SQL because you cannot filter on a window function directly — the window is computed after <code>WHERE</code> runs. The standard solution is a two-step pattern: compute the rank in a common table expression, then filter the CTE in the outer query.</p>
+      <div class="cell" data-cell="top_n_per_group">
+        <div class="cell-head"><span class="cell-title">top_n_per_group.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Which function you choose here is a business decision: <code>ROW_NUMBER</code> returns exactly N rows even when there are ties at the cut-off, while <code>DENSE_RANK</code> or <code>RANK</code> can return more, choosing to keep every tied row rather than drop one arbitrarily.</p>
+    </section>
+
+    <section id="frames">
+      <div class="kicker">Windows</div>
+      <h2>ROWS vs. RANGE: What a Frame Includes</h2>
+      <p>When you add <code>ORDER BY</code> to a window, the frame no longer means "all preceding rows" in a simple positional sense — it becomes a choice between counting <em>physical rows</em> and counting <em>peers</em>. <code>ROWS</code> walks row by row. <code>RANGE</code> treats every row with the same <code>ORDER BY</code> value as one unit, and includes all of them together.</p>
+      <div class="cell" data-cell="rows_vs_range">
+        <div class="cell-head"><span class="cell-title">rows_vs_range.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p>Both columns end at the same total (<code>455</code>), but they disagree in the middle: on a day with two rows, <code>ROWS</code> adds only the first of them, while <code>RANGE</code> has already absorbed the whole tied day. The default when you write <code>ORDER BY</code> alone is <code>RANGE UNBOUNDED PRECEDING</code>, which is why running totals on tied dates surprise people.</p>
+    </section>
+
+    <section id="lag-lead">
+      <div class="kicker">Windows</div>
+      <h2>LAG and LEAD: Comparing to Neighbours</h2>
+      <p>Not every window function is an aggregate. <code>LAG</code> and <code>LEAD</code> reach into the window and return the value from the previous or next row. They turn "compare each day to the day before" from a self-join into a single clause — and the first row's <code>LAG</code> is simply <code>NULL</code>, because there is no row before it.</p>
+      <div class="cell" data-cell="lag_lead">
+        <div class="cell-head"><span class="cell-title">lag_lead.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Both accept an optional offset and default: <code>LAG(price, 1, 0)</code> would replace that leading <code>NULL</code> with <code>0</code>. Choosing an explicit default is often clearer than letting the first row come back empty.</p>
+    </section>
+    <section id="over-stepper">
+      <div class="kicker">Windows</div>
+      <h2>The OVER Clause, Step by Step</h2>
+      <p>Build one window function from nothing, adding one piece at a time, and watch how each addition changes the value on the current row. This is the same query from the running-total section, dissected.</p>
+
+      <div class="widget">
+        <div class="widget-title">Building an OVER Clause</div>
+        <div class="widget-sub">SUM(salary) OVER ( PARTITION BY dept ORDER BY employee_id )</div>
+        <div class="qstep-rail" id="ovsstep-rail"></div>
+        <div class="qstep-body" id="ovsstep-body"></div>
+        <div class="qstep-controls">
+          <button class="qstep-restart-btn" id="ovsstep-back">◀ Back</button>
+          <button class="qstep-next-btn" id="ovsstep-next">Next step ▶</button>
+          <button class="qstep-restart-btn" id="ovsstep-restart">↺ Restart</button>
+          <span class="qstep-count" id="ovsstep-count"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="window-pipeline">
+      <div class="kicker">Windows</div>
+      <h2>Composing a Pipeline</h2>
+      <p>Real analytics queries compose several window functions in one pass over a CTE. The recurring shape is a four-beat pattern you can apply to almost any question: <strong>partition → order → compute → filter</strong>.</p>
+      <ol>
+        <li><strong>Partition</strong> — decide what "a group" means in this question (region, customer, day).</li>
+        <li><strong>Order</strong> — decide what "before" means within the group (by date, by amount).</li>
+        <li><strong>Compute</strong> — stack the window functions you need: a running total, a rank, a neighbour comparison.</li>
+        <li><strong>Filter</strong> — wrap the result in a CTE or subquery and keep only the rows you actually want.</li>
+      </ol>
+      <div class="cell" data-cell="analytics_pipeline">
+        <div class="cell-head"><span class="cell-title">analytics_pipeline.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="cell" data-cell="window_in_where">
+        <div class="cell-head"><span class="cell-title">window_in_where.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">The second cell starts with the mistake on purpose: filtering on a window function in the same query is a parse error, because the window is not computed until after <code>WHERE</code>. The fix — a subquery — is the same "compute, then filter" beat the pipeline uses.</p>
+    </section>
+    <section id="views">
+      <div class="kicker">Views</div>
+      <h2>Views: Reusable Data Interfaces</h2>
+      <p>A <strong>view</strong> is a named, stored query. You write <code>CREATE VIEW name AS SELECT ...</code> once, and from then on every caller can treat <code>name</code> like a table: <code>SELECT * FROM name</code>. The view stores no rows of its own — when you query it, the database runs its definition and hands you the result.</p>
+      <p>The reason views matter is not convenience, it is <em>consistency of access</em>. If five reports each hand-write the same complicated filter, a change to the rule has to be applied in five places, and someone will miss one. Put the rule in a view, and every report reads the same definition. Restrict which columns a role can see, and the view becomes a permission boundary as well as a convenience.</p>
+      <div class="cell" data-cell="view_interface">
+        <div class="cell-head"><span class="cell-title">view_interface.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p>There is a second reason views appear in real schemas: compatibility. When a table is restructured, a view with the <em>old</em> shape can sit in front of the new tables, and applications that only ever read the view keep working. The view absorbs the change.</p>
+    </section>
+
+    <section id="with-check-option">
+      <div class="kicker">Views</div>
+      <h2>The View Boundary: When a Row Vanishes</h2>
+      <p>Because a view is defined by a <code>WHERE</code> clause, a row can be visible through the view at one moment and gone from it the next — even though nothing was deleted. If the underlying row stops satisfying the view's predicate, it simply drops out of the view's result. Watch it happen.</p>
+      <div class="cell" data-cell="view_boundary">
+        <div class="cell-head"><span class="cell-title">view_boundary.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p>The view's <code>WHERE</code> clause is a <em>filter</em>, not a boundary. Standard SQL gives you a way to make it a boundary: <code>WITH CHECK OPTION</code>. When a view is updatable and declared with <code>WITH CHECK OPTION</code>, the database refuses any write that would push a row out of the view's predicate. The rule becomes an integrity constraint in its own right.</p>
+      <div class="callout amber"><strong>Engine note.</strong> SQLite (and therefore the in-browser engine here) does not implement auto-updatable views or <code>WITH CHECK OPTION</code>; a SQLite view is read-only unless you attach an <code>INSTEAD OF</code> trigger. PostgreSQL, MySQL, and Oracle do support both, and this is where the feature is normally taught:</div>
+      <div class="schema-line">CREATE VIEW cheap_products AS
+  SELECT id, name, price FROM products WHERE price &lt; 100
+  WITH CHECK OPTION;   -- PostgreSQL: rejects any update that breaks price &lt; 100</div>
+      <p class="small">The idea transfers regardless of engine: a view is an access rule, and <code>WITH CHECK OPTION</code> is how standard SQL lets you enforce that rule on writes as well as reads.</p>
+    </section>
+    <section id="worked-collapse">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Preserve or Collapse?</h2>
+      <p>A marketing team wants a report of daily sales. They also want each row to show what fraction of that day's total it represents. A grouped aggregate seems natural:</p>
+      <div class="schema-line">SELECT day, SUM(amount) AS day_total
+FROM Sales GROUP BY day;</div>
+      <p>This gives one row per day — but the individual sales are gone, so there is no "each row" left to show a fraction of. The question conflates two different outputs. The window version keeps the detail:</p>
+      <div class="schema-line">SELECT day, amount,
+       SUM(amount) OVER (PARTITION BY day) AS day_total,
+       ROUND(amount * 100.0 / SUM(amount) OVER (PARTITION BY day), 1) AS pct
+FROM Sales;</div>
+      <p>Both queries are correct — they answer different questions. The habit to build is this: before you write an aggregate, ask whether the answer should <em>replace</em> the rows or <em>annotate</em> them. Replace means <code>GROUP BY</code>; annotate means <code>OVER</code>.</p>
+      <p class="small">A tempting middle path is <code>GROUP BY</code> followed by a join back to the base table. It works, but it scans the data twice and buries the intent. The window version says what it means in one pass.</p>
+    </section>
+
+    <section id="worked-ties">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Choosing a Ranking Function</h2>
+      <p>A scholarship committee will award exactly three grants to the three highest scorers. Six students apply; two of them tie for second place. The choice of ranking function now decides who gets the third grant.</p>
+      <table class="compare">
+        <thead><tr><th>Student</th><th>Score</th><th>ROW_NUMBER</th><th>RANK</th><th>DENSE_RANK</th></tr></thead>
+        <tbody>
+          <tr><td>Ana</td><td>98</td><td>1</td><td>1</td><td>1</td></tr>
+          <tr><td>Ben</td><td>95</td><td>2</td><td>2</td><td>2</td></tr>
+          <tr><td>Cleo</td><td>95</td><td>3</td><td>2</td><td>2</td></tr>
+          <tr><td>Dai</td><td>91</td><td>4</td><td>4</td><td>3</td></tr>
+          <tr><td>Eve</td><td>88</td><td>5</td><td>5</td><td>4</td></tr>
+          <tr><td>Fay</td><td>88</td><td>6</td><td>5</td><td>4</td></tr>
+        </tbody>
+      </table>
+      <p>Filtering each to the top three tells three different stories:</p>
+      <ul>
+        <li><code>ROW_NUMBER() &lt;= 3</code> returns Ana, Ben, and Cleo — it silently picks one of the tied pair and drops the other, which is unfair unless a documented tie-breaker exists.</li>
+        <li><code>RANK() &lt;= 3</code> also returns three students, but only because the gap lands after Cleo. Change the scores slightly and it could return two or return four.</li>
+        <li><code>DENSE_RANK() &lt;= 3</code> returns four students (Ana, Ben, Cleo, Dai) — it treats "three distinct scores" as the target, not "three students."</li>
+      </ul>
+      <p>The lesson is not that one function is right. It is that "out of six applicants pick the three best" is under-specified when there are ties, and the ranking function is where you make the tie policy explicit.</p>
+    </section>
+    <section id="window-diagnostic">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Window &amp; View Diagnostic</h2>
+      <p>Ten short scenarios. Decide what a query needs — a grouped aggregate, a window function, a ranking function, or a view — and which one an interviewer would expect you to reach for.</p>
+      <div id="wfv-quiz-mount"></div>
+    </section>
+
+    <section id="window-mapper">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Windows, GROUP BY, or a View?</h2>
+      <p>Every requirement below is a sentence a stakeholder might say. Sort each one by the SQL tool that answers it best. The three tools overlap less than they look like they do.</p>
+
+      <div class="widget">
+        <div class="widget-title">Which Tool Answers This?</div>
+        <div class="widget-sub">GROUP BY collapses · a window preserves · a view saves a query</div>
+        <div class="widget-label">Requirements to place</div>
+        <div class="lm-bank" id="wmbank"></div>
+        <div class="lm-zones">
+          <div class="lm-zone z-a" data-zone="groupby"><div class="lm-zone-head">GROUP BY — collapses rows</div><div id="wmzone-groupby"></div></div>
+          <div class="lm-zone z-b" data-zone="window"><div class="lm-zone-head">Window function — keeps rows</div><div id="wmzone-window"></div></div>
+          <div class="lm-zone z-c" data-zone="view"><div class="lm-zone-head">View — a saved query</div><div id="wmzone-view"></div></div>
+        </div>
+        <div class="lm-hint">Tip: click a requirement, then click a tool. Click a placed item to send it back.</div>
+        <div class="qstep-controls">
+          <button class="lm-check-btn" id="wmcheck">Check mapping</button>
+          <button class="lm-answer-btn" id="wmanswer" disabled>Show correct mapping</button>
+          <button class="lm-restart-btn" id="wmrestart">↺ Restart</button>
+          <span class="lm-score" id="wmscore"></span>
+        </div>
+        <div id="wmfeedback"></div>
+        <div id="wmkey"></div>
+      </div>
+    </section>
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. Rank without collapsing</h4>
+        <p>Given <code>Employee(eid, name, dept, salary)</code>, write one query that returns every employee together with their salary rank inside their own department (highest salary = rank 1), keeping all employees in the output.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <div class="schema-line">SELECT eid, name, dept, salary,
+       RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS dept_rank
+FROM Employee;</div>
+            <p><code>PARTITION BY dept</code> restarts the ranking for each department; <code>ORDER BY salary DESC</code> makes the highest salary rank 1. Every employee row survives because a window function annotates rather than collapses. If you wanted strictly one row per salary value you would use <code>DENSE_RANK</code> instead.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Why did this query fail?</h4>
+        <p>A developer writes:</p>
+        <div class="schema-line">SELECT name, salary
+FROM Employee
+WHERE RANK() OVER (ORDER BY salary DESC) &lt;= 10;</div>
+        <p>Explain the error and give the corrected query.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>Window functions are evaluated <em>after</em> the <code>WHERE</code> clause, so at the moment <code>WHERE</code> runs the rank does not exist yet. The engine rejects the reference. Compute the rank one level down and filter the outer query:</p>
+            <div class="schema-line">SELECT name, salary FROM (
+  SELECT name, salary, RANK() OVER (ORDER BY salary DESC) AS rk
+  FROM Employee
+) WHERE rk &lt;= 10;</div>
+            <p>This "compute in a subquery or CTE, filter outside" shape is the standard workaround and the reason the four-beat pipeline ends with a filter.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Running total or region total?</h4>
+        <p>Given <code>Sales(region, sale_date, amount)</code>, write (a) a running total per region over time, and (b) one row per sale showing the region's grand total. What is the difference in the <code>OVER</code> clause?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <div class="schema-line">-- (a) running total per region
+SELECT region, sale_date, amount,
+       SUM(amount) OVER (PARTITION BY region ORDER BY sale_date) AS running
+FROM Sales;
+
+-- (b) region grand total beside each sale
+SELECT region, sale_date, amount,
+       SUM(amount) OVER (PARTITION BY region) AS region_total
+FROM Sales;</div>
+            <p>The only difference is the <code>ORDER BY</code> inside the window. Without it, the frame is the whole partition, so you get the grand total. With it, the frame grows row by row, so you get a running total. Same function, same partition, different frame.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. When is a view the right tool?</h4>
+        <p>You support three internal reports that all filter to the same subset of a large <code>Orders</code> table. A colleague suggests copying the filtered rows into a new table refreshed nightly. Give two reasons a view is preferable.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <ul>
+              <li><strong>Always current.</strong> A view re-runs its definition on every read, so it never serves stale data; a nightly copy is wrong for up to twenty-four hours.</li>
+              <li><strong>One definition of the rule.</strong> Change the filter in the view and all three reports change together; a copied table means three silent copies of the rule and a data-redundancy problem of exactly the kind this course opened with.</li>
+            </ul>
+            <p>A materialised view is the honest middle ground when performance genuinely demands a stored copy — but that is a caching decision on top of the logical view, not a replacement for it.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p class="interview-lede">Window functions are one of the clearest senior/junior signals in a SQL interview. A candidate who reaches for a self-join where a window would do, or who cannot explain why a window cannot go in <code>WHERE</code>, is usually not yet comfortable with the execution model.</p>
+
+        <p><strong>"What's the difference between GROUP BY and a window function?"</strong> The strong answer is about rows: <code>GROUP BY</code> collapses each group to one row, while a window function computes across a set of related rows and keeps every row. Then name the win: a window avoids the join-back-to-a-grouped-subquery pattern that grouped aggregates otherwise require.</p>
+
+        <p><strong>"ROW_NUMBER, RANK, or DENSE_RANK?"</strong> Recite the tie behaviour, not just the names: <code>ROW_NUMBER</code> is unique and arbitrary on ties; <code>RANK</code> ties then skips; <code>DENSE_RANK</code> ties then does not skip. Then connect it to a requirement — "for a strict top-N I would use <code>ROW_NUMBER</code> with an explicit tie-breaker, because the business asked for exactly N rows."</p>
+
+        <p><strong>"Why can't I use a window function in WHERE?"</strong> Because of evaluation order: <code>WHERE</code> runs before window functions are computed. The fix is a CTE or subquery that computes the window, filtered by the outer query. Being able to state the logical order — <code>FROM → WHERE → GROUP BY → window → ORDER BY → LIMIT</code> — is the mark of someone who has actually used these.</p>
+
+        <p><strong>"What is a view for?"</strong> Say plainly: a saved query that gives many callers one consistent access path — simplifying a complex rule, restricting columns or rows for a role, or preserving a stable interface while the underlying tables change. If asked about writes, mention that simple views are updatable in standard SQL and <code>WITH CHECK OPTION</code> turns the view's predicate into a write-time constraint.</p>
+
+        <p><strong>Rule of thumb.</strong></p>
+        <ul class="criteria-list">
+          <li><span class="c-num">•</span>Ask "do I want the rows replaced or annotated?" before choosing between <code>GROUP BY</code> and <code>OVER</code>.</li>
+          <li><span class="c-num">•</span>When ties exist, the ranking function <em>is</em> the tie policy — make it explicit.</li>
+          <li><span class="c-num">•</span>A view is a named query you can reason about like a table; <code>WITH CHECK OPTION</code> is what makes it a boundary you can trust on writes.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="modern-landscape">
+      <div class="kicker">2026 Status</div>
+      <h2>The Modern Database Landscape</h2>
+      <p>Window functions and views were standardised decades ago, and they have only become more central as analytics moved into the operational database. Where a company once copied data into a separate warehouse before it could compute a running total, most stack decisions in 2026 assume analytical SQL — window functions, CTEs, and views — runs directly against the same tables the application writes to.</p>
+      <ul>
+        <li><strong>Analytical SQL everywhere.</strong> PostgreSQL, MySQL 9, SQL Server, Oracle, DuckDB, Snowflake, and BigQuery all implement the core window functions in this lecture. The clause syntax you learned here is portable across the entire industry.</li>
+        <li><strong>Materialised views and "live" tables.</strong> Managed platforms (PostgreSQL, Snowflake, BigQuery, and the managed Postgres behind most serverless stacks) let a view be materialised and incrementally refreshed, so the same definition serves both correctness and performance.</li>
+        <li><strong>Views as an API boundary.</strong> PostgREST, Supabase, Hasura, and similar tools expose database views as HTTP endpoints directly, which makes "a view is a stable interface" a literal product feature rather than a metaphor.</li>
+        <li><strong>AI-generated SQL raises the stakes.</strong> An assistant will happily write a window function for you — and just as happily put it in a <code>WHERE</code> clause. Knowing the evaluation order is what lets you read the generated query and catch the mistake before it reaches production.</li>
+      </ul>
+      <p>The two ideas in this lecture are the last hand-written pieces of SQL in the course: windows let you compute across related rows without losing them, and views let you name a query once and trust every caller to use it consistently. Everything after this — transactions, indexing, physical design — assumes you are fluent in both.</p>
+    </section>
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+<a class="pgnav-prev" href="index.html">← All playgrounds</a>
+        <a class="pgnav-pos" href="index.html">Playground 13 of 15</a>
+        <a class="pgnav-next" href="14_fd_keys_playground.html">14. Functional Dependencies and Keys →</a>
+      </nav>
+    </footer>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ===== Canonical runnable-cell engine (shared by every playground) ===== */
+const CELLS = {
+  collapse_vs_preserve: {
+    setup: ``,
+    starter: `-- GROUP BY collapses many rows into one; a window keeps every row.
+CREATE TABLE Sales (id INTEGER PRIMARY KEY, region TEXT, sale_date TEXT, amount INT);
+INSERT INTO Sales VALUES
+  (1,'East','2026-01-01',100),
+  (2,'East','2026-01-02', 50),
+  (3,'East','2026-01-03',200),
+  (4,'West','2026-01-01', 75);
+
+-- Collapse: one row per region.
+SELECT region, SUM(amount) AS region_total
+FROM Sales
+GROUP BY region;
+
+-- Preserve: one row per sale, with the region total beside it.
+SELECT id, region, sale_date, amount,
+       SUM(amount) OVER (PARTITION BY region) AS region_total
+FROM Sales;
+-- 4 rows in, 4 rows out. That is the whole difference.` },
+  running_total: {
+    setup: ``,
+    starter: `-- OVER (ORDER BY ...) with no PARTITION BY = one running total over all rows.
+CREATE TABLE Payroll (employee_id INT PRIMARY KEY, name TEXT, salary INT);
+INSERT INTO Payroll VALUES
+  (1,'Ana',5000),(2,'Ben',6000),(3,'Cleo',7000),(4,'Dai',5500);
+
+SELECT employee_id, name, salary,
+       SUM(salary) OVER (ORDER BY employee_id) AS running_payroll
+FROM Payroll;
+-- Try it: add PARTITION BY and the running total restarts for each group.` },
+  rank_functions: {
+    setup: ``,
+    starter: `CREATE TABLE Scores (name TEXT, score INT);
+INSERT INTO Scores VALUES ('A',100),('B',100),('C',90),('D',80),('E',80);
+
+SELECT name, score,
+       ROW_NUMBER() OVER (ORDER BY score DESC) AS row_number,
+       RANK()       OVER (ORDER BY score DESC) AS rank,
+       DENSE_RANK() OVER (ORDER BY score DESC) AS dense_rank
+FROM Scores;
+-- ROW_NUMBER breaks ties arbitrarily; RANK skips; DENSE_RANK does not.` },
+  top_n_per_group: {
+    setup: ``,
+    starter: `CREATE TABLE Products (id INT PRIMARY KEY, name TEXT, category TEXT, price INT);
+INSERT INTO Products VALUES
+  (1,'P1','A',10),(2,'P2','A',90),(3,'P3','B',20),
+  (4,'P4','B',80),(5,'P5','B',50);
+
+-- A window cannot go in WHERE (it is computed after WHERE),
+-- so rank inside a CTE first, then filter outside.
+WITH ranked AS (
+  SELECT name, category, price,
+         DENSE_RANK() OVER (PARTITION BY category ORDER BY price DESC) AS price_rank
+  FROM Products
+)
+SELECT category, name, price, price_rank
+FROM ranked
+WHERE price_rank <= 2
+ORDER BY category, price_rank;` },
+  rows_vs_range: {
+    setup: ``,
+    starter: `CREATE TABLE Ledger (day TEXT, amount INT);
+INSERT INTO Ledger VALUES
+  ('2026-01-01',100),('2026-01-01',50),
+  ('2026-01-02',200),('2026-01-02',30),
+  ('2026-01-03',75);
+
+SELECT day, amount,
+  SUM(amount) OVER (ORDER BY day ROWS  BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS rows_frame,
+  SUM(amount) OVER (ORDER BY day RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS range_frame
+FROM Ledger;
+-- ROWS counts physical rows; RANGE treats tied ORDER BY values as one peer group.` },
+  lag_lead: {
+    setup: ``,
+    starter: `CREATE TABLE Stock (day TEXT PRIMARY KEY, price INT);
+INSERT INTO Stock VALUES ('2026-01-01',10),('2026-01-02',12),('2026-01-03',11);
+
+SELECT day, price,
+       LAG(price)  OVER (ORDER BY day) AS yesterday,
+       LEAD(price) OVER (ORDER BY day) AS tomorrow,
+       price - LAG(price) OVER (ORDER BY day) AS change
+FROM Stock;
+-- The first row's LAG is NULL: there is no row before it.` },
+  analytics_pipeline: {
+    setup: ``,
+    starter: `-- Pattern: partition -> order -> compute -> filter.
+CREATE TABLE Orders (id INT PRIMARY KEY, region TEXT, day TEXT, amount INT);
+INSERT INTO Orders VALUES
+  (1,'East','2026-01-01',100),(2,'East','2026-01-02',120),
+  (3,'East','2026-01-03', 80),(4,'West','2026-01-01',200),
+  (5,'West','2026-01-02',150),(6,'West','2026-01-03', 90);
+
+WITH scored AS (
+  SELECT region, day, amount,
+         SUM(amount) OVER (PARTITION BY region ORDER BY day) AS running_total,
+         ROW_NUMBER() OVER (PARTITION BY region ORDER BY amount DESC) AS amount_rank
+  FROM Orders
+)
+SELECT region, day, amount, running_total, amount_rank
+FROM scored
+ORDER BY region, day;` },
+  window_in_where: {
+    setup: ``,
+    starter: `CREATE TABLE T (n INT);
+INSERT INTO T VALUES (10),(20),(30),(40);
+
+-- This FAILS: a window function is computed AFTER WHERE, so it
+-- cannot be referenced in the WHERE clause of the same query.
+SELECT n, ROW_NUMBER() OVER (ORDER BY n) AS rn
+FROM T
+WHERE ROW_NUMBER() OVER (ORDER BY n) <= 2;
+
+-- The fix: compute the window in a subquery, then filter outside it.
+-- Comment out the failing query above, then Run to watch this one work:
+SELECT n, rn FROM (
+  SELECT n, ROW_NUMBER() OVER (ORDER BY n) AS rn FROM T
+)
+WHERE rn <= 2;` },
+  view_interface: {
+    setup: ``,
+    starter: `CREATE TABLE Grades (student_id TEXT, course TEXT, grade REAL);
+INSERT INTO Grades VALUES
+  ('s1','Databases',3.7),('s1','Algorithms',3.3),('s2','Databases',3.9);
+
+-- A view is a saved query you can treat like a table.
+CREATE VIEW CSReports AS
+SELECT student_id, course, grade
+FROM Grades
+WHERE course = 'Databases';
+
+SELECT * FROM CSReports;
+-- One definition, every caller. Change it once, everyone follows.` },
+  view_boundary: {
+    setup: ``,
+    starter: `CREATE TABLE Products (id INTEGER PRIMARY KEY, name TEXT, price INT);
+INSERT INTO Products VALUES (1,'Cheap',5),(2,'Pricey',500);
+
+CREATE VIEW CheapProducts AS
+SELECT * FROM Products WHERE price < 100;
+
+SELECT * FROM CheapProducts;   -- only id 1
+
+-- Change the base row so it no longer satisfies the view's predicate:
+UPDATE Products SET price = 500 WHERE id = 1;
+
+SELECT * FROM CheapProducts;   -- empty: the row "vanished" from the view
+SELECT * FROM Products;        -- but it still exists in the table
+
+-- The view's WHERE is a filter, not a boundary. Standard SQL's
+-- WITH CHECK OPTION would reject that write instead.` }
+};
+let SQL = null;
+async function pgModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+function pgEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pgTable(cols, rows){
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of cols) html += `<th>${pgEsc(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const r of rows){ html += '<tr>'; for (const v of r) html += `<td>${v === null ? '<em>NULL</em>' : pgEsc(v)}</td>`; html += '</tr>'; }
+  return html + '</tbody></table>';
+}
+function pgHint(m){
+  m = String(m).toLowerCase();
+  if (m.includes('misuse of window function')) return 'A window function is computed after WHERE, so it cannot be referenced in the same WHERE clause. Compute it in a subquery or CTE, then filter the outer query.';
+  if (m.includes('window functions are not allowed in where')) return 'A window function is computed after WHERE, so it cannot be referenced in the same WHERE clause. Wrap the query and filter the outer one.';
+  if (m.includes('no such column')) return 'Check the spelling of the column in your SELECT, ORDER BY, or OVER clause.';
+  if (m.includes('syntax error')) return 'A syntax error — check the OVER clause parentheses and commas.';
+  if (m.includes('view') && m.includes('already exists')) return 'That view already exists. Reset the cell, or use a different view name.';
+  return null;
+}
+async function pgRun(setup, main, out){
+  out.innerHTML = ''; out.classList.remove('err'); out.classList.add('show');
+  try{
+    const M = await pgModule();
+    const db = new M.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setup && setup.trim()) db.run(setup);
+    let html = '', had = false;
+    for (const stmt of db.iterateStatements(main)){
+      const cols = stmt.getColumnNames(); const rows = [];
+      while (stmt.step()) rows.push(stmt.get());
+      if (cols.length){ html += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length === 1 ? '' : 's'}</div>` + pgTable(cols, rows); had = true; }
+    }
+    if (!had) html = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    out.innerHTML = html; db.close();
+  } catch(e){
+    const h = pgHint(e.message);
+    out.innerHTML = `<div style="color:#F0A38A;">✖ ${pgEsc(e.message)}${h ? `<br><span style="opacity:.85">${pgEsc(h)}</span>` : ''}</div>`;
+    out.classList.add('err');
+  }
+}
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+function pgWire(cellEl){
+  const spec = CELLS[cellEl.getAttribute('data-cell')]; if (!spec) return;
+  const ta = cellEl.querySelector('textarea');
+  const out = cellEl.querySelector('.cell-output');
+  const run = cellEl.querySelector('.run-btn');
+  const reset = cellEl.querySelector('.reset-btn');
+  ta.value = spec.starter; pgGrow(ta);
+  ta.addEventListener('input', () => pgGrow(ta));
+  ta.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){ e.preventDefault(); pgRun(spec.setup, ta.value, out); } });
+  run.addEventListener('click', () => pgRun(spec.setup, ta.value, out));
+  reset.addEventListener('click', () => { ta.value = spec.starter; pgGrow(ta); out.classList.remove('show', 'err'); out.innerHTML = ''; });
+}
+function pgInit(){ document.querySelectorAll('.cell[data-cell]').forEach(pgWire); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pgInit); else pgInit();
+</script>
+<script>
+/* ============ Window & View Diagnostic quiz (wfv prefix) ============ */
+const WFV_QUESTIONS = [
+  {
+    scenario: `A report must show <em>every</em> sale row from <code>Sales(region, sale_date, amount)</code>, and beside each sale the total amount for that sale's region. Which construct keeps all rows?`,
+    options: [
+      { title: 'SUM(amount) OVER (PARTITION BY region)', hint: 'A window over the partition', correct: true },
+      { title: 'SUM(amount) with GROUP BY region', hint: 'A grouped aggregate', correct: false },
+      { title: 'MAX(amount) with GROUP BY region', hint: 'A grouped aggregate', correct: false },
+      { title: 'COUNT(*) with GROUP BY region', hint: 'A grouped aggregate', correct: false },
+    ],
+    feedback: '✓ Correct. <code>SUM(...) OVER (PARTITION BY region)</code> computes the region total and repeats it on every row, so all sales survive. Any <code>GROUP BY</code> collapses the rows first, leaving nothing to annotate.',
+  },
+  {
+    scenario: `A scholarship committee will award exactly three grants to the three highest scorers. Two applicants tie for second place. Which ranking function returns <em>exactly three</em> rows?`,
+    options: [
+      { title: 'ROW_NUMBER()', hint: 'Unique 1..N, arbitrary on ties', correct: true },
+      { title: 'RANK()', hint: 'Ties then skips', correct: false },
+      { title: 'DENSE_RANK()', hint: 'Ties then does not skip', correct: false },
+      { title: 'COUNT(*) OVER ()', hint: 'Counts rows in the window', correct: false },
+    ],
+    feedback: '✓ Correct. Only <code>ROW_NUMBER()</code> is guaranteed to produce a unique integer per row, so filtering <code>&lt;= 3</code> returns exactly three rows. That is also its danger: it silently drops one of the tied applicants unless you add an explicit tie-breaker.',
+  },
+  {
+    scenario: `A developer writes <code>SELECT name FROM Employee WHERE RANK() OVER (ORDER BY salary DESC) &lt;= 10;</code> and the engine rejects it. Why?`,
+    options: [
+      { title: 'Window functions are computed after WHERE, so the rank does not exist yet', hint: 'Evaluation order', correct: true },
+      { title: 'RANK() is not a valid function name', hint: 'A spelling problem', correct: false },
+      { title: 'You must GROUP BY salary first', hint: 'A missing clause', correct: false },
+      { title: 'ORDER BY is not allowed inside OVER', hint: 'A window rule', correct: false },
+    ],
+    feedback: '✓ Correct. Logical evaluation runs <code>FROM → WHERE → GROUP BY → windows → ORDER BY</code>. <code>WHERE</code> is evaluated before the window is computed, so the rank value is not available there. Compute it in a subquery or CTE and filter the outer query.',
+  },
+  {
+    scenario: `<code>SELECT SUM(salary) OVER (ORDER BY employee_id) AS running FROM Payroll;</code> returns a running total. What does an empty <code>OVER ()</code> — no ORDER BY — change it to?`,
+    options: [
+      { title: 'The grand total, repeated on every row', hint: 'The frame is the whole partition', correct: true },
+      { title: 'The same running total', hint: 'No change', correct: false },
+      { title: 'An error — ORDER BY is required', hint: 'A syntax rule', correct: false },
+      { title: 'One row, collapsing the table', hint: 'Grouped behaviour', correct: false },
+    ],
+    feedback: '✓ Correct. Without <code>ORDER BY</code> the frame is the entire partition, so the sum is the partition total and it appears on every row. Adding <code>ORDER BY</code> shrinks the frame to "rows up to the current one," producing a running total. Same function; different frame.',
+  },
+  {
+    scenario: `On a day with two ledger rows, a <code>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code> frame and a <code>RANGE</code> frame give different running totals. What is the difference?`,
+    options: [
+      { title: 'ROWS counts physical rows; RANGE treats tied ORDER BY values as one peer group', hint: 'Physical vs. peer', correct: true },
+      { title: 'ROWS is faster but less accurate', hint: 'A performance claim', correct: false },
+      { title: 'RANGE ignores the ORDER BY entirely', hint: 'A window rule', correct: false },
+      { title: 'They are identical; the difference is a bug', hint: 'No difference', correct: false },
+    ],
+    feedback: '✓ Correct. <code>ROWS</code> walks one physical row at a time, so on a tied day it stops mid-group. <code>RANGE</code> absorbs every row sharing the current <code>ORDER BY</code> value at once. That is why running totals on tied dates surprise people — and why <code>RANGE</code> is the default.',
+  },
+  {
+    scenario: `<code>LAG(price) OVER (ORDER BY day)</code> returns <code>NULL</code> for the first (earliest) day. Is that a bug?`,
+    options: [
+      { title: 'No — there is no previous row for the first row', hint: 'Expected behaviour', correct: true },
+      { title: 'Yes — LAG should wrap around to the last row', hint: 'A wrap idea', correct: false },
+      { title: 'Yes — the data must be sorted wrong', hint: 'A sorting problem', correct: false },
+      { title: 'No — but LAG always returns NULL', hint: 'An over-strong claim', correct: false },
+    ],
+    feedback: '✓ Correct. <code>LAG</code> looks backward within the window; the first row has nothing behind it, so it gets <code>NULL</code>. Supply a default with <code>LAG(price, 1, 0)</code> if you would rather not see the empty cell, but the <code>NULL</code> itself is correct.',
+  },
+  {
+    scenario: `A team creates <code>CREATE VIEW CSReports AS SELECT ... FROM Grades WHERE course = 'Databases';</code>. What does the view store?`,
+    options: [
+      { title: 'The query definition, not the rows', hint: 'A saved query', correct: true },
+      { title: 'A physical copy of the matching rows', hint: 'A materialised copy', correct: false },
+      { title: 'Only the column names, no logic', hint: 'An empty shell', correct: false },
+      { title: 'Nothing at all — views cannot be saved', hint: 'A false claim', correct: false },
+    ],
+    feedback: '✓ Correct. An ordinary view stores its <em>definition</em>; the rows are produced each time it is queried against the base tables. That is why it is always current, and why a change to the definition instantly reaches every caller.',
+  },
+  {
+    scenario: `A view is defined with <code>WHERE price &lt; 100</code>. A write pushes a row's price to 500, and the row silently disappears from the view. What standard-SQL feature turns the view's predicate into a write-time constraint?`,
+    options: [
+      { title: 'WITH CHECK OPTION', hint: 'A guarded boundary', correct: true },
+      { title: 'ALTER VIEW', hint: 'Changes the definition', correct: false },
+      { title: 'A UNIQUE index', hint: 'A physical constraint', correct: false },
+      { title: 'GRANT SELECT', hint: 'A permission', correct: false },
+    ],
+    feedback: '✓ Correct. On an updatable view, <code>WITH CHECK OPTION</code> makes the database reject any write that would push a row out of the view\'s own predicate — turning "a filter you can fall out of" into "a boundary you cannot cross." SQLite does not implement it; PostgreSQL, MySQL, and Oracle do.',
+  },
+  {
+    scenario: `You need "the two most expensive products in each category." Why is a window function required rather than <code>WHERE price_rank &lt;= 2</code> directly in one query?`,
+    options: [
+      { title: 'The rank is computed after WHERE, so it must be produced in a CTE or subquery, then filtered outside', hint: 'Compute, then filter', correct: true },
+      { title: 'WHERE cannot compare integers', hint: 'A type claim', correct: false },
+      { title: 'GROUP BY is mandatory with a window function', hint: 'A false rule', correct: false },
+      { title: 'You must use RANK() rather than DENSE_RANK()', hint: 'A function claim', correct: false },
+    ],
+    feedback: '✓ Correct. The pattern is always the same: compute the window in a CTE, then apply the row filter in the outer query. That is the fourth beat — <strong>filter</strong> — of the partition → order → compute → filter pipeline.',
+  },
+  {
+    scenario: `Three internal reports all need the same filtered subset of <code>Orders</code>. Which choice best answers every report with one definition of the rule?`,
+    options: [
+      { title: 'A view containing the filter', hint: 'One shared definition', correct: true },
+      { title: 'A nightly copy of the filtered rows into a new table', hint: 'Redundant storage', correct: false },
+      { title: 'Each report hand-writing the filter', hint: 'Three copies of the rule', correct: false },
+      { title: 'A trigger that rewrites every query', hint: 'An unrelated mechanism', correct: false },
+    ],
+    feedback: '✓ Correct. A view gives every caller the same current definition. A nightly copy is stale for up to a day and creates three silent copies of the rule — the redundancy problem this course opened with. A materialised view is the honest middle ground only when performance genuinely demands it.',
+  },
+];
+
+let wfvState = { qi: 0, selected: null, checked: false, results: [] };
+function wfvEsc(s){ return String(s); }
+function wfvDotsHtml(){
+  let html = '';
+  for (let i = 0; i < WFV_QUESTIONS.length; i++){
+    let cls = 'dot';
+    if (i === wfvState.qi) cls += ' current';
+    else if (wfvState.results[i] === true) cls += ' correct';
+    else if (wfvState.results[i] === false) cls += ' incorrect';
+    html += `<span class="${cls}"></span>`;
+  }
+  return html;
+}
+function wfvScoreVal(){ return wfvState.results.filter(r => r === true).length; }
+function wfvQuestionHtml(){
+  const q = WFV_QUESTIONS[wfvState.qi];
+  const pct = (wfvState.qi / WFV_QUESTIONS.length) * 100;
+  const optsHtml = q.options.map((o, i) => {
+    let cls = 'adt-option-card';
+    if (wfvState.checked) { cls += ' disabled'; if (o.correct) cls += ' correct'; else if (i === wfvState.selected) cls += ' incorrect'; }
+    else if (i === wfvState.selected) cls += ' selected';
+    return `<div class="${cls}" data-idx="${i}"><div class="adt-option-title">${pgEsc(o.title)}</div>${o.hint ? `<div class="adt-option-hint">${pgEsc(o.hint)}</div>` : ''}</div>`;
+  }).join('');
+  return `
+    <div class="adt-quiz-head">
+      <div><span class="adt-dots-label">Scenario</span><span class="adt-dots">${wfvDotsHtml()}</span></div>
+      <div class="adt-score">Score: <b>${wfvScoreVal()} / ${WFV_QUESTIONS.length}</b></div>
+    </div>
+    <div class="adt-progressbar"><div class="adt-progressbar-fill" style="width:${pct}%"></div></div>
+    <div class="adt-scenario-card">
+      <div class="adt-scenario-label">Scenario</div>
+      <div class="adt-scenario-text">${q.scenario}</div>
+      <div class="adt-pick-label">Pick the best answer</div>
+      <div class="adt-options-grid" id="wfv-options-grid">${optsHtml}</div>
+      <button class="adt-check-btn" id="wfv-check-btn" ${wfvState.selected === null ? 'disabled' : ''}>Check answer</button>
+      ${wfvState.checked ? `<div class="adt-feedback ${q.options[wfvState.selected] && q.options[wfvState.selected].correct ? 'correct' : 'incorrect'}">${q.feedback}</div><button class="btn adt-next-btn" id="wfv-next-btn">${wfvState.qi === WFV_QUESTIONS.length - 1 ? 'See score →' : 'Next →'}</button>` : ''}
+    </div>`;
+}
+function wfvDoneHtml(){
+  const score = wfvScoreVal();
+  return `<div class="adt-quiz-done"><div class="big-score">${score} / ${WFV_QUESTIONS.length}</div><p>${score === WFV_QUESTIONS.length ? 'Perfect score.' : 'Review the ones you missed above, then try again.'}</p><button class="btn secondary adt-restart-btn" id="wfv-restart-btn">↺ Restart quiz</button></div>`;
+}
+function wfvRenderQuiz(){
+  const mount = document.getElementById('wfv-quiz-mount');
+  if (!mount) return;
+  if (wfvState.qi >= WFV_QUESTIONS.length){
+    mount.innerHTML = `<div class="adt-quiz">${wfvDoneHtml()}</div>`;
+    document.getElementById('wfv-restart-btn').addEventListener('click', () => { wfvState = { qi: 0, selected: null, checked: false, results: [] }; wfvRenderQuiz(); });
+    return;
+  }
+  mount.innerHTML = `<div class="adt-quiz">${wfvQuestionHtml()}</div>`;
+  document.querySelectorAll('#wfv-quiz-mount .adt-option-card').forEach(card => {
+    card.addEventListener('click', () => { if (wfvState.checked) return; wfvState.selected = +card.dataset.idx; wfvRenderQuiz(); });
+  });
+  const checkBtn = document.getElementById('wfv-check-btn');
+  if (checkBtn) checkBtn.addEventListener('click', () => {
+    if (wfvState.selected === null) return;
+    wfvState.checked = true;
+    wfvState.results[wfvState.qi] = !!WFV_QUESTIONS[wfvState.qi].options[wfvState.selected].correct;
+    wfvRenderQuiz();
+  });
+  const nextBtn = document.getElementById('wfv-next-btn');
+  if (nextBtn) nextBtn.addEventListener('click', () => { wfvState.qi++; wfvState.selected = null; wfvState.checked = false; wfvRenderQuiz(); });
+}
+document.addEventListener('DOMContentLoaded', wfvRenderQuiz);
+</script>
+<script>
+/* ===== Play-and-learn widget kit: Building an OVER clause ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const STEPS = [
+    { name: '1 · Raw rows', tag: 'the input',
+      action: 'Start with the grouped aggregate everyone knows: one row per department, the rows collapsed. A window function will not do this — remember the goal is to keep every row.',
+      artLabel: 'Artifact · collapsed',
+      art: 'SELECT dept, SUM(salary) AS total\nFROM Payroll\nGROUP BY dept\n\n  rows   : 4  ->  2    (collapsed!)\n  schema : { dept, total }' },
+    { name: '2 · Add OVER ()', tag: 'keep every row',
+      action: 'Add OVER () and the same SUM keeps every row. With an empty OVER the frame is the whole table, so each row sees the grand total of all salaries.',
+      artLabel: 'Artifact · grand total repeated',
+      art: 'SELECT dept, name, salary,\n       SUM(salary) OVER () AS grand_total\nFROM Payroll\n\n  rows   : 4  ->  4    (preserved)\n  grand_total : same value on every row' },
+    { name: '3 · Add ORDER BY', tag: 'running total',
+      action: 'Add an ORDER BY inside OVER. Without a PARTITION BY, the frame now runs from the first row up to the current one, so the sum climbs row by row across the whole table.',
+      artLabel: 'Artifact · one running total',
+      art: 'SELECT dept, name, salary,\n       SUM(salary) OVER (ORDER BY employee_id) AS running\nFROM Payroll\n\n  running : 5000, 11000, 18000, 23500\n  (never resets — the window never restarts)' },
+    { name: '4 · Add PARTITION BY', tag: 'per group',
+      action: 'Add PARTITION BY dept. The table splits into independent windows and the running total restarts at the first row of each department. This is the clause people forget, and it is the one that turns a global total into a per-group one.',
+      artLabel: 'Artifact · running total per dept',
+      art: 'SELECT dept, name, salary,\n       SUM(salary) OVER (PARTITION BY dept\n                         ORDER BY employee_id) AS running\nFROM Payroll\n\n  each dept: its own window, its own reset\n  rows kept : 4 / 4' },
+    { name: '5 · Add a frame', tag: 'control the slice',
+      action: 'Finally narrow the window with a frame. "Last three rows" or "previous row only" is expressed with ROWS BETWEEN. ROWS counts physical rows; RANGE — the default when ORDER BY is present — treats tied values as one peer group.',
+      artLabel: 'Artifact · a 3-row sliding window',
+      art: 'AVG(salary) OVER (ORDER BY employee_id\n                   ROWS BETWEEN 2 PRECEDING\n                   AND CURRENT ROW) AS moving_avg\n\n  window   : current row + the two before it\n  ROWS     : physical rows\n  RANGE    : tied ORDER BY values count as one' },
+  ];
+  let i = 0;
+  const rail = byId('ovsstep-rail'), body = byId('ovsstep-body');
+  if (!body) return;
+  function railRender(){
+    rail.innerHTML = STEPS.map((s, k) =>
+      `<div class="qstep-node${k === i ? ' active' : (k < i ? ' done' : '')}" data-i="${k}"><span class="qstep-idx">${k + 1}</span>${esc(s.name)}</div>`).join('');
+    rail.querySelectorAll('.qstep-node').forEach(n => n.addEventListener('click', () => { i = +n.dataset.i; render(); }));
+  }
+  function render(){
+    const s = STEPS[i];
+    body.innerHTML =
+      `<div class="qstep-head"><div class="qstep-name">${esc(s.name)}</div><div class="qstep-layer">${esc(s.tag)}</div></div>` +
+      `<div class="qstep-action">${esc(s.action)}</div>` +
+      `<div class="qstep-art"><span class="art-label">${esc(s.artLabel)}</span>${esc(s.art)}</div>`;
+    railRender();
+    byId('ovsstep-count').textContent = `Step ${i + 1} of ${STEPS.length}`;
+    byId('ovsstep-back').disabled = i === 0;
+    byId('ovsstep-next').disabled = i === STEPS.length - 1;
+  }
+  byId('ovsstep-back').addEventListener('click', () => { if (i > 0) { i--; render(); } });
+  byId('ovsstep-next').addEventListener('click', () => { if (i < STEPS.length - 1) { i++; render(); } });
+  byId('ovsstep-restart').addEventListener('click', () => { i = 0; render(); });
+  render();
+})();
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: Windows, GROUP BY, or a View? ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const ZONES = ['groupby', 'window', 'view'];
+  const ITEMS = [
+    { id: 'g1', text: 'Total revenue per region', zone: 'groupby' },
+    { id: 'g2', text: 'Average GPA per department', zone: 'groupby' },
+    { id: 'g3', text: 'How many orders were placed, as one number', zone: 'groupby' },
+    { id: 'w1', text: "Each sale with its region's total beside it", zone: 'window' },
+    { id: 'w2', text: 'Running total of salaries in hire order', zone: 'window' },
+    { id: 'w3', text: 'Rank products within each category', zone: 'window' },
+    { id: 'w4', text: "Compare each day's price to yesterday's", zone: 'window' },
+    { id: 'v1', text: 'Restrict an application to only its own rows', zone: 'view' },
+    { id: 'v2', text: 'Give analysts a stable, named interface to a subset of columns', zone: 'view' },
+  ];
+  let placed = {}, selected = null, checked = false;
+  const bank = byId('wmbank');
+  if (!bank) return;
+  function keyHtml(){
+    return '<div class="lm-key"><div class="lm-key-head">Correct mapping</div>' +
+      ITEMS.map(it => {
+        const ok = placed[it.id] === it.zone;
+        const h = document.querySelector('.lm-zone[data-zone="' + it.zone + '"] .lm-zone-head');
+        const name = h ? h.textContent.split('·')[0].trim() : it.zone;
+        return '<div class="lm-key-row ' + (ok ? 'ok' : 'bad') + '"><span class="lm-key-item">' + (ok ? '✓' : '✗') + ' ' + esc(it.text) + '</span><span class="lm-key-zone">' + esc(name) + '</span></div>';
+      }).join('') + '</div>';
+  }
+  function render(){
+    const rest = ITEMS.filter(it => !placed[it.id]);
+    bank.innerHTML = rest.length ? rest.map(it =>
+      `<div class="lm-chip${selected === it.id ? ' selected' : ''}" data-id="${it.id}">${esc(it.text)}</div>`).join('')
+      : `<span class="lm-hint" style="margin:0;">${checked ? 'All requirements placed and checked.' : 'All requirements placed — press “Check mapping”.'}</span>`;
+    bank.querySelectorAll('.lm-chip').forEach(chip => chip.addEventListener('click', () => {
+      if (checked) return;
+      selected = selected === chip.dataset.id ? null : chip.dataset.id;
+      render();
+    }));
+    ZONES.forEach(z => {
+      byId('wmzone-' + z).innerHTML = ITEMS.filter(it => placed[it.id] === z).map(it => {
+        let cls = 'lm-item';
+        if (checked) cls += it.zone === z ? ' correct' : ' incorrect';
+        return `<div class="${cls}" data-id="${it.id}">${esc(it.text)}</div>`;
+      }).join('');
+      byId('wmzone-' + z).querySelectorAll('.lm-item').forEach(el => el.addEventListener('click', () => {
+        if (checked) return;
+        delete placed[el.dataset.id]; selected = null; render();
+      }));
+    });
+    document.querySelectorAll('.lm-zone').forEach(z => z.classList.toggle('armed', !!selected));
+    byId('wmcheck').disabled = Object.keys(placed).length < ITEMS.length;
+    byId('wmanswer').disabled = !checked;
+    if (!checked) byId('wmscore').textContent = `${Object.keys(placed).length} of ${ITEMS.length} placed`;
+  }
+  document.querySelectorAll('.lm-zone').forEach(z => z.addEventListener('click', () => {
+    if (checked || !selected) return;
+    placed[selected] = z.dataset.zone; selected = null; render();
+  }));
+  byId('wmcheck').addEventListener('click', () => {
+    checked = true;
+    const wrong = ITEMS.filter(it => placed[it.id] !== it.zone);
+    const score = ITEMS.length - wrong.length;
+    byId('wmfeedback').innerHTML = wrong.length === 0
+      ? `<div class="lm-feedback correct">✓ ${score} / ${ITEMS.length}. The dividing line is rows: <code>GROUP BY</code> <em>replaces</em> the rows with one per group, a window <em>annotates</em> every row, and a view <em>saves</em> a query so every caller gets the same answer.</div>`
+      : `<div class="lm-feedback incorrect">✗ ${score} / ${ITEMS.length}. The red ones are misplaced — click “Restart”. Ask: does the answer replace the rows, keep them, or merely name a query others should reuse?</div>`;
+    render();
+    byId('wmscore').textContent = `${score} / ${ITEMS.length} correct`;
+  });
+  byId('wmanswer').addEventListener('click', () => { byId('wmkey').innerHTML = keyHtml(); });
+  byId('wmrestart').addEventListener('click', () => {
+    placed = {}; selected = null; checked = false;
+    byId('wmfeedback').innerHTML = ''; byId('wmkey').innerHTML = ''; render();
+  });
+  render();
+})();
+</script>
+
+<script>
+/* ===== Ranking function explorer ===== */
+(function () {
+  const byId = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const RACE = [
+    ['Amara Osei', 10.82], ['Lena Vogel', 10.95], ['Ji-Ho Park', 10.95],
+    ['Renata Cruz', 11.07], ['Mei Tanaka', 11.07], ['Sofia Reyes', 11.07],
+    ["Dara O'Brien", 11.24], ['Fatou Diallo', 11.38]
+  ];
+
+  /* Ranks verified against the sqlite3 CLI first:
+     ROW_NUMBER 1..8  ·  RANK 1,2,2,4,4,4,7,8  ·  DENSE_RANK 1,2,2,3,3,3,4,5 */
+  function rankList(mode) {
+    let rank = 0, dense = 0, prev;
+    return RACE.map((r, i) => {
+      if (prev === undefined || r[1] !== prev) { rank = i + 1; dense += 1; }
+      prev = r[1];
+      return mode === 'rn' ? i + 1 : mode === 'rank' ? rank : dense;
+    });
+  }
+
+  const CARD_TEXT = {
+    rn: 'Unique number every row. No ties, no gaps. Order within ties is arbitrary.',
+    rank: 'Ties share the same rank. Next rank skips (gaps appear after tied groups).',
+    dense: 'Ties share the same rank. No gaps — the next distinct value is always +1.'
+  };
+
+  const MODES = [
+    { id:'rn', btn:'ROW_NUMBER()', col:'Row number', cls:'rn', fn:'ROW_NUMBER()',
+      sql:'SELECT name, time,\n       ROW_NUMBER() OVER (ORDER BY time) AS rn\nFROM race_results;',
+      note:'<strong>ROW_NUMBER()</strong> assigns a unique sequential integer to every row regardless of ties. Even if two athletes finish at the same time, they get different numbers. The order between ties is arbitrary (database-dependent). No gaps, no repeats — every row is numbered 1, 2, 3, … In this race <strong>Lena Vogel</strong> and <strong>Ji-Ho Park</strong> both ran <code>10.95s</code>, yet one is given 2 and the other 3, and nothing in the data decides which.' },
+    { id:'rank', btn:'RANK()', col:'Rank', cls:'rank', fn:'RANK()',
+      sql:'SELECT name, time,\n       RANK() OVER (ORDER BY time) AS rnk\nFROM race_results;',
+      note:'<strong>RANK()</strong> gives tied rows the same rank, then skips the following ranks. If three athletes share 4th place, they all get rank 4 and the next athlete jumps straight to rank 7. This creates gaps in the ranking sequence — just like podium scoring in competitions. Here the <code>10.95s</code> pair both get rank 2, so the next distinct time starts at <code>4</code>: the three <code>11.07s</code> runs take 4, 4, 4 and <strong>Dara O\u2019Brien</strong> lands on 7.' },
+    { id:'dense', btn:'DENSE_RANK()', col:'Dense rank', cls:'dense', fn:'DENSE_RANK()',
+      sql:'SELECT name, time,\n       DENSE_RANK() OVER (ORDER BY time) AS drnk\nFROM race_results;',
+      note:'<strong>DENSE_RANK()</strong> also gives tied rows the same rank, but never skips. After three athletes share rank 3 the next distinct value gets rank 4, so there are no gaps. This is useful when you need a compact ordinal count of distinct positions. Here the race is treated as having exactly <code>5</code> distinct times, not 8 places: the <code>11.07s</code> trio all take 3 and <strong>Dara O\u2019Brien</strong> gets 4.' }
+  ];
+  const explored = {};
+
+  /* keywords in one pass, so a word inside the SQL is never re-wrapped */
+  function sqlHtml(sql) {
+    const re = /(--[^\n]*)|(\bSELECT\b|\bFROM\b)|(\bROW_NUMBER\(\)|\bRANK\(\)|\bDENSE_RANK\(\))/g;
+    const out = [];
+    let last = 0, m;
+    while ((m = re.exec(sql)) !== null) {
+      out.push(esc(sql.slice(last, m.index)));
+      const cls = m[1] ? 'k3' : m[2] ? 'k' : 'k2';
+      out.push('<span class="' + cls + '">' + esc(m[0]) + '</span>');
+      last = m.index + m[0].length;
+    }
+    out.push(esc(sql.slice(last)));
+    return out.join('');
+  }
+
+  function tableHtml(mode, ranks) {
+    const rows = RACE.map((r, i) => {
+      const prev = i > 0 ? ranks[i - 1] : null;
+      const next = i < ranks.length - 1 ? ranks[i + 1] : null;
+      const tied = ranks[i] === prev || ranks[i] === next;
+      const w = Math.round(40 + (r[1] - 10.5) * 100);
+      return '<tr>' +
+        '<td class="rfe-idx">' + (i + 1) + '</td>' +
+        '<td>' + esc(r[0]) + (tied ? '<span class="rfe-tie">tie</span>' : '') + '</td>' +
+        '<td><span class="rfe-bar" style="width:' + w + 'px"></span>' + r[1].toFixed(2) + 's</td>' +
+        '<td class="rfe-rkcol"><span class="rfe-rk ' + mode.cls + '">' + ranks[i] + '</span></td>' +
+      '</tr>';
+    }).join('');
+    return '<table class="rfe-tbl"><thead><tr>' +
+      '<th>#</th><th>Athlete</th><th>Time (s)</th><th class="rfe-rkcol">' + esc(mode.col) + '</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function render(mode) {
+    explored[mode.id] = true;
+    byId('rfe-modes').querySelectorAll('.rfe-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.id === mode.id));
+    byId('rfe-sql').innerHTML = sqlHtml(mode.sql);
+    byId('rfe-table').innerHTML = tableHtml(mode, rankList(mode.id));
+    byId('rfe-how').innerHTML =
+      '<h4>How ' + esc(mode.fn) + ' works</h4>' +
+      '<p>' + mode.note + '</p>' +
+      '<div class="rfe-cards">' + MODES.map(m =>
+        '<div class="rfe-card' + (m.id === mode.id ? ' active' : '') + '">' +
+          '<strong>' + esc(m.btn) + '</strong><p>' + esc(CARD_TEXT[m.id]) + '</p>' +
+        '</div>').join('') + '</div>';
+    const seen = MODES.filter(m => explored[m.id]).length;
+    byId('rfe-done').innerHTML = seen === MODES.length
+      ? '<div class="callout green">✓ You\u2019ve explored all three ranking functions!</div>'
+      : '';
+  }
+
+  function init() {
+    const m = byId('rfe-modes');
+    if (!m) return;
+    m.innerHTML = MODES.map(x => '<button class="rfe-mode-btn" data-id="' + x.id + '">' + esc(x.btn) + '</button>').join('');
+    m.querySelectorAll('.rfe-mode-btn').forEach(b =>
+      b.addEventListener('click', () => render(MODES.filter(x => x.id === b.dataset.id)[0])));
+    render(MODES[0]);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

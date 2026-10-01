@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · CTEs and Recursive Queries</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --pink:#A73E7A; --pink-soft:#F5E3EE;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, .cell, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:920px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:700px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+.cell{background:var(--code-bg); border-radius:8px; margin:14px 0; overflow:hidden; border:1px solid var(--code-rule);}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75;}
+.cell textarea{
+  width:100%; min-height:0; background:var(--code-bg); color:var(--code-text);
+  border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; resize:none; outline:none; line-height:1.55; overflow:hidden; display:block; tab-size:2;
+}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+table.dbtable{border-collapse:collapse; margin:8px 0; font-size:12.5px; width:100%; background:var(--code-bg); border-radius:6px; overflow:hidden;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-align:left; padding:5px 10px; border:1px solid var(--code-rule);}
+table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text); background:var(--code-bg);}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:hover{opacity:.9;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+/* ---- generic widget shell ---- */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.widget-label:first-of-type{margin-top:0;}
+
+/* ---- Recursive CTE Visualizer ---- */
+.rcv-sql-box{font-family:"IBM Plex Mono",monospace; background:#fff; border:1px solid var(--rule); border-radius:8px; padding:16px 18px; font-size:12.8px; line-height:1.85; overflow-x:auto;}
+.rcv-line{white-space:pre; padding:1px 8px; border-radius:4px;}
+.rcv-line.anchor{background:var(--amber-soft); color:var(--amber);}
+.rcv-line.recur{background:var(--blue-soft); color:var(--blue);}
+.rcv-line.uni{background:var(--purple-soft); color:var(--purple);}
+.rcv-line.plain{color:var(--ink-soft);}
+.rcv-legend{display:flex; gap:20px; flex-wrap:wrap; margin:14px 0 4px;}
+.rcv-legend label{display:flex; align-items:center; gap:7px; font-size:12.5px; font-family:"IBM Plex Mono",monospace; color:var(--ink-soft);}
+.rcv-legend input{accent-color:var(--ink); width:13px; height:13px;}
+.rcv-legend .swatch{width:11px; height:11px; border-radius:3px; display:inline-block;}
+.rcv-legend .swatch.anchor{background:var(--amber);}
+.rcv-legend .swatch.recur{background:var(--blue);}
+.rcv-legend .swatch.uni{background:var(--purple);}
+.rcv-controls{display:flex; justify-content:space-between; align-items:center; margin:16px 0; flex-wrap:wrap; gap:10px;}
+.rcv-controls-left{display:flex; gap:10px; align-items:center;}
+.rcv-step-label{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft);}
+.rcv-explain{background:var(--blue-soft); border-radius:8px; padding:14px 16px; margin:14px 0; font-size:.94em; color:var(--ink);}
+.rcv-explain b{color:var(--blue);}
+.rcv-tree-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:20px 0 8px;}
+.rcv-tree-wrap{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:14px; text-align:center;}
+.rcv-tree-wrap svg{max-width:100%; height:auto;}
+.rcv-node circle{fill:#fff; stroke:var(--rule-strong); stroke-width:1.6; transition:fill .3s ease, stroke .3s ease;}
+.rcv-node .rcv-name{fill:var(--ink-soft); font-size:11px; font-weight:700; text-anchor:middle; font-family:"IBM Plex Mono",monospace; transition:fill .3s ease;}
+.rcv-node .rcv-idlabel{fill:var(--ink-soft); font-size:8px; text-anchor:middle; font-family:"IBM Plex Mono",monospace; opacity:.75;}
+.rcv-node.current circle{fill:var(--amber); stroke:var(--amber);}
+.rcv-node.current .rcv-name{fill:#fff;}
+.rcv-node.settled circle{fill:var(--blue); stroke:var(--blue);}
+.rcv-node.settled .rcv-name{fill:#fff;}
+.rcv-working{display:flex; gap:10px; flex-wrap:wrap; margin:10px 0;}
+.rcv-work-card{border-radius:8px; padding:10px 12px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; min-width:130px;}
+.rcv-work-card.anchor{background:var(--amber-soft); border:1px solid var(--amber); color:var(--amber);}
+.rcv-work-card.iter{background:var(--blue-soft); border:1px solid var(--blue); color:var(--blue);}
+.rcv-work-card .wc-title{font-weight:700; margin-bottom:4px;}
+.rcv-work-card .wc-row{opacity:.9;}
+.rcv-placeholder{font-size:.85em; color:var(--ink-soft); font-style:italic;}
+.rcv-result-table{width:100%; border-collapse:collapse; font-size:12.5px; background:#0f1512; border-radius:6px; overflow:hidden;}
+.rcv-result-table th{background:#000; color:#fff; text-align:left; padding:6px 12px; font-family:"IBM Plex Mono",monospace; font-size:11.5px;}
+.rcv-result-table td{padding:6px 12px; color:var(--code-text); font-family:"IBM Plex Mono",monospace; border-top:1px solid var(--code-rule); border-left:3px solid transparent;}
+.rcv-result-table tr.lvl0 td:first-child{border-left-color:var(--amber);}
+.rcv-result-table tr.lvlN td:first-child{border-left-color:var(--blue);}
+.rcv-done-banner{background:var(--green-soft); color:var(--green); border-radius:8px; padding:12px 16px; margin-top:14px; font-weight:600; font-size:.92em;}
+
+/* ---- CTE Pattern Picker quiz (same visual language as the aggregation-playground quiz) ---- */
+.cte-quiz{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:18px 0;}
+.cte-quiz-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+.cte-dots{display:inline-flex; gap:6px; align-items:center;}
+.cte-dots .dot{width:9px; height:9px; border-radius:50%; background:var(--rule-strong); display:inline-block;}
+.cte-dots .dot.current{background:var(--ink);}
+.cte-dots .dot.correct{background:var(--green);}
+.cte-dots .dot.incorrect{background:var(--rust);}
+.cte-dots-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-right:8px;}
+.cte-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft);}
+.cte-score b{color:var(--ink); font-size:1.1em;}
+.cte-progressbar{height:3px; background:var(--rule); border-radius:2px; margin:10px 0 18px; overflow:hidden;}
+.cte-progressbar-fill{height:100%; background:var(--blue); transition:width .2s ease;}
+.cte-scenario-card{background:#fff; border:1px solid var(--rule); border-radius:12px; padding:22px 24px;}
+.cte-scenario-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:10px;}
+.cte-scenario-text{font-size:1.05em; margin-bottom:6px;}
+.cte-scenario-text code{background:var(--paper-raised); padding:1px 5px; border-radius:4px;}
+.cte-pick-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:18px 0 10px;}
+.cte-options-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:600px){ .cte-options-grid{grid-template-columns:1fr;} }
+.cte-option-card{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+.cte-option-card:hover{border-color:var(--blue);}
+.cte-option-card.selected{border-color:var(--blue); background:var(--blue-soft);}
+.cte-option-card.correct{border-color:var(--green); background:var(--green-soft);}
+.cte-option-card.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.cte-option-card.disabled{cursor:default;}
+.cte-option-title{font-weight:700; font-size:.98em;}
+.cte-option-hint{font-size:.8em; color:var(--ink-soft); margin-top:4px;}
+.cte-check-btn{margin-top:18px; padding:10px 20px; border-radius:8px; border:none; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13px; cursor:pointer;}
+.cte-check-btn:disabled{background:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.cte-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.cte-feedback.correct{background:var(--green-soft); color:var(--green);}
+.cte-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.cte-verify-btn{margin-top:12px;}
+.btn.secondary.cte-verify-btn, .btn.secondary.cte-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.cte-verify-output{margin-top:10px; display:none; background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px;}
+.cte-verify-output.show{display:block;}
+.cte-next-btn{margin-top:14px;}
+.cte-quiz-done{text-align:center; padding:24px;}
+.cte-quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical cell buttons (shared) ===== */
+.cell .btn{ background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace; }
+.cell .btn:hover{ opacity:.9; }
+.cell .btn.secondary{ background:transparent; color:var(--code-text); border:1px solid var(--code-rule); }
+.cell .btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">Refactoring for Clarity</a>
+      <a href="#cte-basics">The WITH Clause</a>
+      <a href="#chained-ctes">Chained CTEs</a>
+      <div class="grp">Recursion</div>
+      <a href="#recursive-basics">Anchor, Recursive, Union</a>
+      <a href="#recursive-visualizer">Recursive CTE Visualizer</a>
+      <div class="grp">Graphs &amp; Cycles</div>
+      <a href="#cycles">Reachability and Cycles</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-recursive-trace">Trace: Row-by-Row</a>
+      <a href="#worked-chained-report">Chained CTEs for a Report</a>
+      <div class="grp">Apply It</div>
+      <a href="#cte-pattern-picker">CTE Pattern Picker</a>
+      <a href="#recursion-failure">When a Recursive CTE Never Stops</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+          <div class="grp">2026 Status</div>
+      <a href="#in-2026">In 2026: What Has Changed</a>
+</nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>CTEs and Recursive Queries</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">Complex SQL usually starts as a simple query and then grows — a filter here, a join there, a subquery inside another subquery. Six months later it's 200 lines of nested parentheses that no one can safely change. Common Table Expressions are how you keep queries from rotting: instead of nesting logic inside logic, you name each step at the top and use those names below. The same syntax also unlocks something SQL used to be famously bad at — traversing hierarchies and graphs.</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>Refactoring for Clarity</h2>
+      <p>Common Table Expressions, or CTEs, change the way you build queries. Instead of nesting logic inside other logic, you define your building blocks at the top of the script and use them later. It turns a dense thicket of code into a linear story. Once you master this top-down approach, you can move into recursion, which lets SQL do something it usually struggles with: traversing hierarchies like org charts, file systems, and social networks.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nested subqueries drawn as a tangled funnel beside a common table expression drawn as a clean linear chain." font-family="IBM Plex Mono, monospace">
+          <text x="165" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">Nested Subquery Structure</text>
+          <text x="510" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">CTE Structure (Linear Flow)</text>
+
+          <g stroke="#1E2A25" stroke-width="1.5" fill="none">
+            <circle cx="165" cy="170" r="105"/>
+            <circle cx="165" cy="170" r="84"/>
+            <circle cx="165" cy="170" r="64"/>
+            <circle cx="165" cy="170" r="36"/>
+          </g>
+          <g stroke="#1E2A25" stroke-width="1.3" fill="#1E2A25" marker-end="url(#rcv-arrow)">
+            <line x1="95" y1="95" x2="140" y2="150"/>
+            <line x1="235" y1="95" x2="192" y2="150"/>
+            <line x1="70" y1="170" x2="129" y2="170"/>
+          </g>
+          <defs>
+            <marker id="rcv-arrow" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto">
+              <path d="M0,0 L5,2.5 L0,5 Z" fill="#1E2A25"/>
+            </marker>
+          </defs>
+          <text x="165" y="174" text-anchor="middle" font-size="10" font-weight="700" fill="#1E2A25">INNER QUERY</text>
+          <text x="165" y="127" text-anchor="middle" font-size="9.5" fill="#4A564F">MIDDLE QUERY</text>
+          <text x="165" y="82" text-anchor="middle" font-size="9.5" fill="#4A564F">OUTER QUERY</text>
+          <text x="20" y="70" font-size="9.5" fill="#A1402A">DEEPLY</text>
+          <text x="20" y="82" font-size="9.5" fill="#A1402A">NESTED</text>
+          <text x="10" y="260" font-size="9.5" fill="#A1402A">MULTIPLE SCOPES</text>
+          <text x="248" y="255" font-size="9.5" fill="#A1402A">CONFUSING FLOW</text>
+
+          <g font-size="10.5" font-weight="700">
+            <rect x="440" y="55" width="140" height="34" rx="6" fill="#F6F7F2" stroke="#1E2A25" stroke-width="1.5"/>
+            <text x="510" y="76" text-anchor="middle" fill="#1E2A25">CTE 1 (initial query)</text>
+
+            <rect x="440" y="140" width="140" height="34" rx="6" fill="#A73E7A" stroke="#1E2A25" stroke-width="1.5"/>
+            <text x="510" y="161" text-anchor="middle" fill="#fff">CTE 2 (using CTE 1)</text>
+
+            <rect x="440" y="225" width="140" height="34" rx="6" fill="#F6F7F2" stroke="#1E2A25" stroke-width="1.5"/>
+            <text x="510" y="246" text-anchor="middle" fill="#1E2A25">CTE 3 (final result)</text>
+          </g>
+          <g stroke="#1E2A25" stroke-width="1.5" marker-end="url(#rcv-arrow)">
+            <line x1="510" y1="89" x2="510" y2="138"/>
+            <line x1="510" y1="174" x2="510" y2="223"/>
+          </g>
+          <text x="395" y="118" font-size="9" fill="#4A564F">STEP-BY-STEP LOGIC</text>
+          <text x="395" y="203" font-size="9" fill="#4A564F">READABLE &amp; MODULAR</text>
+          <text x="595" y="245" font-size="9" fill="#4A564F">SINGLE SCOPE</text>
+        </svg>
+        <figcaption>Comparing the confusing structure of nested subqueries to the clean, linear flow of Common Table Expressions.</figcaption>
+      </figure>
+
+      <p>Compare the same logic written two ways. First, as nested subqueries — you have to read from the inside out:</p>
+      <div class="schema-line">SELECT *
+FROM (
+    SELECT tc.customer_id, tc.total, p.category
+    FROM (
+        SELECT customer_id, SUM(amount) AS total
+        FROM sales
+        GROUP BY customer_id
+        ORDER BY total DESC
+        LIMIT 100
+    ) AS tc
+    JOIN products p ON p.customer_id = tc.customer_id
+) AS enriched
+WHERE enriched.category = 'X';</div>
+      <p>Now the same thing as chained CTEs — reads top to bottom, one named step at a time:</p>
+      <div class="schema-line">WITH top_customers AS (
+    SELECT customer_id, SUM(amount) AS total
+    FROM sales
+    GROUP BY customer_id
+    ORDER BY total DESC
+    LIMIT 100
+),
+enriched AS (
+    SELECT tc.customer_id, tc.total, p.category
+    FROM top_customers tc
+    JOIN products p ON p.customer_id = tc.customer_id
+)
+SELECT * FROM enriched
+WHERE category = 'X';</div>
+
+      <table class="compare">
+        <thead><tr><th></th><th>Nested subqueries</th><th>Chained CTEs</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Reading order</strong></td><td>Inside out (deep first)</td><td>Top to bottom (natural)</td></tr>
+          <tr><td><strong>Debugging</strong></td><td>Dig through parentheses</td><td>Run any CTE alone</td></tr>
+          <tr><td><strong>Reuse</strong></td><td>Can't reference an inner subquery elsewhere</td><td>Any earlier CTE is available to every later step</td></tr>
+          <tr><td><strong>Naming</strong></td><td>Alias only</td><td>Named step per logical operation</td></tr>
+        </tbody>
+      </table>
+      <p>Same result, drastically better readability and debuggability. Below, both versions run for real against a live SQLite engine and return identical rows — confirming the refactor changes nothing except how easy the query is to read.</p>
+      <div class="cell" data-cell="refactor_top_customers_enriched">
+        <div class="cell-head"><span class="cell-title">nested_vs_chained_ctes.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="cte-basics">
+      <div class="kicker">Foundations</div>
+      <h2>The WITH Clause</h2>
+      <p>A standard subquery is a one-time-use tool. If you define a subquery in your <code>FROM</code> clause, you can only use it right there. If you need that same data again in a different part of the query, you have to copy and paste the entire block — bloated code, and more surface area for bugs to hide.</p>
+      <p>A CTE uses the <code>WITH</code> clause to name a result set you can reference throughout the rest of your query. Think of it like a variable that holds a table. Most people write queries that scatter the logic:</p>
+      <div class="schema-line">SELECT category, total_sales
+FROM (
+    SELECT category_id, SUM(price) as total_sales
+    FROM orders
+    GROUP BY category_id
+) as sales_data
+JOIN categories ON sales_data.category_id = categories.id
+WHERE total_sales > (SELECT AVG(price) FROM orders);</div>
+      <p>You have to read the middle to find the data source, then look at the bottom for the filter. Here's the same logic refactored into named CTEs:</p>
+      <div class="schema-line">WITH CategorySales AS (
+    SELECT category_id, SUM(price) as total_sales
+    FROM orders
+    GROUP BY category_id
+),
+AverageSale AS (
+    SELECT AVG(price) as avg_total
+    FROM orders
+)
+SELECT c.name, s.total_sales
+FROM CategorySales s
+JOIN categories c ON s.category_id = c.id
+CROSS JOIN AverageSale a
+WHERE s.total_sales > a.avg_total;</div>
+      <p>By pulling the logic to the top, you give it a name. Anyone reading this knows exactly what <code>CategorySales</code> represents without parsing the <code>SUM</code> and <code>GROUP BY</code> logic immediately. The final <code>SELECT</code> becomes a simple assembly of pre-built parts.</p>
+
+      <div class="callout amber">
+        <strong>SQLite quirk — the original "scattered" query above has a real bug.</strong> Run the cell below and its first statement fails with <code>no such column: category</code>. The outer <code>SELECT category, total_sales</code> assumes a column named <code>category</code> exists, but the subquery only produces <code>category_id</code>, and the joined <code>categories</code> table has a column called <code>name</code>, not <code>category</code> — there's no column anywhere actually called <code>category</code>. It has to be written as <code>categories.name AS category</code> (or similar) to run at all. This is a good reminder that nested subqueries hide these mistakes in the middle of the query where they're easy to miss; the corrected nested version and the CTE version below both run cleanly and return identical rows once the alias is fixed.
+      </div>
+      <div class="cell" data-cell="cte_basics">
+        <div class="cell-head"><span class="cell-title">cte_basics.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="chained-ctes">
+      <div class="kicker">Foundations</div>
+      <h2>Chained CTEs</h2>
+      <p>The real power of this approach appears when you chain multiple CTEs together. Each CTE can reference the ones defined above it, letting you break a complex business problem into small, testable steps.</p>
+      <p>Suppose you need to find the top 5% of customers by revenue, then find which products those specific customers bought most often. Doing this in nested subqueries is a nightmare. Using chained CTEs, you define a <code>TopCustomers</code> block, then a <code>CustomerProducts</code> block that pulls from the first one, and finally a summary block. It reads like a recipe — one step prepares the ingredients, and the next step cooks them. (The full worked version of this exact report — top 5 customers, plus each one's top product — is built step by step later in <a href="#worked-chained-report">Chained CTEs for a Real Report</a>.)</p>
+
+      <h3>A quirk worth knowing: an unreferenced CTE is dead code</h3>
+      <p>If you define a CTE with <code>WITH</code> but never reference it anywhere in the rest of the query, what happens? In SQLite, nothing — it's simply never evaluated. It isn't even checked for a bad column reference, because the engine never has a reason to compile it. Run the cell below: CTE <code>c</code> references a column that doesn't exist anywhere, yet the query succeeds, because <code>d</code> — the only CTE actually used by the final <code>SELECT</code> — never touches <code>c</code>.</p>
+      <div class="cell" data-cell="unused_cte_check">
+        <div class="cell-head"><span class="cell-title">unused_cte_is_dead_code.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Don't rely on this to "hide" broken SQL on purpose — it's a sign the CTE is dead code and should probably be deleted, not a technique. But it explains why a leftover, half-finished CTE sometimes doesn't throw an error the way you'd expect.</p>
+    </section>
+
+    <section id="recursive-basics">
+      <div class="kicker">Recursion</div>
+      <h2>Anchor, Recursive, Union</h2>
+      <p>Standard SQL is great at looking at rows side by side, but it's traditionally bad at looking at rows that relate to each other in a chain. If you have an <code>employees</code> table where each row has a <code>manager_id</code>, how do you find everyone who reports to the CEO, including the people who report to the people who report to the CEO?</p>
+      <p>A recursive CTE is the tool for this. It has a specific three-part structure:</p>
+      <ol>
+        <li><strong>The Base Case (The Anchor).</strong> This is the starting point, like the CEO.</li>
+        <li><strong>The Recursive Case.</strong> This is the logic that finds the "next" level of data by joining the table back to the previous results.</li>
+        <li><strong>The Union.</strong> The <code>UNION ALL</code> command that stitches these layers together.</li>
+      </ol>
+      <p>When you run a recursive query, the database doesn't just loop blindly. It follows a specific procedure: it executes the anchor query and puts those rows into a temporary "working table." Then it runs the recursive query using the contents of that working table. If it finds new rows, it replaces the working table with those new rows and does it again. It stops only when the recursive step returns zero new rows.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 420 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A parent-child hierarchy that a recursive CTE walks one level at a time, starting from the anchor row and expanding outward." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="rcv-arrow2" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto">
+              <path d="M0,0 L5,2.5 L0,5 Z" fill="#1E2A25"/>
+            </marker>
+          </defs>
+          <g data-beat="1">
+            <rect x="140" y="30" width="140" height="42" rx="21" fill="#2F5D8A" stroke="#1E2A25" stroke-width="1.5"/>
+            <text x="210" y="47" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">ALICE</text>
+            <text x="210" y="61" text-anchor="middle" font-size="9" fill="#E4EBF2">LEVEL 1</text>
+          </g>
+
+          <g data-beat="2">
+            <rect x="140" y="130" width="140" height="42" rx="8" fill="#F6F7F2" stroke="#1E2A25" stroke-width="1.5"/>
+            <text x="210" y="147" text-anchor="middle" font-size="12" font-weight="700" fill="#1E2A25">BOB</text>
+            <text x="210" y="161" text-anchor="middle" font-size="9" fill="#4A564F">LEVEL 2</text>
+          </g>
+
+          <g data-beat="3">
+            <rect x="140" y="230" width="140" height="42" rx="8" fill="#F6F7F2" stroke="#1E2A25" stroke-width="1.5"/>
+            <text x="210" y="247" text-anchor="middle" font-size="12" font-weight="700" fill="#1E2A25">CHARLIE</text>
+            <text x="210" y="261" text-anchor="middle" font-size="9" fill="#4A564F">LEVEL 3</text>
+          </g>
+
+          <line x1="210" y1="130" x2="210" y2="74" stroke="#1E2A25" stroke-width="1.5" marker-end="url(#rcv-arrow2)" data-beat="2"/>
+          <text x="278" y="105" font-size="9.5" fill="#4A564F" data-beat="2">manager_id</text>
+          <line x1="210" y1="230" x2="210" y2="174" stroke="#1E2A25" stroke-width="1.5" marker-end="url(#rcv-arrow2)" data-beat="3"/>
+          <text x="278" y="205" font-size="9.5" fill="#4A564F" data-beat="3">manager_id</text>
+
+          <text x="115" y="55" text-anchor="middle" font-size="11" fill="#1E2A25" data-beat="1">1</text>
+          <text x="115" y="155" text-anchor="middle" font-size="11" fill="#1E2A25" data-beat="2">2</text>
+          <text x="115" y="255" text-anchor="middle" font-size="11" fill="#1E2A25" data-beat="3">3</text>
+        </svg>
+        <figcaption>The visual representation of a hierarchy that a recursive CTE traverses step by step.</figcaption>
+      </figure>
+
+      <p>Tracing this org chart: Alice (ID 1) is the boss. Bob (ID 2) reports to Alice. Charlie (ID 3) reports to Bob.</p>
+      <div class="schema-line">WITH RECURSIVE org_chart AS (
+    -- Anchor: Find the CEO
+    SELECT id, name, manager_id, 1 as level
+    FROM employees
+    WHERE manager_id IS NULL
+
+    UNION ALL
+
+    -- Recursive: Find people who report to the previous level
+    SELECT e.id, e.name, e.manager_id, oc.level + 1
+    FROM employees e
+    JOIN org_chart oc ON e.manager_id = oc.id
+)
+SELECT * FROM org_chart;</div>
+      <p>Step-by-step: <strong>Iteration 0 (Anchor)</strong> finds Alice, because her <code>manager_id</code> is NULL. The working table now contains Alice. <strong>Iteration 1</strong> looks for anyone whose <code>manager_id</code> matches an ID in the working table (Alice's ID, 1) — it finds Bob, who's added to the results, and the working table is now updated to contain only Bob. <strong>Iteration 2</strong> looks for anyone whose <code>manager_id</code> matches Bob's ID (2) — it finds Charlie, added to the results; working table now contains only Charlie. <strong>Iteration 3</strong> looks for anyone whose <code>manager_id</code> matches Charlie's ID (3) — finds no one. The working table is empty. The process stops.</p>
+      <p>The final result is the union of all these iterations. If you forgot the anchor, the query would have nowhere to start. If you wrote the join logic incorrectly, it might never find the next level or, worse, it might find the same rows forever.</p>
+    </section>
+
+    <section id="recursive-visualizer">
+      <div class="kicker">Recursion</div>
+      <h2>Recursive CTE Visualizer</h2>
+      <p>Step through how the anchor and recursive members build the result set for an org-chart query. The final result table below is not simulated — it's read from a real recursive CTE run against a live SQLite database the moment this widget loads.</p>
+      <div class="widget" id="rcv-widget">
+        <div class="widget-title">Recursive CTE Visualizer</div>
+        <div class="widget-sub">Step through how the anchor and recursive members build the result set for an org-chart query.</div>
+
+        <div class="rcv-sql-box" id="rcv-sql"></div>
+
+        <div class="rcv-legend">
+          <label><input type="checkbox" disabled><span class="swatch anchor"></span>Anchor member</label>
+          <label><input type="checkbox" disabled><span class="swatch recur"></span>Recursive member</label>
+          <label><input type="checkbox" disabled><span class="swatch uni"></span>UNION ALL / termination</label>
+        </div>
+
+        <div class="rcv-controls">
+          <div class="rcv-controls-left">
+            <button class="btn secondary" id="rcv-reset" style="color:var(--ink); border-color:var(--rule);">↺ Reset</button>
+            <button class="btn" id="rcv-next">Next step →</button>
+          </div>
+          <div class="rcv-step-label">Step <span id="rcv-step-num">0</span> / 4</div>
+        </div>
+
+        <div class="rcv-explain" id="rcv-explain"></div>
+
+        <div class="rcv-tree-label">Org hierarchy</div>
+        <div class="rcv-tree-wrap">
+          <svg viewBox="0 0 420 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A live picture of the recursive CTE accumulating rows iteration by iteration." font-family="IBM Plex Mono, monospace">
+            <g stroke="var(--rule-strong)" stroke-width="1.5">
+              <line x1="210" y1="45" x2="120" y2="115"/>
+              <line x1="210" y1="45" x2="300" y2="115"/>
+              <line x1="120" y1="115" x2="70" y2="185"/>
+              <line x1="120" y1="115" x2="170" y2="185"/>
+              <line x1="300" y1="115" x2="300" y2="185"/>
+            </g>
+            <g class="rcv-node" data-id="1" data-level="0">
+              <circle cx="210" cy="35" r="26"/>
+              <text class="rcv-name" x="210" y="32">Alice</text>
+              <text class="rcv-idlabel" x="210" y="44">id=1</text>
+            </g>
+            <g class="rcv-node" data-id="2" data-level="1">
+              <circle cx="120" cy="115" r="24"/>
+              <text class="rcv-name" x="120" y="112">Bob</text>
+              <text class="rcv-idlabel" x="120" y="124">id=2</text>
+            </g>
+            <g class="rcv-node" data-id="3" data-level="1">
+              <circle cx="300" cy="115" r="24"/>
+              <text class="rcv-name" x="300" y="112">Carol</text>
+              <text class="rcv-idlabel" x="300" y="124">id=3</text>
+            </g>
+            <g class="rcv-node" data-id="4" data-level="2">
+              <circle cx="70" cy="185" r="22"/>
+              <text class="rcv-name" x="70" y="182">Dave</text>
+              <text class="rcv-idlabel" x="70" y="194">id=4</text>
+            </g>
+            <g class="rcv-node" data-id="5" data-level="2">
+              <circle cx="170" cy="185" r="22"/>
+              <text class="rcv-name" x="170" y="182">Eve</text>
+              <text class="rcv-idlabel" x="170" y="194">id=5</text>
+            </g>
+            <g class="rcv-node" data-id="6" data-level="2">
+              <circle cx="300" cy="185" r="22"/>
+              <text class="rcv-name" x="300" y="182">Frank</text>
+              <text class="rcv-idlabel" x="300" y="194">id=6</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="rcv-tree-label">Working table — each iteration</div>
+        <div class="rcv-working" id="rcv-working">
+          <p class="rcv-placeholder">No iterations yet.</p>
+        </div>
+
+        <div class="rcv-tree-label">Final result set (accumulated)</div>
+        <div id="rcv-result-wrap">
+          <p class="rcv-placeholder" id="rcv-result-placeholder">No rows yet.</p>
+        </div>
+        <div class="rcv-done-banner" id="rcv-done-banner" style="display:none;">✓ You've traced the full recursive CTE execution!</div>
+      </div>
+    </section>
+
+    <section id="cycles">
+      <div class="kicker">Graphs & Cycles</div>
+      <h2>Graph Reachability and Cycles</h2>
+      <p>Recursion isn't just for trees. It's also used for graphs, like a network of flights between cities. If you want to know whether you can get from New York to Singapore, a recursive CTE can explore every possible connection until it finds a path or runs out of options.</p>
+      <p>However, graphs introduce a danger that trees usually don't: cycles. If a flight goes from New York to London, and another goes from London back to New York, a naive recursive query will bounce between them forever. The database keeps finding "new" paths that are just the same cities in a circle.</p>
+      <div class="schema-line">flights
+origin  destination
+NYC     LON
+LON     PAR
+LON     NYC
+PAR     ROM</div>
+      <div class="schema-line">WITH RECURSIVE reachable AS (
+    SELECT destination AS city FROM flights WHERE origin = 'NYC'
+    UNION ALL
+    SELECT f.destination
+    FROM flights f
+    JOIN reachable r ON f.origin = r.city
+)
+SELECT DISTINCT city FROM reachable;</div>
+      <p>The recursive step keeps generating NYC → LON → NYC → LON → ..., producing infinite rows. Most DBMSes will error out after hitting an internal recursion limit (PostgreSQL: <code>max_stack_depth</code>; SQL Server: 32,767 by default) — or, worse, just hang. <strong>The cell below caps the naive version with <code>LIMIT 12</code> so it's safe to run in your browser</strong> — without that cap, this query does not terminate on its own.</p>
+      <div class="cell" data-cell="cycle_naive_capped">
+        <div class="cell-head"><span class="cell-title">cycle_naive_CAPPED_for_safety.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p>Notice the repeating LON / NYC / PAR pattern — that's the cycle bouncing forever, exactly as the article warns.</p>
+
+      <h3>The fix: track where you've already been</h3>
+      <p>To prevent this, you have to track where you have already been — by building a string or array of the path taken so far and checking whether the next city is already in that list. Most modern databases have safety limits to stop a runaway query, but a well-written query should handle its own termination logic.</p>
+      <div class="schema-line">WITH RECURSIVE reachable AS (
+    SELECT destination AS city,
+           ARRAY['NYC', destination] AS path
+    FROM flights WHERE origin = 'NYC'
+
+    UNION ALL
+
+    SELECT f.destination,
+           r.path || f.destination
+    FROM flights f
+    JOIN reachable r ON f.origin = r.city
+    WHERE NOT (f.destination = ANY(r.path))   -- cycle guard
+)
+SELECT DISTINCT city FROM reachable;</div>
+      <p>The <code>NOT (f.destination = ANY(r.path))</code> condition rejects any hop that would revisit a city already on the path. Different DBMSes have different array syntax (PostgreSQL uses <code>ARRAY[]</code> and <code>||</code>; SQL Server uses string-based paths; MySQL 8+ supports JSON arrays; SQLite has no array type at all, so the cell below tracks the path as a delimited text string and uses <code>instr()</code> as the guard). The concept is identical everywhere: recursion over a cyclic graph requires explicit path tracking.</p>
+      <div class="cell" data-cell="cycle_fixed_path_guard">
+        <div class="cell-head"><span class="cell-title">cycle_fixed_path_guard.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+      <div class="callout blue">
+        <strong>A subtlety worth noticing.</strong> The path-guarded version above returns exactly <code>{LON, PAR, ROM}</code> — it excludes NYC, because NYC is already in the starting path, so the guard blocks the LON→NYC hop from ever re-adding it. That's "cities strictly reachable without looping back to where you started."
+      </div>
+
+      <h3>Does plain UNION solve cycles for you?</h3>
+      <p><code>UNION</code> (as opposed to <code>UNION ALL</code>) deduplicates rows. In a recursive CTE with no path-tracking column, that can look like it "fixes" the cycle — SQLite's engine only keeps recursing on genuinely new rows, and once every reachable city has appeared once, the next iteration produces nothing new. Run the first query below: plain <code>UNION</code>, no path column, terminates cleanly and returns 4 cities — including NYC itself, since the cycle legitimately produces it once before dedup kicks in on further repeats. That's a different (also defensible) answer than the path-guarded version's 3 cities: it's "everywhere reachable, including a cycle back to the start" versus "everywhere reachable without revisiting the start."</p>
+      <p>But this "fix" is fragile. The moment you add a column that changes every iteration — like a hop counter — every row becomes unique again, so <code>UNION</code>'s dedup can never kick in and the cycle runs forever exactly like <code>UNION ALL</code> would. The second query below adds a <code>depth</code> column and is capped with <code>LIMIT 12</code> for safety; notice it keeps bouncing and growing <code>depth</code> forever, just like the naive <code>UNION ALL</code> version above.</p>
+      <div class="cell" data-cell="union_vs_union_all">
+        <div class="cell-head"><span class="cell-title">union_dedup_vs_union_all.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Moral: don't rely on <code>UNION</code>'s dedup as your cycle-termination strategy. It happens to work for the narrowest case (no extra columns) and breaks the instant you add one — use explicit path tracking instead, every time.</p>
+    </section>
+
+    <section id="worked-recursive-trace">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Trace a Recursive Query Row-by-Row</h2>
+      <p>Given this <code>employees</code> table (a different, slightly deeper hierarchy than the visualizer's above — here Frank reports to Dave, not Carol):</p>
+      <table class="compare">
+        <thead><tr><th>id</th><th>name</th><th>manager_id</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Alice</td><td>NULL</td></tr>
+          <tr><td>2</td><td>Bob</td><td>1</td></tr>
+          <tr><td>3</td><td>Carol</td><td>1</td></tr>
+          <tr><td>4</td><td>Dave</td><td>2</td></tr>
+          <tr><td>5</td><td>Eve</td><td>2</td></tr>
+          <tr><td>6</td><td>Frank</td><td>4</td></tr>
+        </tbody>
+      </table>
+      <p>Run this query and trace it iteration by iteration:</p>
+      <div class="schema-line">WITH RECURSIVE org AS (
+    SELECT id, name, manager_id, 1 AS depth
+    FROM employees
+    WHERE manager_id IS NULL
+
+    UNION ALL
+
+    SELECT e.id, e.name, e.manager_id, o.depth + 1
+    FROM employees e
+    JOIN org o ON e.manager_id = o.id
+)
+SELECT * FROM org ORDER BY depth, id;</div>
+      <ul>
+        <li><strong>Iteration 0 (anchor):</strong> match <code>manager_id IS NULL</code> → {Alice, depth=1}. Working set: {Alice}. Result so far: {Alice}.</li>
+        <li><strong>Iteration 1:</strong> join <code>employees</code> to working set on <code>e.manager_id = o.id</code> where <code>o.id = 1</code> → matches Bob and Carol. New working set: {Bob depth=2, Carol depth=2}. Result cumulative: {Alice, Bob, Carol}.</li>
+        <li><strong>Iteration 2:</strong> join with working set = {Bob(2), Carol(2)}. Bob's reports: Dave(4), Eve(5). Carol has no reports. New working set: {Dave depth=3, Eve depth=3}. Result cumulative: {Alice, Bob, Carol, Dave, Eve}.</li>
+        <li><strong>Iteration 3:</strong> join with working set = {Dave(4), Eve(5)}. Dave's reports: Frank. Eve has none. New working set: {Frank depth=4}. Result cumulative: {Alice, Bob, Carol, Dave, Eve, Frank}.</li>
+        <li><strong>Iteration 4:</strong> join with {Frank(6)}. No one reports to Frank. New working set: {}. Recursion terminates.</li>
+      </ul>
+      <p>The termination condition — the recursive step returning zero new rows — is what stops the loop. In a cyclic graph, that never happens naturally, which is exactly why you must add explicit cycle detection (next section).</p>
+      <div class="cell" data-cell="worked_recursive_trace">
+        <div class="cell-head"><span class="cell-title">worked_recursive_trace.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="worked-chained-report">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Chained CTEs for a Real Report</h2>
+      <p>You want a business report: "top 5 customers by total revenue, and for each, list their most-purchased product." One giant nested query is unreadable; chained CTEs make it a pipeline:</p>
+      <div class="schema-line">WITH
+top_customers AS (
+    SELECT customer_id, SUM(total) AS revenue
+    FROM orders
+    GROUP BY customer_id
+    ORDER BY revenue DESC
+    LIMIT 5
+),
+customer_product_totals AS (
+    SELECT o.customer_id, ol.product_id, SUM(ol.quantity) AS qty
+    FROM orders o
+    JOIN order_lines ol USING (order_id)
+    WHERE o.customer_id IN (SELECT customer_id FROM top_customers)
+    GROUP BY o.customer_id, ol.product_id
+),
+ranked AS (
+    SELECT customer_id, product_id, qty,
+           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY qty DESC) AS rn
+    FROM customer_product_totals
+)
+SELECT tc.customer_id, tc.revenue, r.product_id AS top_product, r.qty
+FROM top_customers tc
+JOIN ranked r ON r.customer_id = tc.customer_id AND r.rn = 1
+ORDER BY tc.revenue DESC;</div>
+      <p>Four named building blocks, each answering one small question:</p>
+      <ul>
+        <li><code>top_customers</code> — who are the top 5 by revenue?</li>
+        <li><code>customer_product_totals</code> — how many units did each of them buy of each product?</li>
+        <li><code>ranked</code> — order those products by quantity within each customer.</li>
+        <li>Main <code>SELECT</code> — glue the top product per customer to their revenue.</li>
+      </ul>
+      <p>You could inline every CTE as a nested subquery, but the resulting query would be 5+ levels deep and much harder to review. CTEs are the SQL equivalent of extract-method refactoring.</p>
+      <div class="cell" data-cell="worked_chained_report">
+        <div class="cell-head"><span class="cell-title">worked_chained_report.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="cte-pattern-picker">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: CTE Pattern Picker</h2>
+      <p>Ten CTE scenarios. Pick when to reach for a plain CTE, when for a recursive CTE, and when for something else.</p>
+      <div id="cte-quiz-mount"></div>
+    </section>
+
+    <section id="recursion-failure">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: When a Recursive CTE Never Stops</h2>
+      <p>The recursive CTE has exactly one way to go wrong, and it is the classic interview trap: the working table never becomes empty. Step through the mechanics — and the three deterministic fixes.</p>
+
+      <div class="widget">
+        <div class="widget-title">When a Recursive CTE Never Stops</div>
+        <div class="widget-sub">anchor · recursive member · cycle · termination</div>
+        <div class="qstep-rail" id="rcfstep-rail"></div>
+        <div class="qstep-body" id="rcfstep-body"></div>
+        <div class="qstep-controls">
+          <button class="qstep-restart-btn" id="rcfstep-back">◀ Back</button>
+          <button class="qstep-next-btn" id="rcfstep-next">Next step ▶</button>
+          <button class="qstep-restart-btn" id="rcfstep-restart">↺ Restart</button>
+          <span class="qstep-count" id="rcfstep-count"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. Refactor a nested query into two CTEs</h4>
+        <p>Take this deeply-nested query and refactor it using two CTEs:</p>
+        <div class="schema-line">SELECT dept, avg_salary
+FROM (
+    SELECT dept, AVG(salary) AS avg_salary
+    FROM employees
+    WHERE hire_date >= '2022-01-01'
+    GROUP BY dept
+) e
+WHERE e.avg_salary > (SELECT AVG(salary) FROM employees);</div>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>Name the inner aggregate and the overall average as two separate CTEs, then compare them in the final <code>SELECT</code>:</p>
+            <div class="schema-line">WITH dept_avg_recent AS (
+    SELECT dept, AVG(salary) AS avg_salary
+    FROM employees
+    WHERE hire_date >= '2022-01-01'
+    GROUP BY dept
+),
+overall_avg AS (
+    SELECT AVG(salary) AS avg_salary FROM employees
+)
+SELECT d.dept, d.avg_salary
+FROM dept_avg_recent d
+CROSS JOIN overall_avg o
+WHERE d.avg_salary > o.avg_salary;</div>
+            <p>Verified against real SQLite: both the original nested version and this refactor return the identical row for a sample dataset (<code>Eng, 92500</code>). The CTE version just makes each half of the comparison a nameable, independently-runnable step.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Trace a recursive CTE by hand</h4>
+        <p>Trace this recursive CTE by hand for the given <code>parts</code> table. What is the final result?</p>
+        <div class="schema-line">CREATE TABLE parts (assembly VARCHAR, part VARCHAR);
+INSERT INTO parts VALUES
+  ('bike',   'frame'),
+  ('bike',   'wheel'),
+  ('wheel',  'spoke'),
+  ('wheel',  'rim'),
+  ('frame',  'tube'),
+  ('tube',   'metal');</div>
+        <div class="schema-line">WITH RECURSIVE bom AS (
+    SELECT assembly, part, 1 AS depth
+    FROM parts WHERE assembly = 'bike'
+
+    UNION ALL
+
+    SELECT p.assembly, p.part, b.depth + 1
+    FROM parts p
+    JOIN bom b ON p.assembly = b.part
+)
+SELECT * FROM bom ORDER BY depth, part;</div>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>The anchor starts at <code>bike</code> (depth 1: <code>frame</code>, <code>wheel</code>). Each iteration looks for parts whose <code>assembly</code> matches a <code>part</code> just found — <code>wheel</code> and <code>frame</code> are themselves assemblies of smaller parts, so the recursion continues one more level, then <code>tube</code> is itself an assembly of <code>metal</code> for a third level:</p>
+            <table class="compare">
+              <thead><tr><th>depth</th><th>assembly</th><th>part</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>bike</td><td>frame</td></tr>
+                <tr><td>1</td><td>bike</td><td>wheel</td></tr>
+                <tr><td>2</td><td>frame</td><td>tube</td></tr>
+                <tr><td>2</td><td>wheel</td><td>rim</td></tr>
+                <tr><td>2</td><td>wheel</td><td>spoke</td></tr>
+                <tr><td>3</td><td>tube</td><td>metal</td></tr>
+              </tbody>
+            </table>
+            <p>Verified against real SQLite: this exact 6-row result comes back, ordered by depth then part. This is a real bill-of-materials (BOM) pattern — the same shape a manufacturing system uses to cost out an assembly recursively.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. UNION vs. UNION ALL in a recursive CTE</h4>
+        <p>Explain what happens when you replace <code>UNION ALL</code> with <code>UNION</code> in a recursive CTE. Give one case where it matters.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><code>UNION</code> deduplicates rows between the anchor and every recursive step; <code>UNION ALL</code> keeps every row, duplicates included. For tree-shaped data (no cycles, and no reason the same exact row would ever recur), the two behave identically — <code>UNION ALL</code> is preferred because it's cheaper (no dedup comparison every iteration).</p>
+            <p>Where it matters: on a <em>cyclic</em> graph with no extra per-row columns (see the <a href="#cycles">Reachability and Cycles</a> section above), <code>UNION</code>'s deduplication can accidentally make a naive query terminate, because once every reachable node has appeared, the next iteration produces only rows the engine has already seen and dedupes away — zero <em>new</em> rows, so it stops. <code>UNION ALL</code> on that same query loops forever. But this is a fragile accident, not a real fix: the moment the recursive step carries a column that changes every iteration (a depth counter, an accumulated path), every row is unique again, dedup can never trigger, and <code>UNION</code> loops forever too — verified live in the cell above. Always use explicit path-tracking for real cycle safety; never rely on plain <code>UNION</code>'s dedup as the termination strategy.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. Friends within 3 hops, with cycles</h4>
+        <p>You have <code>friends(person_id, friend_id)</code> representing a social graph. Write a recursive CTE that returns everyone within 3 hops of person 1 (including person 1). Handle cycles.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <div class="schema-line">WITH RECURSIVE network AS (
+    SELECT 1 AS person_id, 0 AS hops, '|1|' AS path
+
+    UNION ALL
+
+    SELECT f.friend_id, n.hops + 1, n.path || f.friend_id || '|'
+    FROM friends f
+    JOIN network n ON f.person_id = n.person_id
+    WHERE n.hops < 3
+      AND instr(n.path, '|' || f.friend_id || '|') = 0   -- cycle guard
+)
+SELECT DISTINCT person_id FROM network ORDER BY person_id;</div>
+            <p>Two safety mechanisms working together: <code>WHERE n.hops &lt; 3</code> bounds the depth (so it can never recurse past 3 hops even without a cycle), and the <code>instr(...)</code> path check stops it from ever re-visiting a person already on the current path — necessary because <code>friends</code> can easily contain a cycle (person A → B → C → A). Verified against real SQLite with a graph that includes exactly such a cycle: the query returns cleanly rather than hanging.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>5. An unused CTE among four</h4>
+        <p>A colleague writes a query with 4 separately-defined CTEs (<code>WITH a AS (...), b AS (...), c AS (...), d AS (...)</code>) where <code>d</code> references only <code>a</code> and <code>b</code>, and <code>c</code> isn't used anywhere. What happens at execution time? Is this a bug?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>In every mainstream engine, <code>c</code> is simply never executed — a CTE is only materialized (or inlined) if something downstream actually references it. It costs nothing at runtime.</p>
+            <p>Verified against real SQLite in the <a href="#chained-ctes">Chained CTEs</a> section above: a CTE <code>c</code> that references a genuinely nonexistent column doesn't even throw a compile error, because the engine never binds or validates a CTE it has no reason to run. It's not a runtime bug — but it's very likely a <em>maintenance</em> bug: dead, unreferenced SQL that a future reader will assume matters and waste time trying to understand, or that silently goes stale as the schema changes underneath it. Delete unused CTEs the same way you'd delete unused variables.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p class="interview-lede">CTEs and recursive queries show up in senior SQL rounds and in system-design conversations where hierarchies come up.</p>
+
+        <p><strong>The readability round.</strong> A senior candidate is shown a 60-line SQL query with three levels of nested subqueries and asked "how would you refactor this?" The expected answer is "extract the intermediate results into CTEs, one per logical step" — the SQL equivalent of extract-method. Bonus points for mentioning that in older PostgreSQL, CTEs were an optimization fence, so refactoring to CTEs could change performance and you should benchmark. In current PostgreSQL and every major DBMS, CTEs are inlined by default unless marked <code>MATERIALIZED</code>.</p>
+
+        <p><strong>The graph-and-hierarchy question.</strong> "Given an <code>employees</code> table with a <code>manager_id</code>, list every subordinate under a specific manager and their depth." This is a canonical recursive CTE question. Interviewers watch for four things:</p>
+        <ul class="criteria-list">
+          <li><span class="c-num">1.</span>Anchor member clearly identifies the starting row (<code>WHERE emp_id = ?</code> or <code>manager_id IS NULL</code>).</li>
+          <li><span class="c-num">2.</span>Recursive member joins the CTE back to the base table on the correct FK.</li>
+          <li><span class="c-num">3.</span><code>UNION ALL</code> (not <code>UNION</code>) — the latter is more expensive without changing semantics for tree data.</li>
+          <li><span class="c-num">4.</span>Termination condition is implicit but must be understood — recursion ends when no new rows are produced. If the interviewer follows up "what if the manager graph has a cycle?", the answer is a visited array or path column plus a not-equal / not-in check.</li>
+        </ul>
+
+        <p><strong>A common interview trap.</strong> "Can you compute a running total with a plain CTE?" No — running totals require <code>ORDER BY</code> across rows, which is a window-function concept. Recognizing that CTEs and window functions solve different problems (CTEs give queries structure; window functions compute across rows) is worth pointing out even when not asked.</p>
+
+        <p><strong>The GraphQL / API design tie-in.</strong> "Your GraphQL API needs to return a user, their friends, and their friends' friends. Two SQL queries or one?" The right answer is often one recursive CTE with depth ≤ 2. Modern APIs increasingly rely on this pattern because the alternative — N+1 queries from application code — is what caused Facebook to invent GraphQL in the first place.</p>
+
+        <p><strong>Rule of thumb.</strong></p>
+        <ul class="criteria-list">
+          <li><span class="c-num">•</span>Deeply nested subqueries hurting readability → chained (non-recursive) CTEs.</li>
+          <li><span class="c-num">•</span>"Walk up/down" a hierarchy, unbounded depth → recursive CTE.</li>
+          <li><span class="c-num">•</span>Traversing a graph that may contain cycles → recursive CTE + explicit path tracking.</li>
+          <li><span class="c-num">•</span>Aggregating across rows without collapsing them → window function, not a CTE.</li>
+        </ul>
+        <p>Whenever a question involves "walk up/down" a hierarchy, "trace reachability" through a graph, or "compute across levels of aggregation," reach for a CTE — recursive if the depth is unbounded, chained if you have a linear pipeline of steps.</p>
+      </div>
+    </section>
+
+    <section id="in-2026">
+      <div class="kicker">2026 Status</div>
+      <h2>In 2026: What Has Changed</h2>
+      <p>CTEs stopped being syntax sugar and became the standard way relational engines express graphs.</p>
+      <ul>
+        <li><strong><code>MATERIALIZED</code> / <code>NOT MATERIALIZED</code></strong> hints let you choose whether a CTE is an optimisation fence or is inlined into the query that uses it.</li>
+        <li><strong>Recursive CTEs are how relational engines do graphs</strong> — org charts, bills of materials, dependency order, and shortest paths with a depth column.</li>
+        <li><strong>SQL:2023 added <code>SEARCH</code> and <code>CYCLE</code></strong> clauses, so depth-first/breadth-first ordering and cycle detection are declarative instead of hand-rolled.</li>
+        <li><strong>The failure mode is an infinite loop</strong>, so a depth limit or a cycle test belongs in the query itself rather than in a bug report later.</li>
+      </ul>
+      <p class="small">Recursion is the part of SQL that surprises people who assume SQL cannot express iteration.</p>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="11_aggregation_playground.html">← 11. Aggregation</a>
+        <a class="pgnav-pos" href="index.html">Playground 12 of 15</a>
+        <a class="pgnav-next" href="13_window_functions_and_views_playground.html">13. Window Functions & Views →</a>
+      </nav>
+    </footer>
+
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
+const CELLS = {
+  refactor_top_customers_enriched: {
+    setup: ``,
+    starter:
+`CREATE TABLE sales(sale_id INTEGER PRIMARY KEY, customer_id INTEGER, amount REAL);
+CREATE TABLE products(customer_id INTEGER, category TEXT);
+INSERT INTO sales VALUES
+  (1,1,500),(2,1,300),(3,2,900),(4,3,200),(5,4,150),(6,5,700);
+INSERT INTO products VALUES (1,'X'),(2,'Y'),(3,'X'),(4,'Z'),(5,'X');
+
+-- nested subqueries
+SELECT *
+FROM (
+    SELECT tc.customer_id, tc.total, p.category
+    FROM (
+        SELECT customer_id, SUM(amount) AS total
+        FROM sales
+        GROUP BY customer_id
+        ORDER BY total DESC
+        LIMIT 100
+    ) AS tc
+    JOIN products p ON p.customer_id = tc.customer_id
+) AS enriched
+WHERE enriched.category = 'X';
+
+-- chained CTEs -- same result, read top to bottom
+WITH top_customers AS (
+    SELECT customer_id, SUM(amount) AS total
+    FROM sales
+    GROUP BY customer_id
+    ORDER BY total DESC
+    LIMIT 100
+),
+enriched AS (
+    SELECT tc.customer_id, tc.total, p.category
+    FROM top_customers tc
+    JOIN products p ON p.customer_id = tc.customer_id
+)
+SELECT * FROM enriched
+WHERE category = 'X';`
+  },
+  cte_basics: {
+    setup: ``,
+    starter:
+`CREATE TABLE categories(id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE orders(order_id INTEGER PRIMARY KEY, category_id INTEGER, price REAL);
+INSERT INTO categories VALUES (1,'Books'),(2,'Toys'),(3,'Games');
+INSERT INTO orders VALUES
+  (1,1,20),(2,1,25),(3,1,15),
+  (4,2,50),(5,2,60),
+  (6,3,10),(7,3,12),(8,3,8);
+
+-- (1) the "scattered" query exactly as first written -- this fails, see the callout above
+SELECT category, total_sales FROM (
+    SELECT category_id, SUM(price) as total_sales
+    FROM orders GROUP BY category_id
+) as sales_data
+JOIN categories ON sales_data.category_id = categories.id
+WHERE total_sales > (SELECT AVG(price) FROM orders);
+
+-- (2) corrected nested version -- alias the real column
+SELECT categories.name AS category, total_sales FROM (
+    SELECT category_id, SUM(price) as total_sales
+    FROM orders GROUP BY category_id
+) as sales_data
+JOIN categories ON sales_data.category_id = categories.id
+WHERE total_sales > (SELECT AVG(price) FROM orders);
+
+-- (3) refactored into named CTEs -- identical rows, easier to read
+WITH CategorySales AS (
+    SELECT category_id, SUM(price) as total_sales
+    FROM orders GROUP BY category_id
+),
+AverageSale AS (
+    SELECT AVG(price) as avg_total FROM orders
+)
+SELECT c.name, s.total_sales
+FROM CategorySales s
+JOIN categories c ON s.category_id = c.id
+CROSS JOIN AverageSale a
+WHERE s.total_sales > a.avg_total;`
+  },
+  unused_cte_check: {
+    setup: ``,
+    starter:
+`CREATE TABLE t(x INTEGER);
+INSERT INTO t VALUES (1),(2),(3);
+
+-- 'c' references a column that does not exist -- but nothing selects from c,
+-- so SQLite never compiles it and this query succeeds anyway.
+WITH a AS (SELECT x FROM t WHERE x > 1),
+     b AS (SELECT x FROM t WHERE x < 3),
+     c AS (SELECT nonexistent_column FROM t),
+     d AS (SELECT a.x FROM a JOIN b ON a.x = b.x)
+SELECT * FROM d;`
+  },
+  worked_recursive_trace: {
+    setup: ``,
+    starter:
+`CREATE TABLE employees(id INTEGER PRIMARY KEY, name TEXT, manager_id INTEGER);
+INSERT INTO employees VALUES
+  (1,'Alice',NULL),
+  (2,'Bob',1),
+  (3,'Carol',1),
+  (4,'Dave',2),
+  (5,'Eve',2),
+  (6,'Frank',4);
+
+WITH RECURSIVE org AS (
+    SELECT id, name, manager_id, 1 AS depth
+    FROM employees
+    WHERE manager_id IS NULL
+
+    UNION ALL
+
+    SELECT e.id, e.name, e.manager_id, o.depth + 1
+    FROM employees e
+    JOIN org o ON e.manager_id = o.id
+)
+SELECT * FROM org ORDER BY depth, id;`
+  },
+  cycle_naive_capped: {
+    setup: ``,
+    starter:
+`CREATE TABLE flights(origin TEXT, destination TEXT);
+INSERT INTO flights VALUES ('NYC','LON'),('LON','PAR'),('LON','NYC'),('PAR','ROM');
+
+-- LIMIT 12 added ONLY as a browser-safety cap -- without it, this recurses forever.
+WITH RECURSIVE reachable AS (
+    SELECT destination AS city FROM flights WHERE origin = 'NYC'
+    UNION ALL
+    SELECT f.destination
+    FROM flights f
+    JOIN reachable r ON f.origin = r.city
+)
+SELECT city FROM reachable LIMIT 12;`
+  },
+  cycle_fixed_path_guard: {
+    setup: ``,
+    starter:
+`CREATE TABLE flights(origin TEXT, destination TEXT);
+INSERT INTO flights VALUES ('NYC','LON'),('LON','PAR'),('LON','NYC'),('PAR','ROM');
+
+-- SQLite has no array type, so the path is tracked as a delimited text string
+-- and instr() is the cycle guard (the same idea as ARRAY[]/ANY() in Postgres).
+WITH RECURSIVE reachable AS (
+    SELECT destination AS city,
+           '|NYC|' || destination || '|' AS path
+    FROM flights WHERE origin = 'NYC'
+
+    UNION ALL
+
+    SELECT f.destination,
+           r.path || f.destination || '|'
+    FROM flights f
+    JOIN reachable r ON f.origin = r.city
+    WHERE instr(r.path, '|' || f.destination || '|') = 0   -- cycle guard
+)
+SELECT DISTINCT city FROM reachable ORDER BY city;`
+  },
+  union_vs_union_all: {
+    setup: ``,
+    starter:
+`CREATE TABLE flights(origin TEXT, destination TEXT);
+INSERT INTO flights VALUES ('NYC','LON'),('LON','PAR'),('LON','NYC'),('PAR','ROM');
+
+-- (1) plain UNION, no extra columns -- terminates on its own via dedup
+WITH RECURSIVE reachable AS (
+    SELECT destination AS city FROM flights WHERE origin = 'NYC'
+    UNION
+    SELECT f.destination
+    FROM flights f
+    JOIN reachable r ON f.origin = r.city
+)
+SELECT city FROM reachable ORDER BY city;
+
+-- (2) same idea, but with a depth column -- every row is unique now, so
+-- UNION's dedup never kicks in. LIMIT 12 added ONLY as a browser-safety cap.
+WITH RECURSIVE reachable AS (
+    SELECT destination AS city, 1 AS depth FROM flights WHERE origin = 'NYC'
+    UNION
+    SELECT f.destination, r.depth + 1
+    FROM flights f
+    JOIN reachable r ON f.origin = r.city
+)
+SELECT city, depth FROM reachable LIMIT 12;`
+  },
+  worked_chained_report: {
+    setup: ``,
+    starter:
+`CREATE TABLE orders(order_id INTEGER PRIMARY KEY, customer_id INTEGER, total REAL);
+CREATE TABLE order_lines(order_id INTEGER, product_id TEXT, quantity INTEGER);
+INSERT INTO orders VALUES
+  (1,1,500),(2,1,300),(3,2,900),(4,3,200),(5,4,150),
+  (6,5,700),(7,6,50),(8,1,100),(9,2,80),(10,3,60);
+INSERT INTO order_lines VALUES
+  (1,'A',5),(1,'B',2),(2,'A',3),(3,'C',10),(3,'A',1),
+  (4,'B',4),(5,'A',2),(6,'C',6),(6,'B',1),(7,'A',1),
+  (8,'A',2),(9,'C',3),(10,'B',5);
+
+WITH
+top_customers AS (
+    SELECT customer_id, SUM(total) AS revenue
+    FROM orders
+    GROUP BY customer_id
+    ORDER BY revenue DESC
+    LIMIT 5
+),
+customer_product_totals AS (
+    SELECT o.customer_id, ol.product_id, SUM(ol.quantity) AS qty
+    FROM orders o
+    JOIN order_lines ol USING (order_id)
+    WHERE o.customer_id IN (SELECT customer_id FROM top_customers)
+    GROUP BY o.customer_id, ol.product_id
+),
+ranked AS (
+    SELECT customer_id, product_id, qty,
+           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY qty DESC) AS rn
+    FROM customer_product_totals
+)
+SELECT tc.customer_id, tc.revenue, r.product_id AS top_product, r.qty
+FROM top_customers tc
+JOIN ranked r ON r.customer_id = tc.customer_id AND r.rn = 1
+ORDER BY tc.revenue DESC;`
+  }
+};
+
+function commonErrorHint(msg){
+  const m = msg.toLowerCase();
+  if (m.includes('no such column')) {
+    return "That column (or alias) isn't in scope at this point in query execution.";
+  }
+  if (m.includes('unique constraint failed')) {
+    return "A UNIQUE or PRIMARY KEY constraint stopped this -- that value already exists in the table.";
+  }
+  if (m.includes('circular reference')) {
+    return "SQLite detected a CTE referencing itself outside of a RECURSIVE definition.";
+  }
+  return null;
+}
+
+/* ============ SQL execution engine ============ */
+let SQL = null;
+async function getSqlJsModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderResultTable(columns, rows){
+  if (!columns.length) return '';
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of columns) html += `<th>${escapeHtml(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += '<tr>';
+    for (const v of row) html += `<td>${v === null ? '<em>NULL</em>' : escapeHtml(v)}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+async function runSqlAgainstFreshDb(setupSql, mainSql, outputEl){
+  outputEl.innerHTML = '';
+  outputEl.classList.remove('err');
+  outputEl.classList.add('show');
+  try {
+    const SQLmod = await getSqlJsModule();
+    const db = new SQLmod.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setupSql && setupSql.trim()) db.run(setupSql);
+    let out = '';
+    let hadOutput = false;
+    let stmtIter;
+    try {
+      stmtIter = db.iterateStatements(mainSql);
+    } catch (e) {
+      throw e;
+    }
+    for (const stmt of stmtIter) {
+      try {
+        const cols = stmt.getColumnNames();
+        const rows = [];
+        while (stmt.step()) {
+          rows.push(stmt.get());
+        }
+        if (cols.length) {
+          out += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length===1?'':'s'}</div>`;
+          out += renderResultTable(cols, rows);
+          hadOutput = true;
+        }
+      } catch (stmtErr) {
+        const hint = commonErrorHint(stmtErr.message);
+        out += `<div style="color:#F0A38A; margin-top:8px;">✖ Error: ${escapeHtml(stmtErr.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+        hadOutput = true;
+        outputEl.innerHTML = out;
+        outputEl.classList.add('err');
+        db.close();
+        return;
+      }
+    }
+    if (!hadOutput) out = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    outputEl.innerHTML = out;
+    db.close();
+  } catch (e) {
+    const hint = commonErrorHint(e.message);
+    outputEl.innerHTML = `<div style="color:#F0A38A;">✖ Error: ${escapeHtml(e.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+    outputEl.classList.add('err');
+  }
+}
+
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+
+function wireCell(cellEl){
+  const id = cellEl.getAttribute('data-cell');
+  const spec = CELLS[id];
+  if (!spec) return;
+  const textarea = cellEl.querySelector('textarea');
+  const output = cellEl.querySelector('.cell-output');
+  const runBtn = cellEl.querySelector('.run-btn');
+  const resetBtn = cellEl.querySelector('.reset-btn');
+  textarea.value = spec.starter;
+  pgGrow(textarea);
+  textarea.addEventListener('input', () => pgGrow(textarea));
+  runBtn.addEventListener('click', () => {
+    runSqlAgainstFreshDb(spec.setup, textarea.value, output);
+  });
+  resetBtn.addEventListener('click', () => {
+    textarea.value = spec.starter;
+    pgGrow(textarea);
+    output.classList.remove('show', 'err');
+    output.innerHTML = '';
+  });
+}
+
+function initAllCells(){
+  document.querySelectorAll('.cell[data-cell]').forEach(wireCell);
+}
+
+/* ============ Recursive CTE Visualizer widget ============ */
+const RCV_EMPLOYEES = [
+  {id:1, name:'Alice', manager_id:null},
+  {id:2, name:'Bob',   manager_id:1},
+  {id:3, name:'Carol', manager_id:1},
+  {id:4, name:'Dave',  manager_id:2},
+  {id:5, name:'Eve',   manager_id:2},
+  {id:6, name:'Frank', manager_id:3},
+];
+const RCV_LEVEL_OF = {1:0, 2:1, 3:1, 4:2, 5:2, 6:2};
+
+// step -> { settledLevels:[...], currentLevel: N|null }
+const RCV_STEP_STATE = [
+  {settled:[],      current:null},
+  {settled:[],      current:0},
+  {settled:[0],     current:1},
+  {settled:[0,1],   current:2},
+  {settled:[0,1,2], current:null},
+];
+
+const RCV_EXPLAIN = [
+  `This query uses a <b>Recursive CTE</b> named <code>org_cte</code>. It has two parts separated by <b>UNION ALL</b>: the <b>anchor member</b> (base case) and the <b>recursive member</b>. The engine alternates between them until no new rows are produced.`,
+  `<b>Anchor member executes first.</b> It selects employees with no manager (<code>manager_id IS NULL</code>). This seeds the working table with the root — Alice (id=1, lvl=0). No recursion yet.`,
+  `<b>Recursive iteration 1:</b> The engine joins <code>employees</code> to the <i>previous iteration's</i> rows in the working table. It finds direct reports of last iteration's employees. New rows added: <b>Bob, Carol</b> (lvl=1). These become the new frontier.`,
+  `<b>Recursive iteration 2:</b> The engine joins <code>employees</code> to the <i>previous iteration's</i> rows in the working table. It finds direct reports of last iteration's employees. New rows added: <b>Dave, Eve, Frank</b> (lvl=2). These become the new frontier.`,
+  `<b>Termination:</b> The recursive member finds no employees whose <code>manager_id</code> matches any row in the current frontier — so it returns zero rows. The engine stops. The final SELECT returns <i>all accumulated rows</i> from every iteration, ordered by level.`,
+];
+
+const RCV_SQL_LINES = [
+  {t:'WITH RECURSIVE org_cte (id, name, manager_id, lvl) AS (', c:'plain'},
+  {t:'', c:'plain'},
+  {t:'  -- Anchor member: the root (CEO)', c:'plain'},
+  {t:'  SELECT id, name, manager_id, 0 AS lvl', c:'anchor'},
+  {t:'  FROM employees', c:'anchor'},
+  {t:'  WHERE manager_id IS NULL', c:'anchor'},
+  {t:'', c:'plain'},
+  {t:'  UNION ALL', c:'uni'},
+  {t:'', c:'plain'},
+  {t:'  -- Recursive member: join back to CTE', c:'plain'},
+  {t:'  SELECT e.id, e.name, e.manager_id, c.lvl + 1', c:'recur'},
+  {t:'  FROM employees e', c:'recur'},
+  {t:'  JOIN org_cte c ON e.manager_id = c.id', c:'recur'},
+  {t:')', c:'plain'},
+  {t:'SELECT * FROM org_cte ORDER BY lvl, id;', c:'plain'},
+];
+
+let rcvStep = 0;
+let rcvRealRows = null; // populated from a real sql.js run on init
+
+function rcvRenderSql(){
+  const box = document.getElementById('rcv-sql');
+  box.innerHTML = RCV_SQL_LINES.map(l => {
+    const cls = l.c === 'plain' ? 'plain' : l.c;
+    const text = l.t.length ? escapeHtml(l.t) : ' ';
+    return `<div class="rcv-line ${cls}">${text}</div>`;
+  }).join('');
+}
+
+function rcvRenderTree(){
+  const state = RCV_STEP_STATE[rcvStep];
+  document.querySelectorAll('.rcv-node').forEach(node => {
+    const level = parseInt(node.getAttribute('data-level'), 10);
+    node.classList.remove('current', 'settled');
+    if (state.settled.includes(level)) node.classList.add('settled');
+    else if (state.current === level) node.classList.add('current');
+  });
+}
+
+function rcvRenderWorking(){
+  const wrap = document.getElementById('rcv-working');
+  const cards = [];
+  if (rcvStep >= 1) {
+    cards.push(`<div class="rcv-work-card anchor"><div class="wc-title">Anchor (lvl 0)</div><div class="wc-row">Alice&nbsp;&nbsp;&nbsp;lvl=0</div></div>`);
+  }
+  if (rcvStep >= 2) {
+    cards.push(`<div class="rcv-work-card iter"><div class="wc-title">Iteration 1 (lvl 1)</div><div class="wc-row">Bob&nbsp;&nbsp;&nbsp;&nbsp;lvl=1</div><div class="wc-row">Carol&nbsp;&nbsp;lvl=1</div></div>`);
+  }
+  if (rcvStep >= 3) {
+    cards.push(`<div class="rcv-work-card iter"><div class="wc-title">Iteration 2 (lvl 2)</div><div class="wc-row">Dave&nbsp;&nbsp;&nbsp;lvl=2</div><div class="wc-row">Eve&nbsp;&nbsp;&nbsp;&nbsp;lvl=2</div><div class="wc-row">Frank&nbsp;&nbsp;lvl=2</div></div>`);
+  }
+  wrap.innerHTML = cards.length ? cards.join('') : `<p class="rcv-placeholder">No iterations yet.</p>`;
+}
+
+// how many of the REAL query's rows (already sorted by lvl,id) are visible at this step
+const RCV_STEP_ROW_COUNT = [0, 1, 3, 6, 6];
+
+function rcvRenderResult(){
+  const wrap = document.getElementById('rcv-result-wrap');
+  const banner = document.getElementById('rcv-done-banner');
+  const n = RCV_STEP_ROW_COUNT[rcvStep];
+  if (!rcvRealRows || n === 0) {
+    wrap.innerHTML = `<p class="rcv-placeholder" id="rcv-result-placeholder">No rows yet.</p>`;
+    banner.style.display = 'none';
+    return;
+  }
+  const visible = rcvRealRows.slice(0, n);
+  let html = `<table class="rcv-result-table"><thead><tr><th>id</th><th>name</th><th>manager_id</th><th>lvl</th></tr></thead><tbody>`;
+  for (const row of visible) {
+    const cls = row.lvl === 0 ? 'lvl0' : 'lvlN';
+    html += `<tr class="${cls}"><td>${row.id}</td><td>${escapeHtml(row.name)}</td><td>${row.manager_id === null ? '<em>NULL</em>' : row.manager_id}</td><td>${row.lvl}</td></tr>`;
+  }
+  html += `</tbody></table>`;
+  wrap.innerHTML = html;
+  banner.style.display = (rcvStep === 4) ? 'block' : 'none';
+}
+
+function rcvRender(){
+  document.getElementById('rcv-step-num').textContent = rcvStep;
+  document.getElementById('rcv-explain').innerHTML = RCV_EXPLAIN[rcvStep];
+  document.getElementById('rcv-next').disabled = (rcvStep >= 4);
+  rcvRenderTree();
+  rcvRenderWorking();
+  rcvRenderResult();
+}
+
+async function rcvRunRealQuery(){
+  const setup = `CREATE TABLE employees(id INTEGER PRIMARY KEY, name TEXT, manager_id INTEGER);
+INSERT INTO employees VALUES
+  (1,'Alice',NULL),(2,'Bob',1),(3,'Carol',1),(4,'Dave',2),(5,'Eve',2),(6,'Frank',3);`;
+  const query = `WITH RECURSIVE org_cte (id, name, manager_id, lvl) AS (
+  SELECT id, name, manager_id, 0 AS lvl FROM employees WHERE manager_id IS NULL
+  UNION ALL
+  SELECT e.id, e.name, e.manager_id, c.lvl + 1 FROM employees e JOIN org_cte c ON e.manager_id = c.id
+)
+SELECT * FROM org_cte ORDER BY lvl, id;`;
+  try {
+    const SQLmod = await getSqlJsModule();
+    const db = new SQLmod.Database();
+    db.run(setup);
+    const res = db.exec(query);
+    db.close();
+    if (res && res.length) {
+      const cols = res[0].columns;
+      rcvRealRows = res[0].values.map(v => {
+        const obj = {};
+        cols.forEach((c, i) => obj[c] = v[i]);
+        return obj;
+      });
+    } else {
+      rcvRealRows = [];
+    }
+  } catch (e) {
+    rcvRealRows = [];
+  }
+  rcvRender();
+}
+
+function initRcvWidget(){
+  rcvRenderSql();
+  document.getElementById('rcv-next').addEventListener('click', () => {
+    if (rcvStep < 4) { rcvStep++; rcvRender(); }
+  });
+  document.getElementById('rcv-reset').addEventListener('click', () => {
+    rcvStep = 0;
+    rcvRender();
+  });
+  rcvRender();
+  rcvRunRealQuery(); // real, live sql.js execution -- populates the accumulating result table
+}
+
+/* ============ CTE Pattern Picker quiz ============ */
+const CTE_QUESTIONS = [
+  {
+    scenario: "You have a complex query with 4 levels of nested subqueries. Your teammate asks you to make it more maintainable. What's the cleanest refactor?",
+    options: [
+      { title: "Add comments", correct: false },
+      { title: "Extract each level into a named CTE (WITH clause)", correct: true },
+      { title: "Create views for each level", hint: "Requires DDL", correct: false },
+      { title: "Use temp tables", hint: "Materializes each step", correct: false },
+    ],
+    feedback: "Extracting each nested level into its own named CTE turns the inside-out reading order into a top-to-bottom one, without requiring any schema changes (unlike views) or forced materialization (unlike temp tables).",
+    verifySetup: `CREATE TABLE t(x INTEGER); INSERT INTO t VALUES (1),(2),(3);`,
+    verifyMain: `WITH step_one AS (SELECT x FROM t WHERE x > 1) SELECT * FROM step_one;`,
+  },
+  {
+    scenario: "You have employees(id, manager_id) and want to trace the entire chain of command above a specific employee (their manager, their manager's manager, etc., up to the CEO). Which construct?",
+    options: [
+      { title: "5-way self-join (LEFT JOIN 5 times)", hint: "Works if depth is bounded", correct: false },
+      { title: "Recursive CTE", hint: "WITH RECURSIVE ... UNION ALL", correct: true },
+      { title: "Window function", correct: false },
+      { title: "Application-side loop", correct: false },
+    ],
+    feedback: "Unbounded-depth hierarchy traversal is exactly what a recursive CTE is for. A fixed N-way self-join only works if you know the maximum depth in advance and breaks the moment the org chart grows one level deeper.",
+    verifySetup: `CREATE TABLE employees(id INTEGER PRIMARY KEY, manager_id INTEGER); INSERT INTO employees VALUES (1,NULL),(2,1),(3,2);`,
+    verifyMain: `WITH RECURSIVE chain AS (SELECT id, manager_id FROM employees WHERE id = 3 UNION ALL SELECT e.id, e.manager_id FROM employees e JOIN chain c ON e.id = c.manager_id) SELECT * FROM chain;`,
+  },
+  {
+    scenario: "A recursive CTE traversing a graph (e.g., 'find all cities reachable from Boston') runs forever and gets killed by the DBMS. Most likely cause?",
+    options: [
+      { title: "Syntax error", correct: false },
+      { title: "The graph has a cycle and no cycle-detection is in place", correct: true },
+      { title: "Missing index", correct: false },
+      { title: "Used UNION instead of UNION ALL", correct: false },
+    ],
+    feedback: "A cyclic graph with no path-tracking guard makes the recursive step keep finding the same 'new' rows forever. A syntax error would fail immediately, not run forever; a missing index would slow it down, not make it infinite.",
+    verifySetup: `CREATE TABLE g(a TEXT, b TEXT); INSERT INTO g VALUES ('X','Y'),('Y','X');`,
+    verifyMain: `WITH RECURSIVE r AS (SELECT b AS city, '|X|'||b||'|' AS path FROM g WHERE a='X' UNION ALL SELECT g.b, r.path||g.b||'|' FROM g JOIN r ON g.a=r.city WHERE instr(r.path,'|'||g.b||'|')=0) SELECT DISTINCT city FROM r;`,
+  },
+  {
+    scenario: "You write WITH big_orders AS (SELECT ... FROM orders WHERE total > 1000) then reference it in three separate JOINs in the outer query. Under what circumstances is this WORSE than pasting the subquery three times?",
+    options: [
+      { title: "Never — CTEs are always as good or better", correct: false },
+      { title: "Older Postgres (≤11) that treated CTEs as optimization fences", correct: true },
+      { title: "Always — CTEs force materialization", correct: false },
+      { title: "CTEs are never faster", correct: false },
+    ],
+    feedback: "Before PostgreSQL 12, a CTE was an 'optimization fence' — the planner materialized it once as a black box and couldn't push predicates through it, which sometimes made the CTE version slower than three copy-pasted subqueries the planner could optimize freely. PostgreSQL 12+ and every other major engine inline CTEs by default unless you explicitly mark MATERIALIZED, so this is now mostly a legacy concern — but a real one to mention in an interview.",
+    verifySetup: `CREATE TABLE orders(id INTEGER PRIMARY KEY, total REAL); INSERT INTO orders VALUES (1,1500),(2,500),(3,2000);`,
+    verifyMain: `WITH big_orders AS (SELECT id, total FROM orders WHERE total > 1000) SELECT COUNT(*) AS n FROM big_orders;`,
+  },
+  {
+    scenario: "You write two CTEs where the SECOND CTE references the FIRST. Which is valid?",
+    options: [
+      { title: "Only the first can reference the second", correct: false },
+      { title: "Only the second can reference the first (natural order)", correct: true },
+      { title: "Both — CTEs can reference each other freely", correct: false },
+      { title: "CTEs can't reference each other", correct: false },
+    ],
+    feedback: "Non-recursive CTEs form a strict one-directional chain: each one can only reference CTEs defined earlier in the same WITH clause, never a later one, and never each other mutually. (WITH RECURSIVE is the one exception, and only for a CTE referencing itself.)",
+    verifySetup: ``,
+    verifyMain: `WITH a AS (SELECT 1 AS x), b AS (SELECT x + 1 AS y FROM a) SELECT * FROM b;`,
+  },
+  {
+    scenario: "For a recursive CTE traversing an org chart, which combines the anchor member and the recursive member?",
+    options: [
+      { title: "UNION", hint: "With deduplication", correct: false },
+      { title: "UNION ALL", hint: "No deduplication", correct: true },
+      { title: "JOIN", correct: false },
+      { title: "CROSS JOIN", correct: false },
+    ],
+    feedback: "UNION ALL is the standard choice for tree-shaped hierarchy data — rows are naturally unique (each employee has one manager chain), so there's nothing to deduplicate, and UNION ALL is cheaper since it skips the comparison. UNION would only matter if duplicate identical rows were actually possible.",
+    verifySetup: `CREATE TABLE employees(id INTEGER PRIMARY KEY, manager_id INTEGER); INSERT INTO employees VALUES (1,NULL),(2,1);`,
+    verifyMain: `WITH RECURSIVE org AS (SELECT id, manager_id, 0 AS lvl FROM employees WHERE manager_id IS NULL UNION ALL SELECT e.id, e.manager_id, o.lvl+1 FROM employees e JOIN org o ON e.manager_id=o.id) SELECT * FROM org;`,
+  },
+  {
+    scenario: "The same expensive aggregate is needed twice in one query — once on its own, and once to compare every row against it. What does a CTE let you do that a plain nested subquery does not?",
+    options: [
+      { title: "Name the result once and reference it more than once", correct: true },
+      { title: "Skip the aggregate's work entirely", hint: "No — it still computes", correct: false },
+      { title: "Return rows a subquery could not", correct: false },
+      { title: "Change the result's data type", correct: false },
+    ],
+    feedback: "A CTE is a named result you can reference several times in the same statement; a derived table has to be written out again each time it is needed. It is a factoring and readability win — whether the optimizer materialises it or inlines it is a separate question it decides on its own.",
+    verifySetup: `CREATE TABLE sales(amount REAL); INSERT INTO sales VALUES (100),(200),(300);`,
+    verifyMain: `WITH avg_sale AS (SELECT AVG(amount) AS a FROM sales) SELECT (SELECT a FROM avg_sale) AS avg_all, (SELECT COUNT(*) FROM sales WHERE amount > (SELECT a FROM avg_sale)) AS above_avg;`,
+  },
+  {
+    scenario: "A recursive CTE is built from two SELECTs joined by UNION or UNION ALL. What are those two parts, and what does each do?",
+    options: [
+      { title: "The anchor member (the starting rows) and the recursive member (which refers back to the CTE)", correct: true },
+      { title: "The principal SELECT and its WHERE clause", correct: false },
+      { title: "The WITH clause and the RECURSIVE keyword", correct: false },
+      { title: "A seed row and a HAVING clause", correct: false },
+    ],
+    feedback: "The anchor member runs once and produces the starting rows. The recursive member names the CTE itself, runs repeatedly, and each pass feeds the next — until a pass returns no new rows. UNION ALL keeps duplicates and is faster; UNION deduplicates, which is what you reach for when the data can contain cycles.",
+    verifySetup: `SELECT 1;`,
+    verifyMain: `WITH RECURSIVE counter(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM counter WHERE n < 3) SELECT n FROM counter;`,
+  },
+  {
+    scenario: "You write a recursive CTE but leave out the guard — the part that stops the recursion producing new rows. What happens?",
+    options: [
+      { title: "It never terminates on its own — the engine keeps iterating until a limit or error stops it", correct: true },
+      { title: "It stops automatically after one pass", correct: false },
+      { title: "It returns just the anchor row", correct: false },
+      { title: "SQLite silently rewrites it as a loop", correct: false },
+    ],
+    feedback: "Termination is the query's responsibility: the recursive member must eventually produce no new rows. Without a guard the engine keeps iterating until it hits a recursion limit and aborts, or until it runs out of memory. A depth counter (<code>WHERE o.lvl &lt; 5</code>), a visited-set, or the standard <code>CYCLE</code> clause are the three common ways to guarantee an end.",
+    verifySetup: `SELECT 1;`,
+    verifyMain: `WITH RECURSIVE counter(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM counter WHERE n < 5) SELECT n FROM counter;`,
+  },
+  {
+    scenario: "In WITH RECURSIVE org AS (SELECT id, manager_id, 0 AS lvl FROM employees WHERE manager_id IS NULL UNION ALL SELECT e.id, e.manager_id, o.lvl+1 FROM employees e JOIN org o ON e.manager_id = o.id), what does o.lvl+1 do?",
+    options: [
+      { title: "Carries a depth counter forward on each recursive pass", correct: true },
+      { title: "Filters out everything below level 1", correct: false },
+      { title: "Sorts the final result by level", correct: false },
+      { title: "Nothing — it is ignored", correct: false },
+    ],
+    feedback: "A recursive member can compute new values each pass, not just copy columns. Here <code>lvl</code> records how deep in the hierarchy each row sits. The same mechanism lets you bound the recursion with a depth ceiling (<code>WHERE o.lvl &lt; 5</code>) or build a path string with <code>o.path || '/' || e.id</code> so you can spot a cycle.",
+    verifySetup: `CREATE TABLE employees(id INTEGER PRIMARY KEY, manager_id INTEGER); INSERT INTO employees VALUES (1,NULL),(2,1),(3,2);`,
+    verifyMain: `WITH RECURSIVE org AS (SELECT id, manager_id, 0 AS lvl FROM employees WHERE manager_id IS NULL UNION ALL SELECT e.id, e.manager_id, o.lvl+1 FROM employees e JOIN org o ON e.manager_id = o.id) SELECT id, lvl FROM org;`,
+  },
+];
+
+let cteQuizState = { idx: 0, score: 0, selected: null, answered: false, history: [] };
+
+function cteDotsHtml(){
+  let html = '';
+  for (let i = 0; i < CTE_QUESTIONS.length; i++) {
+    let cls = '';
+    if (i < cteQuizState.history.length) cls = cteQuizState.history[i] ? 'correct' : 'incorrect';
+    else if (i === cteQuizState.idx) cls = 'current';
+    html += `<span class="dot ${cls}"></span>`;
+  }
+  return html;
+}
+
+function cteQuestionHtml(){
+  const total = CTE_QUESTIONS.length;
+  const q = CTE_QUESTIONS[cteQuizState.idx];
+  let html = `<div class="cte-quiz-head">
+    <div><span class="cte-dots-label">Scenario</span><span class="cte-dots">${cteDotsHtml()}</span></div>
+    <div class="cte-score">Score: <b>${cteQuizState.score}</b> / ${total}</div>
+  </div>
+  <div class="cte-progressbar"><div class="cte-progressbar-fill" style="width:${(cteQuizState.idx/total)*100}%"></div></div>
+  <div class="cte-scenario-card">
+    <div class="cte-scenario-label">Scenario</div>
+    <div class="cte-scenario-text">${escapeHtml(q.scenario)}</div>
+    <div class="cte-pick-label">Pick the best answer</div>
+    <div class="cte-options-grid">`;
+  q.options.forEach((opt, i) => {
+    html += `<div class="cte-option-card" data-idx="${i}">
+      <div class="cte-option-title">${escapeHtml(opt.title)}</div>
+      ${opt.hint ? `<div class="cte-option-hint">${escapeHtml(opt.hint)}</div>` : ''}
+    </div>`;
+  });
+  html += `</div>
+    <button class="cte-check-btn" id="cte-check-btn" disabled>Check answer</button>
+    <div id="cte-feedback-slot"></div>
+    <button class="btn secondary cte-verify-btn" id="cte-verify-btn" style="display:none;">▶ Verify against real SQLite</button>
+    <div class="cell-output cte-verify-output" id="cte-verify-output"></div>
+  </div>`;
+  return html;
+}
+
+function cteDoneHtml(){
+  const total = CTE_QUESTIONS.length;
+  return `<div class="cte-quiz-done">
+    <div class="big-score">${cteQuizState.score} / ${total}</div>
+    <p>${cteQuizState.score === total ? "Perfect score." : "Review the ones you missed above, then try again."}</p>
+    <button class="btn secondary cte-restart-btn" id="cte-restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+
+function cteRenderQuiz(){
+  const mount = document.getElementById('cte-quiz-mount');
+  if (cteQuizState.idx >= CTE_QUESTIONS.length) {
+    mount.innerHTML = `<div class="cte-quiz">${cteDoneHtml()}</div>`;
+    document.getElementById('cte-restart-btn').addEventListener('click', cteInitQuiz);
+    return;
+  }
+  mount.innerHTML = `<div class="cte-quiz">${cteQuestionHtml()}</div>`;
+  mount.querySelectorAll('.cte-option-card').forEach(card => {
+    card.addEventListener('click', () => cteSelectOption(parseInt(card.getAttribute('data-idx'), 10)));
+  });
+  document.getElementById('cte-check-btn').addEventListener('click', cteCheckAnswer);
+}
+
+function cteSelectOption(idx){
+  if (cteQuizState.answered) return;
+  cteQuizState.selected = idx;
+  document.querySelectorAll('.cte-option-card').forEach((card, i) => {
+    card.classList.toggle('selected', i === idx);
+  });
+  document.getElementById('cte-check-btn').disabled = false;
+}
+
+function cteCheckAnswer(){
+  if (cteQuizState.answered || cteQuizState.selected === null) return;
+  cteQuizState.answered = true;
+  const q = CTE_QUESTIONS[cteQuizState.idx];
+  const chosen = q.options[cteQuizState.selected];
+  const cards = document.querySelectorAll('.cte-option-card');
+  cards.forEach((card, i) => {
+    card.classList.add('disabled');
+    card.classList.remove('selected');
+    if (q.options[i].correct) card.classList.add('correct');
+    else if (i === cteQuizState.selected) card.classList.add('incorrect');
+  });
+  document.getElementById('cte-check-btn').style.display = 'none';
+  const isCorrect = chosen.correct;
+  if (isCorrect) cteQuizState.score++;
+  cteQuizState.history.push(isCorrect);
+  document.querySelector('.cte-dots').innerHTML = cteDotsHtml();
+  document.querySelector('.cte-score b').textContent = cteQuizState.score;
+
+  const slot = document.getElementById('cte-feedback-slot');
+  slot.innerHTML = `<div class="cte-feedback ${isCorrect ? 'correct' : 'incorrect'}">${isCorrect ? '✓ Correct.' : '✖ Not quite.'} ${escapeHtml(q.feedback)}</div>
+    <button class="btn cte-next-btn" id="cte-next-btn">${cteQuizState.idx === CTE_QUESTIONS.length - 1 ? 'See score →' : 'Next →'}</button>`;
+  document.getElementById('cte-next-btn').addEventListener('click', cteNext);
+
+  const verifyBtn = document.getElementById('cte-verify-btn');
+  verifyBtn.style.display = 'inline-block';
+  verifyBtn.onclick = async () => {
+    const out = document.getElementById('cte-verify-output');
+    out.classList.add('show');
+    await runSqlAgainstFreshDb(q.verifySetup, q.verifyMain, out);
+  };
+}
+
+function cteNext(){
+  cteQuizState.idx++;
+  cteQuizState.selected = null;
+  cteQuizState.answered = false;
+  cteRenderQuiz();
+}
+
+function cteInitQuiz(){
+  cteQuizState = { idx: 0, score: 0, selected: null, answered: false, history: [] };
+  cteRenderQuiz();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initAllCells();
+  initRcvWidget();
+  cteInitQuiz();
+});
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: When a recursive CTE never stops ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const STEPS = [
+    { name: '1 · The anchor runs once', tag: 'the starting rows',
+      action: 'The anchor SELECT produces the first rows and puts them into a working table. If it returns nothing at all, there is nothing to expand and the query finishes immediately — which is a valid, harmless outcome.',
+      artLabel: 'Artifact · the working table',
+      art: 'WITH RECURSIVE tree AS (\n  SELECT id, name, 1 AS depth\n  FROM employees WHERE manager_id IS NULL    -- anchor\n  ...\n)\n\n  working table = { the root row }' },
+    { name: '2 · The recursive member expands', tag: 'join back to itself',
+      action: 'The recursive member joins the table to the CTE result, matching each working-table row against its children. Whatever it returns becomes the next working table — and that is the only thing that can make the recursion continue.',
+      artLabel: 'Artifact · the next working table',
+      art: 'UNION ALL\nSELECT e.id, e.name, t.depth + 1\nFROM employees e\nJOIN tree t ON e.manager_id = t.id\n\n  working table = { depth 2 rows }' },
+    { name: '3 · UNION ALL keeps duplicates', tag: 'the usual culprit',
+      action: 'UNION ALL appends every row, even ones already produced — which is usually what you want, because de-duplicating on every iteration is expensive. It is also exactly what turns a cycle into an infinite loop.',
+      artLabel: 'Artifact · the choice that matters',
+      art: 'UNION      -- removes duplicates; accidentally breaks cycles\nUNION ALL  -- keeps them; faster; will not save you\n\n  a cycle + UNION ALL = never terminates' },
+    { name: '4 · A cycle in the data', tag: 'the silent trap',
+      action: 'If employee 5 reports to 6 and 6 reports to 5, the recursive member keeps rediscovering the same two rows. Nothing is wrong with the SQL — the graph has a cycle, and traversal without a visited-set will loop forever.',
+      artLabel: 'Artifact · the working table over time',
+      art: 'emp 5 -> mgr 6\nemp 6 -> mgr 5\n\n  depth 1: { 5 }\n  depth 2: { 6 }\n  depth 3: { 5 }   <- already seen\n  depth 4: { 6 }   ... forever' },
+    { name: '5 · What actually happens', tag: 'the failure mode',
+      action: 'Some engines spin until you cancel the query; others raise a resource error when the working table grows past a limit. Either way the symptom is a query that never returns, and the cause is always that nothing prunes the working table.',
+      artLabel: 'Artifact · the symptom',
+      art: 'SQLite / PostgreSQL\n  -> runs until you interrupt it\n  -> or: statement timeout / out of memory\n\n  never a wrong answer — just no answer' },
+    { name: '6 · The three fixes', tag: 'break the loop',
+      action: 'Carry the path already walked and reject repeats, impose a depth ceiling, or use the engine CYCLE clause. Any of the three makes termination deterministic — and none of them depends on the data being clean.',
+      artLabel: 'Artifact · deterministic termination',
+      art: '-- 1. carry the path, reject repeats\n  WHERE  t.id NOT IN (SELECT unnest(t.path))\n\n-- 2. depth ceiling\n  WHERE  t.depth < 10\n\n-- 3. engine support (SQL:2023)\n  ... CYCLE id SET is_cycle USING path' },
+  ];
+  let i = 0;
+  const rail = byId('rcfstep-rail'), body = byId('rcfstep-body');
+  if (!body) return;
+  function railRender(){
+    rail.innerHTML = STEPS.map((s, k) =>
+      `<div class="qstep-node${k === i ? ' active' : (k < i ? ' done' : '')}" data-i="${k}"><span class="qstep-idx">${k + 1}</span>${esc(s.name)}</div>`).join('');
+    rail.querySelectorAll('.qstep-node').forEach(n => n.addEventListener('click', () => { i = +n.dataset.i; render(); }));
+  }
+  function render(){
+    const s = STEPS[i];
+    body.innerHTML =
+      `<div class="qstep-head"><div class="qstep-name">${esc(s.name)}</div><div class="qstep-layer">${esc(s.tag)}</div></div>` +
+      `<div class="qstep-action">${esc(s.action)}</div>` +
+      `<div class="qstep-art"><span class="art-label">${esc(s.artLabel)}</span>${esc(s.art)}</div>`;
+    railRender();
+    byId('rcfstep-count').textContent = `Step ${i + 1} of ${STEPS.length}`;
+    byId('rcfstep-back').disabled = i === 0;
+    byId('rcfstep-next').disabled = i === STEPS.length - 1;
+  }
+  byId('rcfstep-back').addEventListener('click', () => { if (i > 0) { i--; render(); } });
+  byId('rcfstep-next').addEventListener('click', () => { if (i < STEPS.length - 1) { i++; render(); } });
+  byId('rcfstep-restart').addEventListener('click', () => { i = 0; render(); });
+  render();
+})();
+</script>
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

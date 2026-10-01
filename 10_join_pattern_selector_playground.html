@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · Joins and Subqueries: The Join Pattern Selector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, .cell, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:900px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:680px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+.step-card{border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:20px 22px; margin:22px 0;}
+.step-card .step-num{display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600; margin-right:10px;}
+.step-card h3{display:flex; align-items:center; margin-top:0;}
+
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.mode-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+.mode-btn{padding:9px 14px; border-radius:8px; border:1.5px solid var(--rule); background:var(--paper); cursor:pointer; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:12.5px; color:var(--ink-soft);}
+.mode-btn.active{border-color:var(--ink); background:var(--ink); color:#fff;}
+.expr-box{font-family:"IBM Plex Mono",monospace; background:var(--code-bg); color:#F4C97A; padding:12px 14px; border-radius:6px; font-size:13px; margin-bottom:14px; white-space:pre; overflow-x:auto; line-height:1.6;}
+.widget-tables{display:flex; gap:18px; flex-wrap:wrap; margin-bottom:16px;}
+.widget-table-col{flex:1; min-width:220px;}
+.widget-table-col h4{font-size:.85em; letter-spacing:.02em; color:var(--ink-soft); margin:0 0 6px; display:flex; align-items:center; gap:8px;}
+table.mini{border-collapse:collapse; width:100%; font-size:12.5px;}
+table.mini th{background:var(--blue-soft); color:var(--blue); padding:5px 8px; text-align:left; border:1px solid var(--rule); font-family:"IBM Plex Mono",monospace;}
+table.mini td{padding:5px 8px; border:1px solid var(--rule); font-family:"IBM Plex Mono",monospace;}
+table.mini td.is-null{color:var(--rust); font-style:italic; font-weight:700;}
+table.mini tr.result-row{background:var(--green-soft);}
+table.mini tr.eliminated{background:var(--rust-soft);}
+table.mini tr.eliminated td{color:var(--rust); text-decoration:line-through;}
+table.mini tr.survives{background:var(--green-soft);}
+.ajb-legend{font-size:.78em; color:var(--ink-soft); margin:6px 0 0;}
+.ajb-legend .swatch{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:4px; vertical-align:middle;}
+.ajb-legend .swatch.rust{background:var(--rust);}
+.ajb-legend .swatch.green{background:var(--green);}
+.row-count{font-size:.78em; color:var(--ink-soft); font-weight:400; font-family:"IBM Plex Mono",monospace;}
+.ajb-toggle-row{display:flex; align-items:center; gap:10px; margin-bottom:16px; font-size:.95em; cursor:pointer;}
+.ajb-null-word{color:var(--rust); font-weight:700;}
+.ajb-toggle-switch{position:relative; display:inline-block; width:38px; height:22px; flex-shrink:0;}
+.ajb-toggle-switch input{opacity:0; width:0; height:0;}
+.ajb-toggle-slider{position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:var(--rule-strong); border-radius:22px; transition:.15s;}
+.ajb-toggle-slider:before{position:absolute; content:""; height:16px; width:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.15s; box-shadow:0 1px 2px rgba(0,0,0,.25);}
+.ajb-toggle-switch input:checked + .ajb-toggle-slider{background:var(--ink);}
+.ajb-toggle-switch input:checked + .ajb-toggle-slider:before{transform:translateX(16px);}
+.ajb-stepbar{display:flex; align-items:center; gap:10px; margin:6px 0 12px;}
+.ajb-step-label{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-soft); min-width:70px; text-align:center;}
+.ajb-step-dots{display:inline-flex; gap:5px; align-items:center;}
+.ajb-step-dots .dot{width:7px; height:7px; border-radius:50%; background:var(--rule-strong); display:inline-block;}
+.ajb-step-dots .dot.done{background:var(--ink-soft);}
+.ajb-step-dots .dot.current{background:var(--blue);}
+.ajb-step-explain{background:var(--paper); border:1px solid var(--rule); border-radius:8px; padding:12px 14px; font-size:.92em; margin:0 0 18px;}
+.ajb-result h4{font-size:.85em; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin:0 0 8px; display:flex; align-items:center; gap:8px;}
+.ajb-result-placeholder{font-size:.85em; color:var(--ink-soft); font-style:italic; margin:6px 0 0;}
+.ajb-result-placeholder.hidden{display:none;}
+
+/* ===== Join type simulator ===== */
+.jts-explored{display:flex; align-items:center; gap:8px; font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-bottom:14px;}
+.jts-dots{display:inline-flex; gap:5px; align-items:center;}
+.jts-dots .dot{width:8px; height:8px; border-radius:50%; background:var(--rule-strong); display:inline-block;}
+.jts-dots .dot.done{background:var(--blue);}
+.jts-modes{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
+.jts-venn{text-align:center; margin:6px 0 16px;}
+.jts-venn svg{max-width:100%; height:auto;}
+.jts-sql{font-family:"IBM Plex Mono",monospace; background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-size:12.5px; line-height:1.6; white-space:pre-wrap; margin:6px 0 16px;}
+.jts-sql .k{color:#7FB3E0;}
+.jts-sql .k2{color:#C9A0E8;}
+.jts-sql .k3{color:#F0A38A;}
+.jts-sql .c{color:#9FB4A6;}
+.jts-tables{display:flex; gap:20px; flex-wrap:wrap; margin-bottom:18px;}
+.jts-table-col{flex:1; min-width:230px;}
+.jts-table-col h4{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:0 0 8px; font-family:"IBM Plex Mono",monospace;}
+table.jts-tbl{width:100%; border-collapse:collapse; font-size:12px; font-family:"IBM Plex Mono",monospace;}
+table.jts-tbl th{background:var(--ink); color:#fff; text-align:left; padding:7px 10px; font-size:11px; font-weight:700; letter-spacing:.02em;}
+table.jts-tbl td{padding:6px 10px; border-bottom:1px solid var(--rule); color:var(--ink);}
+table.jts-tbl td.jts-null{color:var(--rust); font-style:italic;}
+table.jts-tbl tr.r-left{background:var(--blue-soft);}
+table.jts-tbl tr.r-right{background:var(--amber-soft);}
+table.jts-tbl tr.r-match{background:var(--green-soft);}
+.jts-result-head{display:flex; align-items:center; gap:10px; margin:0 0 10px;}
+.jts-count{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--blue-soft); color:var(--blue);}
+.jts-legend{display:flex; gap:18px; align-items:center; flex-wrap:wrap; font-size:.85em; color:var(--ink-soft); margin-bottom:10px;}
+.jts-legend .swatch{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:6px; vertical-align:middle; border:1px solid var(--rule);}
+.jts-legend .swatch.s-left{background:var(--blue-soft);}
+.jts-legend .swatch.s-right{background:var(--amber-soft);}
+.jts-legend .swatch.s-match{background:var(--green-soft);}
+.jts-complete{margin-top:18px;}
+
+.cell{background:var(--code-bg); border-radius:8px; margin:14px 0; overflow:hidden; border:1px solid var(--code-rule);}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75;}
+.cell textarea{
+  width:100%; min-height:0; background:var(--code-bg); color:var(--code-text);
+  border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; resize:none; outline:none; line-height:1.55; overflow:hidden; display:block; tab-size:2;
+}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+table.dbtable{border-collapse:collapse; margin:8px 0; font-size:12.5px; width:100%;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-align:left; padding:5px 10px; border:1px solid var(--code-rule);}
+table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text);}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.quiz-wrap{border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:20px 22px; margin:18px 0;}
+.quiz-progress{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
+.quiz-q{font-weight:600; margin-bottom:12px; font-size:1.05em;}
+.quiz-q .quiz-sql{display:block; margin-top:10px;}
+.quiz-opt{display:block; width:100%; text-align:left; padding:10px 14px; margin-bottom:8px; border:1px solid var(--rule); border-radius:8px; background:var(--paper); cursor:pointer; font-family:"Source Serif 4",serif; font-size:.98em;}
+.quiz-opt:hover{border-color:var(--blue);}
+.quiz-opt .opt-label{font-weight:600; margin-right:6px;}
+.quiz-opt .opt-hint{display:block; font-size:.85em; color:var(--ink-soft); margin-top:2px;}
+.quiz-opt.correct{border-color:var(--green); background:var(--green-soft);}
+.quiz-opt.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.quiz-opt.disabled{cursor:default;}
+.quiz-feedback{margin-top:12px; padding:12px 14px; border-radius:8px; font-size:.95em;}
+.quiz-feedback.correct{background:var(--green-soft); color:var(--green);}
+.quiz-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.quiz-nav{margin-top:14px;}
+.quiz-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft); margin-top:8px;}
+.quiz-done{text-align:center; padding:20px;}
+.quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+.quiz-verify-output{margin-top:10px; display:none;}
+.quiz-verify-output.show{display:block;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:hover{opacity:.9;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical cell buttons (shared) ===== */
+.cell .btn{ background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace; }
+.cell .btn:hover{ opacity:.9; }
+.cell .btn.secondary{ background:transparent; color:var(--code-text); border:1px solid var(--code-rule); }
+.cell .btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">Choosing the Right Join</a>
+      <a href="#join-type-simulator">Join Type Simulator</a>
+      <a href="#wrong-left-join">The Wrong-LEFT-JOIN Trap</a>
+      <a href="#subqueries">Subqueries: Scalar, Table, Correlated</a>
+      <div class="grp">The NULL Trap</div>
+      <a href="#not-in-trap">NOT IN vs NOT EXISTS</a>
+      <a href="#antijoin-builder">Anti-Join Logic Builder</a>
+      <a href="#semi-anti-joins">Semi-Joins and Anti-Joins</a>
+      <div class="grp">Patterns That Scale</div>
+      <a href="#correlated-vs-window">Latest-Per-Group: Subquery vs Window</a>
+      <a href="#full-outer">FULL OUTER JOIN: Finding Discrepancies</a>
+      <a href="#cartesian">The Accidental Cartesian Product</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-dropoff">Users Who Never Did Anything</a>
+      <a href="#worked-first-event">Each User's First Event</a>
+      <div class="grp">Apply It</div>
+      <a href="#join-quiz">Join Pattern Selector</a>
+      <a href="#join-pattern-steps">The Five Join Patterns</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+          <div class="grp">2026 Status</div>
+      <a href="#in-2026">In 2026: What Has Changed</a>
+</nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>Joins and Subqueries: The Join Pattern Selector</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">Real data lives across many tables. Answering a real business question — who bought what, who's never ordered, whose numbers don't reconcile — means stitching tables back together at query time. This playground is about picking the right tool for that: the five ways two tables can meet, the NULL trap hiding inside <code>NOT IN</code>, and the semi-join/anti-join/window-function patterns that separate a working query from a fast, correct one.</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>Choosing the Right Join</h2>
+      <p>A join is a matchmaking process: you have a left table, a right table, and a rule for how rows pair up. The type of join you pick determines what happens to the rows that <em>don't</em> find a match. The whole decision comes down to one question: <strong>which unmatched rows do you want to keep?</strong></p>
+      <table class="compare">
+        <tr><th>Join type</th><th>A-only rows</th><th>Matched rows</th><th>B-only rows</th><th>Use it when</th></tr>
+        <tr><td><code>INNER JOIN</code></td><td>✗</td><td>✓</td><td>✗</td><td>You need pairs that exist on both sides</td></tr>
+        <tr><td><code>LEFT JOIN</code></td><td>✓ (NULLs on B side)</td><td>✓</td><td>✗</td><td>You want every A row, plus B's info if any exists</td></tr>
+        <tr><td><code>RIGHT JOIN</code></td><td>✗</td><td>✓</td><td>✓ (NULLs on A side)</td><td>Same as LEFT, from B's perspective (rarely used — most people just flip the table order and use LEFT)</td></tr>
+        <tr><td><code>FULL OUTER JOIN</code></td><td>✓</td><td>✓</td><td>✓</td><td>You want every row on both sides — a reconciliation</td></tr>
+        <tr><td>Anti-join (<code>WHERE NOT EXISTS</code>)</td><td>✓ (unmatched only)</td><td>✗</td><td>✗</td><td>You want the gaps — A-rows with no B partner</td></tr>
+        <tr><td>Semi-join (<code>WHERE EXISTS</code>)</td><td>✗</td><td>✓ (A's columns only, deduped)</td><td>✗</td><td>You want to filter A by "has a match in B," without importing B's columns</td></tr>
+      </table>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four Venn diagrams comparing joins: INNER JOIN shades only the overlap, LEFT JOIN shades the whole left circle, RIGHT JOIN shades the whole right circle, and FULL OUTER JOIN shades both circles." font-family="IBM Plex Mono, monospace">
+          <!-- ===== INNER JOIN ===== -->
+          <circle cx="184" cy="100" r="62" fill="#FFFFFF" stroke="#A8B0A0" stroke-width="1.6"/>
+          <circle cx="236" cy="100" r="62" fill="#FFFFFF" stroke="#A8B0A0" stroke-width="1.6"/>
+          <path d="M210,43.7 A62,62 0 0 1 210,156.3 A62,62 0 0 1 210,43.7 Z" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <text x="158" y="105" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">A</text>
+          <text x="262" y="105" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">B</text>
+          <text x="210" y="186" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">INNER JOIN</text>
+
+          <!-- ===== LEFT JOIN ===== -->
+          <circle cx="576" cy="100" r="62" fill="#FFFFFF" stroke="#A8B0A0" stroke-width="1.6"/>
+          <circle cx="524" cy="100" r="62" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <path d="M550,43.7 A62,62 0 0 1 550,156.3 A62,62 0 0 1 550,43.7 Z" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <text x="498" y="105" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">A</text>
+          <text x="602" y="105" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">B</text>
+          <text x="550" y="186" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">LEFT JOIN</text>
+
+          <!-- ===== RIGHT JOIN ===== -->
+          <circle cx="184" cy="272" r="62" fill="#FFFFFF" stroke="#A8B0A0" stroke-width="1.6"/>
+          <circle cx="236" cy="272" r="62" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <path d="M210,215.7 A62,62 0 0 1 210,328.3 A62,62 0 0 1 210,215.7 Z" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <text x="158" y="277" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">A</text>
+          <text x="262" y="277" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">B</text>
+          <text x="210" y="358" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">RIGHT JOIN</text>
+
+          <!-- ===== FULL OUTER JOIN ===== -->
+          <circle cx="524" cy="272" r="62" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <circle cx="576" cy="272" r="62" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <path d="M550,215.7 A62,62 0 0 1 550,328.3 A62,62 0 0 1 550,215.7 Z" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <text x="498" y="277" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">A</text>
+          <text x="602" y="277" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">B</text>
+          <text x="550" y="358" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">FULL OUTER JOIN</text>
+
+          <text x="380" y="396" text-anchor="middle" font-size="14" font-weight="700" fill="#A1402A">which unmatched rows survive?</text>
+        </svg>
+        <figcaption>Comparing INNER, LEFT, RIGHT, and FULL OUTER joins side by side.</figcaption>
+      </figure>
+
+      <p>The strictest is <code>INNER JOIN</code>: if a row on either side has no match, it's discarded entirely. <code>LEFT JOIN</code> is more forgiving — "give me everything from the left table, and if there's a match on the right, show it; if not, put NULLs there." That's how you find the gaps: every customer, including the ones with zero orders.</p>
+      <div class="cell" data-cell="inner_vs_left">
+        <div class="cell-head"><span class="cell-title">inner_vs_left_customers.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Notice Carmen appears in the <code>LEFT JOIN</code> result with <code>order_id</code> and <code>total</code> both NULL — she has zero orders, but the left table's row is preserved anyway. That's the entire point of the outer join.</p>
+    </section>
+
+    <section id="join-type-simulator">
+      <div class="kicker">Foundations</div>
+      <h2>Join Type Simulator</h2>
+      <p>The fastest way to internalise the difference between join types is to watch them run on the same two tables. <code>employees</code> has four rows, <code>projects</code> has three, and only departments 10 and 20 exist on both sides — the mismatches are the whole story. <code>Carol</code> (department 30) and <code>Gamma</code> (department 40) have no partner at all. Pick a join type below and watch exactly which rows survive, where NULLs get padded in, and how the row count changes.</p>
+
+      <div class="widget">
+        <div class="widget-title">Join type simulator</div>
+        <div class="widget-sub">Select a join type to see how Employees and Projects combine — watch which rows are kept and where NULLs appear.</div>
+
+        <div class="jts-explored">
+          <span>Explored:</span>
+          <span class="jts-dots" id="jts-dots"></span>
+          <span id="jts-explored-count">0/5</span>
+        </div>
+
+        <div class="jts-modes" id="jts-modes"></div>
+        <div class="jts-venn" id="jts-venn"></div>
+        <div class="callout" id="jts-note"></div>
+        <div class="jts-sql" id="jts-sql"></div>
+
+        <div class="jts-tables">
+          <div class="jts-table-col">
+            <h4>Employees (left)</h4>
+            <div id="jts-emp"></div>
+          </div>
+          <div class="jts-table-col">
+            <h4>Projects (right)</h4>
+            <div id="jts-proj"></div>
+          </div>
+        </div>
+
+        <div class="jts-result-head">
+          <strong>Result set</strong>
+          <span class="jts-count" id="jts-count"></span>
+        </div>
+        <div class="jts-legend">
+          <span><span class="swatch s-left"></span>From left only</span>
+          <span><span class="swatch s-right"></span>From right only</span>
+          <span><span class="swatch s-match"></span>Matched pair</span>
+        </div>
+        <div id="jts-result"></div>
+        <div class="jts-complete" id="jts-complete"></div>
+      </div>
+    </section>
+
+    <section id="wrong-left-join">
+      <div class="kicker">Foundations</div>
+      <h2>The Wrong-LEFT-JOIN Trap</h2>
+      <p>This is the single most common LEFT JOIN bug, and it shows up at every seniority level: a <code>WHERE</code> filter on a right-side column silently turns your outer join back into an inner join.</p>
+      <div class="callout amber">
+        <strong>Why it happens:</strong> <code>WHERE</code> runs <em>after</em> the join. For customers with no matching subscription, every subscription column — including <code>status</code> — is NULL. The comparison <code>NULL = 'active'</code> evaluates to Unknown, and <code>WHERE</code> drops Unknown just like it drops False. So every unmatched left-side row gets silently filtered out, even though the whole reason you wrote <code>LEFT JOIN</code> was to keep it.
+      </div>
+      <figure class="diagram">
+        <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Alice, Bob and Carmen left-joined to subscriptions. Alice matches an active subscription, Bob's is cancelled and Carmen has none, so both keep their row with a NULL status. Adding WHERE status equals active deletes those two NULL rows and leaves only Alice." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="wlj-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#A1402A"/></marker>
+          </defs>
+          <text x="380" y="28" text-anchor="middle" font-size="16" font-weight="700" fill="#1E2A25">Why WHERE silently turns LEFT JOIN into INNER JOIN</text>
+          <text x="380" y="50" text-anchor="middle" font-size="11" fill="#4A564F">The filter belongs in ON, not WHERE.</text>
+
+          <!-- correct: filter in ON -->
+          <rect x="60" y="80" width="340" height="130" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <rect x="60" y="80" width="340" height="28" fill="#F6F7F2"/>
+          <rect x="232" y="144" width="166" height="30" fill="#F4EBD6" data-beat="2"/>
+          <rect x="232" y="178" width="166" height="30" fill="#F4EBD6" data-beat="2"/>
+          <line x1="60" y1="108" x2="400" y2="108" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="230" y1="80" x2="230" y2="210" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="60" y1="142" x2="400" y2="142" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="60" y1="176" x2="400" y2="176" stroke="#C9CFC2" stroke-width="1"/>
+          <text x="145" y="99" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1E2A25">name</text>
+          <text x="315" y="99" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1E2A25">status</text>
+          <text x="145" y="129" text-anchor="middle" font-size="11" fill="#1E2A25" data-beat="1">Alice</text>
+          <text x="315" y="129" text-anchor="middle" font-size="11" fill="#3D6B4A" data-beat="1">active</text>
+          <text x="145" y="163" text-anchor="middle" font-size="11" fill="#1E2A25" data-beat="2">Bob</text>
+          <text x="315" y="163" text-anchor="middle" font-size="11" font-style="italic" fill="#7A560F" data-beat="2">NULL</text>
+          <text x="145" y="197" text-anchor="middle" font-size="11" fill="#1E2A25" data-beat="2">Carmen</text>
+          <text x="315" y="197" text-anchor="middle" font-size="11" font-style="italic" fill="#7A560F" data-beat="2">NULL</text>
+          <text x="60" y="230" font-size="10.5" fill="#3D6B4A">LEFT JOIN &#8230; AND s.status = 'active'  →  3 rows</text>
+
+          <!-- the trap -->
+          <rect x="440" y="80" width="300" height="130" fill="#FFFFFF" stroke="#A1402A" stroke-width="1.6"/>
+          <rect x="440" y="80" width="300" height="28" fill="#F6E4DE"/>
+          <line x1="440" y1="108" x2="740" y2="108" stroke="#A1402A" stroke-width="1.2"/>
+          <line x1="595" y1="80" x2="595" y2="210" stroke="#A1402A" stroke-width="1.2"/>
+          <line x1="440" y1="142" x2="740" y2="142" stroke="#F6E4DE" stroke-width="1"/>
+          <line x1="440" y1="176" x2="740" y2="176" stroke="#F6E4DE" stroke-width="1"/>
+          <text x="517" y="99" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1E2A25">name</text>
+          <text x="667" y="99" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1E2A25">status</text>
+          <text x="517" y="129" text-anchor="middle" font-size="11" fill="#1E2A25">Alice</text>
+          <text x="667" y="129" text-anchor="middle" font-size="11" fill="#3D6B4A">active</text>
+          <text x="517" y="163" text-anchor="middle" font-size="11" fill="#A1402A" text-decoration="line-through">Bob</text>
+          <text x="667" y="163" text-anchor="middle" font-size="11" fill="#A1402A" text-decoration="line-through">—</text>
+          <text x="517" y="197" text-anchor="middle" font-size="11" fill="#A1402A" text-decoration="line-through">Carmen</text>
+          <text x="667" y="197" text-anchor="middle" font-size="11" fill="#A1402A" text-decoration="line-through">—</text>
+          <text x="440" y="230" font-size="10.5" fill="#A1402A">+ WHERE s.status = 'active'  →  1 row</text>
+
+          <line x1="404" y1="145" x2="438" y2="145" stroke="#A1402A" stroke-width="2" marker-end="url(#wlj-arrow)"/>
+          <text x="380" y="262" text-anchor="middle" font-size="11" fill="#4A564F">The two NULL rows are the whole point of LEFT JOIN — and WHERE deletes them.</text>
+        </svg>
+        <figcaption>Filter a right-side column in <code>ON</code> and every customer survives; filter it in <code>WHERE</code> and the unmatched rows vanish, leaving an inner join.</figcaption>
+      </figure>
+      <div class="cell" data-cell="wrong_left_join_bug">
+        <div class="cell-head"><span class="cell-title">wrong_left_join_vs_fixed.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p>The fix is always the same: move the filter on the right-side table into the <code>ON</code> clause, so it's applied <em>during</em> matching rather than <em>after</em>. <code>ON s.cust_id = c.cust_id AND s.status = 'active'</code> lets non-subscribers stay in the result with NULL subscription columns, which is what "every customer, with active-subscription info if any" actually means.</p>
+    </section>
+
+    <section id="subqueries">
+      <div class="kicker">Foundations</div>
+      <h2>Subqueries: Scalar, Table, Correlated</h2>
+      <p>Sometimes a join isn't the most natural way to express a question — you need the result of one query to filter or compute inside another. A <strong>scalar subquery</strong> returns exactly one value (a single number, a single string) and can be used anywhere a constant would go — "find products priced above the average" needs the average computed first, and that average can't be a hardcoded literal. A <strong>table subquery</strong> returns a list or a whole temporary result set, often paired with <code>IN</code> or as a joinable derived table.</p>
+      <p>Both of those run <em>independently</em>: the database evaluates the inner query once and hands the result to the outer query. A <strong>correlated subquery</strong> is different — the inner query references a column from the outer query's current row, so it must run once <em>per row</em> the outer query processes, like a for-each loop. That's what makes "the most recent order for each customer" or "the first event for each user" possible, at the cost of re-scanning the inner table once per outer row.</p>
+    </section>
+
+    <section id="not-in-trap">
+      <div class="kicker">The NULL Trap</div>
+      <h2>The <code>NOT IN</code> / NULL Trap</h2>
+      <p>This is the subquery equivalent of <code>WHERE column = NULL</code> — a trap that has bitten every senior engineer at least once. You want customers who've never ordered:</p>
+      <div class="schema-line">WHERE cust_id NOT IN (SELECT cust_id FROM orders)</div>
+      <p>This works right up until a single row in <code>orders</code> has a NULL <code>cust_id</code> — a guest checkout, say, where no customer was ever attached. As soon as that happens, <code>NOT IN</code> silently returns <strong>zero rows</strong>, for every customer, even the ones who obviously have never ordered anything.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 760 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A NOT IN subquery whose result list contains one NULL returns zero rows; a note points at the NULL row explaining that it poisons the whole check." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="nin-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#A1402A"/></marker>
+          </defs>
+
+          <!-- the predicate -->
+          <rect x="150" y="40" width="460" height="72" rx="8" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="380" y="70" text-anchor="middle" font-size="13" fill="#1E2A25">WHERE user_id NOT IN</text>
+          <text x="380" y="92" text-anchor="middle" font-size="13" fill="#1E2A25">(SELECT user_id FROM signups)</text>
+
+          <!-- the subquery result, with the offending NULL -->
+          <rect x="340" y="152" width="120" height="98" fill="#FFFFFF" stroke="#1E2A25" stroke-width="1.6"/>
+          <rect x="340" y="152" width="120" height="26" fill="#F6F7F2"/>
+          <rect x="340" y="226" width="120" height="24" fill="#F6E4DE"/>
+          <line x1="340" y1="178" x2="460" y2="178" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="340" y1="202" x2="460" y2="202" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="340" y1="226" x2="460" y2="226" stroke="#C9CFC2" stroke-width="1"/>
+          <rect x="340" y="152" width="120" height="98" fill="none" stroke="#1E2A25" stroke-width="1.6"/>
+          <text x="400" y="170" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1E2A25">signups</text>
+          <text x="400" y="195" text-anchor="middle" font-size="12" fill="#1E2A25">(5)</text>
+          <text x="400" y="219" text-anchor="middle" font-size="12" fill="#1E2A25">(7)</text>
+          <text x="400" y="243" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">(NULL)</text>
+          <ellipse cx="400" cy="238" rx="46" ry="15" fill="none" stroke="#A1402A" stroke-width="1.8"/>
+
+          <!-- the hand-written aside -->
+          <text x="596" y="222" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">this NULL poisons</text>
+          <text x="596" y="240" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">the whole check</text>
+          <line x1="494" y1="231" x2="444" y2="231" stroke="#A1402A" stroke-width="2" marker-end="url(#nin-arrow)"/>
+
+          <!-- the outcome -->
+          <rect x="230" y="286" width="300" height="94" rx="8" fill="#FFFFFF" stroke="#A1402A" stroke-width="1.6"/>
+          <text x="380" y="316" text-anchor="middle" font-size="14" font-weight="700" fill="#1E2A25">RESULT: 0 rows</text>
+          <circle cx="380" cy="350" r="17" fill="none" stroke="#1E2A25" stroke-width="1.6"/>
+          <circle cx="374" cy="344" r="1.8" fill="#1E2A25"/>
+          <circle cx="386" cy="344" r="1.8" fill="#1E2A25"/>
+          <path d="M371,358 Q380,350 389,358" fill="none" stroke="#1E2A25" stroke-width="1.6"/>
+
+          <text x="380" y="412" text-anchor="middle" font-size="14" font-weight="700" fill="#A1402A">use NOT EXISTS instead — NULL-safe</text>
+        </svg>
+        <figcaption>How a single NULL in a <code>NOT IN</code> subquery silently returns zero rows.</figcaption>
+      </figure>
+
+      <div class="cell" data-cell="not_in_null_trap">
+        <div class="cell-head"><span class="cell-title">not_in_vs_not_exists_vs_leftjoin.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="callout rust">
+        <strong>Why it fails:</strong> <code>x NOT IN (a, b, NULL)</code> is really <code>x != a AND x != b AND x != NULL</code>. The last comparison is always Unknown. <code>TRUE AND TRUE AND UNKNOWN</code> is Unknown — and <code>WHERE</code> only keeps rows that are True. One NULL anywhere in the subquery's results poisons the entire predicate, for every outer row, regardless of whether that row's own value would obviously qualify.
+      </div>
+      <p><code>NOT EXISTS</code> checks for the <em>presence of a row</em>, not value equality, so it's completely immune to NULLs on either side — and it's often faster besides, since the database can stop scanning the instant it finds one match. <code>LEFT JOIN ... WHERE right.col IS NULL</code> is the other safe pattern. Prefer <code>NOT EXISTS</code> by default; reach for plain <code>IN</code>/<code>NOT IN</code> only when you can guarantee the subquery's column is NULL-free.</p>
+    </section>
+
+    <section id="antijoin-builder">
+      <div class="kicker">The NULL Trap</div>
+      <h2>Anti-Join Logic Builder</h2>
+      <p>See how <code>NOT IN</code>, <code>NOT EXISTS</code>, and <code>LEFT JOIN / IS NULL</code> handle missing data differently — step through the logic by hand, then watch each one actually run against a live database.</p>
+      <div class="widget" id="ajb-widget">
+        <label class="ajb-toggle-row">
+          <span class="ajb-toggle-switch">
+            <input type="checkbox" id="ajb-null-toggle" checked>
+            <span class="ajb-toggle-slider"></span>
+          </span>
+          <span>Include <span class="ajb-null-word">NULL</span> in <code>Sales.product_id</code></span>
+          <span class="badge amber" id="ajb-null-badge">NULL present in Sales</span>
+        </label>
+        <div class="mode-row" id="ajb-tabs">
+          <button class="mode-btn active" data-method="notin">NOT IN</button>
+          <button class="mode-btn" data-method="notexists">NOT EXISTS</button>
+          <button class="mode-btn" data-method="leftjoin">LEFT JOIN / IS NULL</button>
+        </div>
+        <div class="expr-box ajb-sql" id="ajb-sql"></div>
+        <div class="widget-tables">
+          <div class="widget-table-col">
+            <h4>Products <span class="row-count" id="ajb-products-count">5 rows</span></h4>
+            <div id="ajb-products-table"></div>
+            <p class="ajb-legend"><span class="swatch rust"></span>Has a matching sale (eliminated) &nbsp; <span class="swatch green"></span>No matching sale (survives)</p>
+          </div>
+          <div class="widget-table-col">
+            <h4>Sales <span class="row-count" id="ajb-sales-count">4 rows</span></h4>
+            <div id="ajb-sales-table"></div>
+          </div>
+        </div>
+        <div class="ajb-stepbar">
+          <button class="btn secondary" id="ajb-prev">← Prev</button>
+          <button class="btn" id="ajb-next">Next →</button>
+          <span class="ajb-step-dots" id="ajb-step-dots"></span>
+          <span class="ajb-step-label" id="ajb-step-label">Step 1 / 3</span>
+        </div>
+        <p class="ajb-step-explain" id="ajb-step-explain"></p>
+        <div class="ajb-result">
+          <h4>Result set — <span id="ajb-result-method">NOT IN</span> <span class="row-count" id="ajb-result-count">—</span></h4>
+          <div id="ajb-result-table"></div>
+          <p class="ajb-result-placeholder" id="ajb-result-placeholder">Run through the steps to see the result…</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="semi-anti-joins">
+      <div class="kicker">The NULL Trap</div>
+      <h2>Semi-Joins and Anti-Joins</h2>
+      <p>When you filter table A using <code>EXISTS</code> or <code>IN</code> against table B, you're performing a <strong>semi-join</strong>: you use B purely as a filter, and B's columns never appear in the output, and A's rows are never duplicated even if several B rows match. An <strong>anti-join</strong> is the mirror image — rows from A that have <em>no</em> match in B — the "find the gaps" pattern from the section above.</p>
+      <p>The tempting alternative — <code>INNER JOIN</code> plus <code>DISTINCT</code> — gets the same rows, but only after actually joining in (and then discarding) every matching row from B. A true semi-join never materializes B's rows at all.</p>
+      <div class="cell" data-cell="semi_join_products_sold">
+        <div class="cell-head"><span class="cell-title">semi_join_products_ever_sold.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Widget has two sales rows. <code>EXISTS</code> and plain <code>IN</code> each return it exactly once — that's the semi-join property. The plain <code>INNER JOIN</code> without <code>DISTINCT</code>, shown last, returns Widget <em>twice</em> — once per matching sale — which is almost never what "products that have sold" is supposed to mean.</p>
+    </section>
+
+    <section id="correlated-vs-window">
+      <div class="kicker">Patterns That Scale</div>
+      <h2>Latest-Per-Group: Correlated Subquery vs. Window Function</h2>
+      <p>"For each customer, show their most recent order" is a hierarchical question — one row per customer, but the value depends on which customer. A correlated subquery answers it directly: for each row of <code>customers</code>, re-run <code>MAX(order_ts) WHERE cust_id = &lt;this row's id&gt;</code>. It reads cleanly, but on a million-row customer table, that's a million separate subquery evaluations against <code>orders</code>.</p>
+      <p>A window function answers the same question in a single pass: rank every order within its customer's partition by recency, then keep only rank 1.</p>
+      <div class="cell" data-cell="latest_order_per_customer">
+        <div class="cell-head"><span class="cell-title">latest_order_subquery_vs_window.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Both queries return the same rows here. The difference is scaling behavior: the correlated subquery re-scans <code>orders</code> once per customer; <code>ROW_NUMBER() OVER (PARTITION BY ...)</code> scans <code>orders</code> exactly once, ranks everything in one pass, and the outer query just filters to <code>rn = 1</code>. Prefer the window-function shape once the tables get large.</p>
+    </section>
+
+    <section id="full-outer">
+      <div class="kicker">Patterns That Scale</div>
+      <h2>FULL OUTER JOIN: Finding Discrepancies</h2>
+      <p><code>FULL OUTER JOIN</code> is the most inclusive join: it keeps every row from both sides, filling in NULLs wherever a match is missing on either one. Its best use case is a reconciliation — two systems that are supposed to agree, and you want to know exactly where they don't.</p>
+      <div class="cell" data-cell="full_outer_discrepancy">
+        <div class="cell-head"><span class="cell-title">full_outer_join_discrepancies.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="callout">
+        <strong>Portability note:</strong> <code>FULL OUTER JOIN</code> (and <code>RIGHT JOIN</code>) only work in SQLite from version 3.39 (2022) onward — this playground's engine is new enough. MySQL has never supported <code>FULL OUTER JOIN</code> at all; the standard workaround there is a <code>LEFT JOIN UNION RIGHT JOIN</code> (or, more simply, <code>LEFT JOIN ... UNION SELECT ... RIGHT-side-only rows</code>). PostgreSQL and SQL Server have always supported it directly. Check your target engine before relying on it.
+      </div>
+    </section>
+
+    <section id="cartesian">
+      <div class="kicker">Patterns That Scale</div>
+      <h2>The Accidental Cartesian Product</h2>
+      <p>Forget the <code>JOIN</code> keyword, forget the <code>ON</code> clause, forget the <code>WHERE</code> — and list two tables separated by a comma — and SQL doesn't error. It gives you every possible pairing of rows: the Cartesian product. Each row of A is paired with every row of B, whether or not they're related in any way.</p>
+      <div class="cell" data-cell="accidental_cartesian">
+        <div class="cell-head"><span class="cell-title">accidental_cartesian_product.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">10 rows × 20 rows = 200 rows here. Scale that pattern to a 10,000-row <code>users</code> table and a 50,000-row <code>orders</code> table and a missing <code>ON</code> clause produces 500,000,000 rows — which is either a query that never finishes, or one that silently eats all the memory on the box. A missing join condition on small test tables is a correctness bug; the same missing condition on production tables is an incident.</p>
+    </section>
+
+    <section id="worked-dropoff">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Users Who Signed Up But Never Did Anything</h2>
+      <p>The classic onboarding-funnel question, and the classic anti-join, side by side — both patterns are safe, and both produce the same rows.</p>
+      <div class="cell" data-cell="events_q1_dropoff">
+        <div class="cell-head"><span class="cell-title">onboarding_dropoff_two_ways.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="worked-first-event">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Each User's First Event</h2>
+      <p>"Activation analysis" — the first thing a user ever did after signing up. The correlated-subquery version is readable; the window-function version scans <code>events</code> exactly once.</p>
+      <div class="cell" data-cell="events_q2_first_event">
+        <div class="cell-head"><span class="cell-title">first_event_subquery_vs_window.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="join-quiz">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Join Pattern Selector</h2>
+      <p>Ten scenarios pulling together everything above — picking the right join, spotting the wrong-LEFT-JOIN bug, staying safe under NULLs, and choosing the cleanest pattern for "latest per group" and "has a match" questions.</p>
+      <div id="jps-quiz"></div>
+    </section>
+
+    <section id="join-pattern-steps">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: The Five Join Patterns</h2>
+      <p>Almost every join question reduces to one of five shapes. Step through them once — with the row-count effect of each — and you will never again guess between <code>JOIN</code>, <code>LEFT JOIN</code> and <code>NOT EXISTS</code>.</p>
+
+      <div class="widget">
+        <div class="widget-title">The Five Join Patterns</div>
+        <div class="widget-sub">matching · left · semi · anti · lateral</div>
+        <div class="qstep-rail" id="jpstep-rail"></div>
+        <div class="qstep-body" id="jpstep-body"></div>
+        <div class="qstep-controls">
+          <button class="qstep-restart-btn" id="jpstep-back">◀ Back</button>
+          <button class="qstep-next-btn" id="jpstep-next">Next pattern ▶</button>
+          <button class="qstep-restart-btn" id="jpstep-restart">↺ Restart</button>
+          <span class="qstep-count" id="jpstep-count"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. Self-join for manager names</h4>
+        <p>Given <code>employees(emp_id, name, mgr_id)</code> where <code>mgr_id</code> is a foreign key back to <code>employees.emp_id</code> (NULL for the CEO), write a query that lists every employee alongside their manager's name. Ensure the CEO appears in the output even though they have no manager.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <div class="schema-line">SELECT e.name AS employee, m.name AS manager
+FROM employees e
+LEFT JOIN employees m ON m.emp_id = e.mgr_id;</div>
+            <ul>
+              <li>Self-join: <code>employees</code> joined to itself using two aliases (<code>e</code> for employee, <code>m</code> for manager).</li>
+              <li><code>LEFT JOIN</code> (not <code>INNER</code>): the CEO has <code>mgr_id IS NULL</code>, so no matching row exists in <code>m</code>. <code>LEFT JOIN</code> preserves the CEO in the output with <code>manager = NULL</code>.</li>
+              <li>An <code>INNER JOIN</code> here would silently drop the CEO.</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Which pattern is safe under NULLs?</h4>
+        <p>Given a <code>users</code> table and a <code>banned_users</code> table, which of these queries is safe if <code>banned_users.user_id</code> can contain NULL?</p>
+        <p>(a) <code>WHERE id IN (SELECT user_id FROM banned_users)</code> &nbsp; (b) <code>WHERE id NOT IN (SELECT user_id FROM banned_users)</code> &nbsp; (c) <code>WHERE EXISTS (SELECT 1 FROM logs WHERE logs.user_id = users.id)</code></p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <ul>
+              <li><strong>(a) Safe.</strong> <code>IN</code> with a NULL in the subquery becomes Unknown for <em>that one comparison</em>, but if a non-NULL match exists elsewhere in the list, the row is still returned. Extra NULLs are effectively ignored, not toxic.</li>
+              <li><strong>(b) Dangerous.</strong> As soon as <code>banned_users</code> has one <code>user_id IS NULL</code>, the entire <code>NOT IN</code> becomes Unknown for every user, returning zero rows. Rewrite as <code>WHERE NOT EXISTS (SELECT 1 FROM banned_users b WHERE b.user_id = users.id)</code>.</li>
+              <li><strong>(c) Safe.</strong> <code>EXISTS</code> checks for row presence, not value equality — NULLs in <code>logs.user_id</code> simply don't match anything, they don't collapse the whole predicate. This is exactly why <code>NOT EXISTS</code> is the recommended replacement for <code>NOT IN</code>.</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Counting rows across join types</h4>
+        <p>Given <code>A = {1, 2, 3, 4, 5}</code> and <code>B = {4, 5, 6, 7, 8}</code> as tables each with one column <code>id</code>, how many rows does each query return?</p>
+        <p>(a) <code>A INNER JOIN B ON A.id = B.id</code> &nbsp; (b) <code>A LEFT JOIN B ON A.id = B.id</code> &nbsp; (c) <code>A FULL OUTER JOIN B ON A.id = B.id</code> &nbsp; (d) <code>A CROSS JOIN B</code></p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <ul>
+              <li><strong>(a) 2 rows</strong> — only {4, 5} match on both sides.</li>
+              <li><strong>(b) 5 rows</strong> — every A row survives: 3 unmatched (1, 2, 3) plus 2 matched (4, 5). Unmatched rows get NULL for B's columns.</li>
+              <li><strong>(c) 8 rows</strong> — 2 matched, plus 3 unmatched from A, plus 3 unmatched from B.</li>
+              <li><strong>(d) 25 rows</strong> — 5 × 5 = every possible pair. Cross joins scale multiplicatively, which is exactly why accidentally omitting an <code>ON</code> clause on large tables is catastrophic.</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. Correlated subquery vs. JOIN + GROUP BY</h4>
+        <p>You want customers whose latest order is over 500. Write it two ways: (a) using a correlated subquery, (b) using a JOIN + GROUP BY. Which is likely to run faster on a large <code>orders</code> table with an index on <code>cust_id</code>?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>(a) Correlated subquery:</p>
+            <div class="schema-line">SELECT c.cust_id, c.name
+FROM customers c
+WHERE (SELECT total FROM orders o
+       WHERE o.cust_id = c.cust_id
+       ORDER BY o.order_date DESC LIMIT 1) &gt; 500;</div>
+            <p>(b) JOIN + GROUP BY, then filter:</p>
+            <div class="schema-line">WITH latest AS (
+    SELECT cust_id, MAX(order_date) AS max_date
+    FROM orders GROUP BY cust_id
+)
+SELECT c.cust_id, c.name
+FROM customers c
+JOIN latest l ON l.cust_id = c.cust_id
+JOIN orders o ON o.cust_id = l.cust_id AND o.order_date = l.max_date
+WHERE o.total &gt; 500;</div>
+            <p>Version (b) is usually faster on large tables — it scans <code>orders</code> once to compute <code>latest</code>, then joins. The correlated subquery in (a) effectively re-evaluates per customer. On a million customers with millions of orders, the difference can be minutes versus milliseconds. The optimizer <em>sometimes</em> rewrites (a) into something like (b), but you can't rely on that — write the cleaner shape yourself.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>5. Why did the NULL-status rows disappear?</h4>
+        <p>You wrote <code>WHERE status NOT IN ('shipped', 'cancelled')</code> intending to find pending/processing orders. When you run it, orders where <code>status IS NULL</code> are missing from the result. Why, and how do you fix it?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><code>NULL NOT IN ('shipped', 'cancelled')</code> evaluates to Unknown, because comparing NULL to any value is Unknown, and <code>Unknown AND ...</code> is Unknown. <code>WHERE</code> only keeps True rows, so NULL-status rows are dropped.</p>
+            <p>Fix — explicitly handle NULL:</p>
+            <div class="schema-line">WHERE (status IS NULL OR status NOT IN ('shipped', 'cancelled'))</div>
+            <p>Or, if NULL status is a data-quality bug and shouldn't exist, add a <code>CHECK</code> constraint to the schema going forward and clean up the existing NULLs. Either fix is defensible — the query fix recovers from bad data; the schema fix prevents it.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p>Joins are the single most-asked SQL topic in coding rounds. Every top company's SQL screen tests joins first.</p>
+
+        <p><strong>The classic SQL-round question.</strong> Given a <code>users</code> table and an <code>events</code> table (with a <code>user_id</code> FK), find users who signed up but never triggered a purchase event. The correct answer uses either <code>LEFT JOIN ... WHERE ... IS NULL</code> (anti-join) or <code>NOT EXISTS</code>. <code>NOT IN</code> is a trap — if any <code>user_id</code> in <code>events</code> is NULL, the query returns zero rows silently. Interviewers know this and use it as a filter for careful vs. sloppy candidates.</p>
+
+        <p><strong>The follow-up.</strong> "Now find users whose first purchase happened within 7 days of signup." This is a classic "for each user, the first purchase" pattern — either a correlated subquery (<code>SELECT MIN(event_ts) ... WHERE user_id = u.user_id</code>), or a window function (<code>ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY event_ts)</code> filtered to <code>rn = 1</code>), or a JOIN with <code>MIN(event_ts) GROUP BY user_id</code>. Verbalize the trade-offs: window functions read cleanly, aggregations are usually cheaper on large data.</p>
+
+        <p><strong>Watch for the "wrong LEFT JOIN" trap.</strong> A very common bug at all seniority levels:</p>
+        <div class="schema-line">-- BROKEN: WHERE on the right side of LEFT JOIN silently drops unmatched rows
+SELECT u.user_id, s.plan_tier
+FROM users u
+LEFT JOIN subscriptions s ON s.user_id = u.user_id
+WHERE s.plan_tier = 'pro';</div>
+        <p>The filter runs after the join, and the LEFT JOIN's NULL rows fail <code>s.plan_tier = 'pro'</code>, so they're silently dropped — turning the LEFT JOIN back into an INNER JOIN. The fix is to move the filter into the <code>ON</code> clause:</p>
+        <div class="schema-line">LEFT JOIN subscriptions s
+  ON s.user_id = u.user_id
+ AND s.plan_tier = 'pro';</div>
+        <p>Being able to spot this in a code review is a favorite interviewer signal.</p>
+
+        <p><strong>Rule of thumb for interviews.</strong></p>
+        <ul class="criteria-list">
+          <li><span class="c-num">•</span>Column from both sides → <code>JOIN</code>.</li>
+          <li><span class="c-num">•</span>Filter existence, no columns from the other table → <code>EXISTS</code>.</li>
+          <li><span class="c-num">•</span>Filter absence → <code>NOT EXISTS</code> (never <code>NOT IN</code>, unless the subquery is guaranteed NULL-free).</li>
+          <li><span class="c-num">•</span>"For each X, the latest Y" → window function (<code>ROW_NUMBER() OVER (PARTITION BY x ORDER BY y_ts DESC)</code>).</li>
+        </ul>
+        <p>Verbalize which one you are using and why. Silent code loses the round even when it runs.</p>
+      </div>
+    </section>
+
+    <section id="in-2026">
+      <div class="kicker">2026 Status</div>
+      <h2>In 2026: What Has Changed</h2>
+      <p>Join patterns are stable; what changed is how often an optimizer rewrites them for you.</p>
+      <ul>
+        <li><strong>LATERAL joins</strong> let a subquery reference columns from the table to its left — the clean way to express 'top N per group'.</li>
+        <li><strong>Semi- and anti-joins are the shapes to reach for</strong> instead of <code>IN</code> / <code>NOT IN</code> whenever NULLs are possible.</li>
+        <li><strong>Decorrelation</strong> means a correlated subquery often compiles to a join — but only when the pattern is provably equivalent.</li>
+        <li><strong>Duplicate amplification</strong> is the most common join bug: joining a table with two matching rows doubles the row count and silently inflates every aggregate downstream.</li>
+      </ul>
+      <p class="small">Choosing the right join shape is usually the difference between a query that is correct and one that is merely close.</p>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="9_null_trap_detector_playground.html">← 9. Single-Table SELECT</a>
+        <a class="pgnav-pos" href="index.html">Playground 10 of 15</a>
+        <a class="pgnav-next" href="11_aggregation_playground.html">11. Aggregation →</a>
+      </nav>
+    </footer>
+
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
+const CELLS = {
+  inner_vs_left: {
+    setup: ``,
+    starter:
+`CREATE TABLE customers (cust_id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1,'Alice'), (2,'Bob'), (3,'Carmen');
+
+CREATE TABLE orders (order_id INT PRIMARY KEY, cust_id INT, total REAL);
+INSERT INTO orders VALUES (100,1,50.0), (101,1,20.0), (102,2,75.0);
+
+-- INNER JOIN: Carmen has no orders, so she's discarded entirely
+SELECT c.name, o.order_id, o.total FROM customers c INNER JOIN orders o ON o.cust_id = c.cust_id;
+
+-- LEFT JOIN: Carmen still appears, with NULL order info
+SELECT c.name, o.order_id, o.total FROM customers c LEFT JOIN orders o ON o.cust_id = c.cust_id;`
+  },
+  wrong_left_join_bug: {
+    setup: ``,
+    starter:
+`CREATE TABLE customers (cust_id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1,'Alice'), (2,'Bob'), (3,'Carmen');
+
+CREATE TABLE subscriptions (sub_id INT PRIMARY KEY, cust_id INT, status TEXT);
+INSERT INTO subscriptions VALUES (1,1,'active'), (2,2,'cancelled');
+
+-- BROKEN: WHERE on the right-side column silently converts LEFT JOIN into INNER JOIN
+SELECT c.name, s.status
+FROM customers c
+LEFT JOIN subscriptions s ON s.cust_id = c.cust_id
+WHERE s.status = 'active';
+
+-- FIXED: move the filter into the ON clause -- non-subscribers stay, with NULL status
+SELECT c.name, s.status
+FROM customers c
+LEFT JOIN subscriptions s ON s.cust_id = c.cust_id AND s.status = 'active';`
+  },
+  not_in_null_trap: {
+    setup: ``,
+    starter:
+`CREATE TABLE customers (cust_id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1,'Alice'), (2,'Bob'), (3,'Carmen');
+
+CREATE TABLE orders (order_id INT PRIMARY KEY, cust_id INT);
+-- order 101 is a guest checkout -- no customer attached, cust_id IS NULL
+INSERT INTO orders VALUES (100,1), (101,NULL);
+
+-- DANGEROUS: one NULL in the subquery makes NOT IN return ZERO rows, always
+SELECT cust_id, name FROM customers WHERE cust_id NOT IN (SELECT cust_id FROM orders);
+
+-- SAFE: NOT EXISTS is immune to NULLs in the subquery
+SELECT cust_id, name FROM customers c
+WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.cust_id = c.cust_id);
+
+-- SAFE: LEFT JOIN + IS NULL anti-join
+SELECT c.cust_id, c.name FROM customers c
+LEFT JOIN orders o ON o.cust_id = c.cust_id
+WHERE o.cust_id IS NULL;`
+  },
+  semi_join_products_sold: {
+    setup: ``,
+    starter:
+`CREATE TABLE products (id INT PRIMARY KEY, name TEXT);
+INSERT INTO products VALUES (1,'Widget'), (2,'Gadget'), (3,'Gizmo');
+
+CREATE TABLE sales (sale_id INT PRIMARY KEY, product_id INT, sale_ts TEXT);
+-- Widget has TWO sales rows -- watch what that does without a semi-join
+INSERT INTO sales VALUES (1,1,'2025-01-01'), (2,1,'2025-01-05'), (3,2,'2025-02-01');
+
+-- Semi-join via EXISTS: Widget appears exactly once
+SELECT id, name FROM products p WHERE EXISTS (SELECT 1 FROM sales s WHERE s.product_id = p.id);
+
+-- Semi-join via IN: same result
+SELECT id, name FROM products WHERE id IN (SELECT product_id FROM sales);
+
+-- INNER JOIN without DISTINCT: Widget appears TWICE -- once per matching sale
+SELECT p.id, p.name FROM products p INNER JOIN sales s ON s.product_id = p.id;`
+  },
+  latest_order_per_customer: {
+    setup: ``,
+    starter:
+`CREATE TABLE customers (cust_id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1,'Alice'), (2,'Bob');
+
+CREATE TABLE orders (order_id INT PRIMARY KEY, cust_id INT, order_ts TEXT, total REAL);
+INSERT INTO orders VALUES
+  (100,1,'2025-01-01',50.0),
+  (101,1,'2025-03-15',80.0),
+  (102,2,'2025-02-10',30.0);
+
+-- Correlated subquery: re-evaluated once per customer row
+SELECT c.cust_id, c.name,
+       (SELECT MAX(order_ts) FROM orders o WHERE o.cust_id = c.cust_id) AS latest_order
+FROM customers c;
+
+-- Window function: single pass over orders, then filter to rn = 1
+WITH ranked AS (
+  SELECT cust_id, order_ts, total,
+         ROW_NUMBER() OVER (PARTITION BY cust_id ORDER BY order_ts DESC) AS rn
+  FROM orders
+)
+SELECT c.cust_id, c.name, r.order_ts AS latest_order, r.total
+FROM customers c
+LEFT JOIN ranked r ON r.cust_id = c.cust_id AND r.rn = 1;`
+  },
+  full_outer_discrepancy: {
+    setup: ``,
+    starter:
+`CREATE TABLE system_a (emp_id INT PRIMARY KEY, name TEXT);
+INSERT INTO system_a VALUES (1,'Alice'), (2,'Bob'), (3,'Carmen');
+
+CREATE TABLE system_b (emp_id INT PRIMARY KEY, name TEXT);
+INSERT INTO system_b VALUES (2,'Bob'), (3,'Carmen'), (4,'Dave');
+
+SELECT COALESCE(a.emp_id, b.emp_id) AS emp_id,
+       a.name AS name_in_a, b.name AS name_in_b,
+       CASE WHEN a.emp_id IS NULL THEN 'Missing from A'
+            WHEN b.emp_id IS NULL THEN 'Missing from B'
+            ELSE 'In both' END AS status
+FROM system_a a
+FULL OUTER JOIN system_b b ON a.emp_id = b.emp_id
+WHERE a.emp_id IS NULL OR b.emp_id IS NULL;`
+  },
+  accidental_cartesian: {
+    setup: ``,
+    starter:
+`CREATE TABLE small_users (id INT PRIMARY KEY);
+INSERT INTO small_users VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
+
+CREATE TABLE small_orders (id INT PRIMARY KEY);
+INSERT INTO small_orders SELECT value FROM (
+  WITH RECURSIVE seq(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM seq WHERE value < 20)
+  SELECT value FROM seq
+);
+
+-- No JOIN keyword, no ON clause, no WHERE -- comma between tables means Cartesian product
+SELECT COUNT(*) AS row_count FROM small_users, small_orders;`
+  },
+  events_q1_dropoff: {
+    setup: ``,
+    starter:
+`CREATE TABLE users (user_id INT PRIMARY KEY, email TEXT, signup_date TEXT);
+INSERT INTO users VALUES (1,'a@x.com','2025-01-01'), (2,'b@x.com','2025-01-02'), (3,'c@x.com','2025-01-03');
+
+CREATE TABLE events (event_id INT PRIMARY KEY, user_id INT, event_name TEXT, event_ts TEXT);
+INSERT INTO events VALUES (1,1,'login','2025-01-02'), (2,1,'purchase','2025-01-03');
+
+-- Method 1: LEFT JOIN + IS NULL
+SELECT u.user_id, u.email, u.signup_date
+FROM users u
+LEFT JOIN events e ON e.user_id = u.user_id
+WHERE e.event_id IS NULL;
+
+-- Method 2: NOT EXISTS -- often faster, same result
+SELECT u.user_id, u.email, u.signup_date
+FROM users u
+WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.user_id = u.user_id);`
+  },
+  events_q2_first_event: {
+    setup: ``,
+    starter:
+`CREATE TABLE users (user_id INT PRIMARY KEY, email TEXT);
+INSERT INTO users VALUES (1,'a@x.com'), (2,'b@x.com');
+
+CREATE TABLE events (event_id INT PRIMARY KEY, user_id INT, event_name TEXT, event_ts TEXT);
+INSERT INTO events VALUES
+  (1,1,'signup','2025-01-01'),
+  (2,1,'login','2025-01-02'),
+  (3,2,'signup','2025-01-05');
+
+-- Correlated subquery: re-scans events per user
+SELECT u.user_id, u.email,
+       (SELECT event_name FROM events e WHERE e.user_id = u.user_id ORDER BY event_ts ASC LIMIT 1) AS first_event
+FROM users u;
+
+-- Window function: single pass over events
+WITH firsts AS (
+  SELECT user_id, event_name, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY event_ts ASC) AS rn
+  FROM events
+)
+SELECT u.user_id, u.email, f.event_name AS first_event
+FROM users u
+LEFT JOIN firsts f ON f.user_id = u.user_id AND f.rn = 1;`
+  }
+};
+
+function commonErrorHint(msg){
+  const m = msg.toLowerCase();
+  if (m.includes('no such column')) {
+    return "That column (or alias) doesn't exist at this point in query execution -- check whether you meant a column from the other side of the join, or an alias that isn't in scope yet.";
+  }
+  if (m.includes('right and left of') || m.includes('ambiguous column name')) {
+    return "Both tables have a column with this name -- qualify it with the table alias (e.g. c.id vs o.id).";
+  }
+  if (m.includes('unique constraint failed')) {
+    return "A UNIQUE or PRIMARY KEY constraint stopped this -- that value already exists in the table.";
+  }
+  if (m.includes('foreign key constraint failed')) {
+    return "A foreign key stopped this -- a row points at a parent that doesn't exist, or a parent still has dependent children.";
+  }
+  return null;
+}
+
+/* ============ SQL execution engine (uses iterateStatements so zero-row SELECTs and partial output before an error are preserved) ============ */
+let SQL = null;
+async function getSqlJsModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderResultTable(columns, rows){
+  if (!columns.length) return '';
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of columns) html += `<th>${escapeHtml(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += '<tr>';
+    for (const v of row) html += `<td>${v === null ? '<em>NULL</em>' : escapeHtml(v)}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+async function runSqlAgainstFreshDb(setupSql, mainSql, outputEl){
+  outputEl.innerHTML = '';
+  outputEl.classList.remove('err');
+  outputEl.classList.add('show');
+  try {
+    const SQLmod = await getSqlJsModule();
+    const db = new SQLmod.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setupSql && setupSql.trim()) db.run(setupSql);
+    let out = '';
+    let hadOutput = false;
+    let stmtIter;
+    try {
+      stmtIter = db.iterateStatements(mainSql);
+    } catch (e) {
+      throw e;
+    }
+    for (const stmt of stmtIter) {
+      try {
+        const cols = stmt.getColumnNames();
+        const rows = [];
+        while (stmt.step()) {
+          rows.push(stmt.get());
+        }
+        if (cols.length) {
+          out += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length===1?'':'s'}</div>`;
+          out += renderResultTable(cols, rows);
+          hadOutput = true;
+        }
+      } catch (stmtErr) {
+        const hint = commonErrorHint(stmtErr.message);
+        out += `<div style="color:#F0A38A; margin-top:8px;">✖ Error: ${escapeHtml(stmtErr.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+        hadOutput = true;
+        outputEl.innerHTML = out;
+        outputEl.classList.add('err');
+        db.close();
+        return;
+      }
+    }
+    if (!hadOutput) out = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    outputEl.innerHTML = out;
+    db.close();
+  } catch (e) {
+    const hint = commonErrorHint(e.message);
+    outputEl.innerHTML = `<div style="color:#F0A38A;">✖ Error: ${escapeHtml(e.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+    outputEl.classList.add('err');
+  }
+}
+
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+
+function wireCell(cellEl){
+  const id = cellEl.getAttribute('data-cell');
+  const spec = CELLS[id];
+  if (!spec) return;
+  const textarea = cellEl.querySelector('textarea');
+  const output = cellEl.querySelector('.cell-output');
+  const runBtn = cellEl.querySelector('.run-btn');
+  const resetBtn = cellEl.querySelector('.reset-btn');
+  textarea.value = spec.starter;
+  pgGrow(textarea);
+  textarea.addEventListener('input', () => pgGrow(textarea));
+  runBtn.addEventListener('click', () => {
+    runSqlAgainstFreshDb(spec.setup, textarea.value, output);
+  });
+  resetBtn.addEventListener('click', () => {
+    textarea.value = spec.starter;
+    pgGrow(textarea);
+    output.classList.remove('show', 'err');
+    output.innerHTML = '';
+  });
+}
+
+function initAllCells(){
+  document.querySelectorAll('.cell[data-cell]').forEach(wireCell);
+}
+
+/* ============ Join Pattern Selector quiz (extends the generic engine with a DDL/SQL preview and a live Verify button) ============ */
+const JOIN_PATTERN_QUESTIONS = [
+  {
+    q: "You need to list every customer along with their orders. Customers with no orders should still appear in the result (with NULL order info). Which join?",
+    verifySetup: `CREATE TABLE customers (cust_id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1,'Alice'),(2,'Bob'),(3,'Carmen');
+CREATE TABLE orders (order_id INT PRIMARY KEY, cust_id INT, total REAL);
+INSERT INTO orders VALUES (100,1,50.0),(101,2,75.0);`,
+    verifyMain: `SELECT c.name, o.order_id, o.total FROM customers c LEFT JOIN orders o ON o.cust_id = c.cust_id;`,
+    options: [
+      { label: "INNER JOIN", hint: "Match required on both sides", correct: false },
+      { label: "LEFT JOIN", hint: "Keep all from left", correct: true },
+      { label: "RIGHT JOIN", hint: "", correct: false },
+      { label: "CROSS JOIN", hint: "", correct: false }
+    ],
+    feedback: "LEFT JOIN keeps every row from the left table (customers) regardless of whether a match exists on the right, filling in NULLs where there's no order."
+  },
+  {
+    q: "Given LEFT JOIN orders ON orders.customer_id = customers.id, followed by WHERE orders.status = 'active'. You expect all customers to appear (with NULLs for those without active orders). Instead, customers with no orders are DROPPED. Why?",
+    verifySetup: `CREATE TABLE customers (id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1,'Alice'),(2,'Bob');
+CREATE TABLE orders (order_id INT PRIMARY KEY, customer_id INT, status TEXT);
+INSERT INTO orders VALUES (100,1,'active');`,
+    verifyMain: `SELECT customers.name, orders.status
+FROM customers
+LEFT JOIN orders ON orders.customer_id = customers.id
+WHERE orders.status = 'active';`,
+    options: [
+      { label: "Typo in the ON clause", hint: "", correct: false },
+      { label: "The WHERE filter on the right-side column converts the LEFT JOIN into an effective INNER JOIN", hint: "", correct: true },
+      { label: "Bug in the DBMS", hint: "", correct: false },
+      { label: "Missing index", hint: "", correct: false }
+    ],
+    feedback: "For unmatched left rows, every right-side column (including status) is NULL. NULL = 'active' is Unknown, and WHERE drops Unknown rows -- silently turning the LEFT JOIN back into an INNER JOIN. Move the filter into the ON clause to fix it."
+  },
+  {
+    q: "You need to find users who have NEVER placed an order. The orders.user_id column is nullable (guest orders exist with NULL user_id). Which pattern is SAFE?",
+    verifySetup: `CREATE TABLE users (id INT PRIMARY KEY, name TEXT);
+INSERT INTO users VALUES (1,'Alice'),(2,'Bob'),(3,'Carmen');
+CREATE TABLE orders (order_id INT PRIMARY KEY, user_id INT);
+INSERT INTO orders VALUES (100,1),(101,NULL);`,
+    verifyMain: `-- NOT IN (dangerous): returns 0 rows because of the NULL user_id
+SELECT id, name FROM users WHERE id NOT IN (SELECT user_id FROM orders);
+
+-- NOT EXISTS (safe): correctly finds Bob and Carmen
+SELECT id, name FROM users u WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);`,
+    options: [
+      { label: "WHERE user_id NOT IN (SELECT user_id FROM orders)", hint: "Classic anti-join, but unsafe here", correct: false },
+      { label: "WHERE NOT EXISTS (SELECT 1 FROM orders WHERE ...)", hint: "", correct: true },
+      { label: "Either works identically", hint: "", correct: false },
+      { label: "LEFT JOIN + AND user_id IS NULL", hint: "the IS NULL check goes in ON, not WHERE", correct: false }
+    ],
+    feedback: "NOT IN is poisoned by a single NULL in the subquery and silently returns zero rows for every user. NOT EXISTS checks row presence, not value equality, so it's unaffected. (Putting 'AND user_id IS NULL' inside the ON clause doesn't work either -- run the verify query variations to see why: it changes the join condition itself, not which rows survive after it.)"
+  },
+  {
+    q: "You want to find each user's most recent order -- a single row per user showing their latest purchase, with the other order columns intact. Which pattern is cleanest?",
+    verifySetup: `CREATE TABLE users (user_id INT PRIMARY KEY, name TEXT);
+INSERT INTO users VALUES (1,'Alice'),(2,'Bob');
+CREATE TABLE orders (order_id INT PRIMARY KEY, user_id INT, order_ts TEXT, total REAL);
+INSERT INTO orders VALUES (1,1,'2025-01-01',50),(2,1,'2025-03-15',80),(3,2,'2025-02-10',30);`,
+    verifyMain: `WITH ranked AS (
+  SELECT order_id, user_id, order_ts, total,
+         ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY order_ts DESC) AS rn
+  FROM orders
+)
+SELECT u.user_id, u.name, r.order_ts, r.total
+FROM users u
+LEFT JOIN ranked r ON r.user_id = u.user_id AND r.rn = 1;`,
+    options: [
+      { label: "GROUP BY user_id, then MAX(order_ts) -- but you also want other order columns", hint: "", correct: false },
+      { label: "Correlated subquery per user", hint: "", correct: false },
+      { label: "ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY order_ts DESC) filtered to rn = 1", hint: "", correct: true },
+      { label: "SELECT DISTINCT user_id", hint: "", correct: false }
+    ],
+    feedback: "ROW_NUMBER() PARTITION BY gives you the full row -- every column of the winning order -- in one pass over the table. GROUP BY + MAX gets you the date but not the rest of that row's columns without extra joining; a correlated subquery works but re-scans per user; DISTINCT user_id doesn't tell you anything about 'latest' at all."
+  },
+  {
+    q: "You have products(id, name) and sales(product_id, sale_ts). You want products that have EVER been sold (at least one sale), without pulling any sale columns into the result. Which pattern is best?",
+    verifySetup: `CREATE TABLE products (id INT PRIMARY KEY, name TEXT);
+INSERT INTO products VALUES (1,'Widget'),(2,'Gadget'),(3,'Gizmo');
+CREATE TABLE sales (sale_id INT PRIMARY KEY, product_id INT, sale_ts TEXT);
+INSERT INTO sales VALUES (1,1,'2025-01-01'),(2,1,'2025-01-05'),(3,2,'2025-02-01');`,
+    verifyMain: `-- EXISTS: semi-join, Widget appears once despite two sales
+SELECT id, name FROM products p WHERE EXISTS (SELECT 1 FROM sales s WHERE s.product_id = p.id);
+
+-- INNER JOIN without DISTINCT: Widget appears twice
+SELECT p.id, p.name FROM products p INNER JOIN sales s ON s.product_id = p.id;`,
+    options: [
+      { label: "INNER JOIN + DISTINCT", hint: "Works, but joins in every sale row first, then discards duplicates", correct: false },
+      { label: "WHERE EXISTS (SELECT 1 FROM sales WHERE ...)", hint: "Semi-join in SQL", correct: true },
+      { label: "WHERE id IN (SELECT product_id FROM sales)", hint: "", correct: false },
+      { label: "Any of the three -- all give the same rows", hint: "", correct: false }
+    ],
+    feedback: "EXISTS is the idiomatic semi-join: it never touches sale columns and stops scanning the instant it finds one match. IN gives the same rows here too, but EXISTS is generally preferred and both beat INNER JOIN + DISTINCT, which materializes every matching sale row before discarding the duplicates."
+  },
+  {
+    q: "You accidentally wrote SELECT * FROM users, orders (no ON clause, no JOIN keyword, no WHERE). Users has 10K rows, orders has 50K. How many rows does the query return?",
+    verifySetup: `CREATE TABLE small_a (id INT PRIMARY KEY);
+INSERT INTO small_a VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10);
+CREATE TABLE small_b (id INT PRIMARY KEY);
+INSERT INTO small_b SELECT value FROM (
+  WITH RECURSIVE seq(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM seq WHERE value < 20)
+  SELECT value FROM seq
+);`,
+    verifyMain: `-- Same mechanism at a scale that runs instantly: 10 rows x 20 rows = 200
+SELECT COUNT(*) AS row_count FROM small_a, small_b;`,
+    options: [
+      { label: "50,000 (one per order)", hint: "", correct: false },
+      { label: "10,000 (one per user)", hint: "", correct: false },
+      { label: "60,000 (both tables combined)", hint: "", correct: false },
+      { label: "500,000,000 (Cartesian product)", hint: "10K × 50K", correct: true }
+    ],
+    feedback: "A comma between two tables with no join condition is a Cartesian product: every row of the first table pairs with every row of the second. 10,000 × 50,000 = 500,000,000 rows -- either a query that never finishes or one that exhausts memory."
+  },
+  {
+    q: "You need the names of customers who have at least one order — just the customer columns, and each customer listed once even if they placed several orders. Which query does that?",
+    verifySetup: `CREATE TABLE customers (cust_id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1,'Alice'),(2,'Bob'),(3,'Carmen');
+CREATE TABLE orders (order_id INT PRIMARY KEY, cust_id INT, ordered_at TEXT, total REAL);
+INSERT INTO orders VALUES (100,1,'2026-01-01',50.0),(101,1,'2026-03-01',75.0),(102,2,'2026-02-01',20.0);`,
+    verifyMain: `SELECT c.name FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.cust_id = c.cust_id);`,
+    options: [
+      { label: "SELECT c.* FROM customers c JOIN orders o ON o.cust_id = c.cust_id", hint: "Returns a row per order — Alice appears twice", correct: false },
+      { label: "SELECT c.* FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.cust_id = c.cust_id)", hint: "A semi-join: keep the row or not, bring no right-side columns", correct: true },
+      { label: "SELECT c.* FROM customers c LEFT JOIN orders o ON o.cust_id = c.cust_id", hint: "", correct: false },
+      { label: "SELECT c.* FROM customers c CROSS JOIN orders o", hint: "", correct: false }
+    ],
+    feedback: "This is a semi-join: the right side decides which left rows survive, but contributes no columns, so a customer with three orders still appears once. The plain JOIN would return Alice twice. Semantically the JOIN plus DISTINCT is equivalent, but EXISTS reads as the intent and avoids the duplicate work."
+  },
+  {
+    q: "Now the opposite: list the customers who have never placed an order. Which query works?",
+    verifySetup: `CREATE TABLE customers (cust_id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1,'Alice'),(2,'Bob'),(3,'Carmen');
+CREATE TABLE orders (order_id INT PRIMARY KEY, cust_id INT, ordered_at TEXT, total REAL);
+INSERT INTO orders VALUES (100,1,'2026-01-01',50.0),(101,1,'2026-03-01',75.0),(102,2,'2026-02-01',20.0);`,
+    verifyMain: `SELECT c.name FROM customers c LEFT JOIN orders o ON o.cust_id = c.cust_id WHERE o.order_id IS NULL;`,
+    options: [
+      { label: "SELECT c.* FROM customers c JOIN orders o ON o.cust_id = c.cust_id", hint: "", correct: false },
+      { label: "SELECT c.* FROM customers c LEFT JOIN orders o ON o.cust_id = c.cust_id WHERE o.order_id IS NULL", hint: "An anti-join: keep rows that found no match", correct: true },
+      { label: "SELECT c.* FROM customers c WHERE o.order_id IS NULL", hint: "orders isn't in the FROM", correct: false },
+      { label: "SELECT c.* FROM customers c, orders o", hint: "", correct: false }
+    ],
+    feedback: "The anti-join spelling: LEFT JOIN, then keep only the rows where the right side produced no match (its key is NULL). Because the right aliases don't exist outside the FROM, the test has to be <code>o.order_id IS NULL</code>. <code>NOT EXISTS (SELECT 1 FROM orders o WHERE o.cust_id = c.cust_id)</code> is the equivalent, and it is NULL-safe."
+  },
+  {
+    q: "customers has 3 rows. orders has 3 rows — two belong to Alice and one to Bob; Carmen has none. How many rows does customers LEFT JOIN orders return?",
+    verifySetup: `CREATE TABLE customers (cust_id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1,'Alice'),(2,'Bob'),(3,'Carmen');
+CREATE TABLE orders (order_id INT PRIMARY KEY, cust_id INT, ordered_at TEXT, total REAL);
+INSERT INTO orders VALUES (100,1,'2026-01-01',50.0),(101,1,'2026-03-01',75.0),(102,2,'2026-02-01',20.0);`,
+    verifyMain: `SELECT COUNT(*) AS row_count FROM customers c LEFT JOIN orders o ON o.cust_id = c.cust_id;`,
+    options: [
+      { label: "3 — one row per customer", hint: "", correct: false },
+      { label: "4 — Alice twice, Bob once, Carmen once with NULLs", hint: "", correct: true },
+      { label: "6", hint: "", correct: false },
+      { label: "5", hint: "", correct: false }
+    ],
+    feedback: "LEFT JOIN guarantees every <em>left row</em> survives; it does not promise one row per left row. Alice appears twice (two orders), Bob once, and Carmen once with NULLs because she matched nothing — 4 rows. If you wanted exactly one row per customer you'd need GROUP BY, or a semi/anti-join instead."
+  },
+  {
+    q: "You need the most recent order for each customer — exactly one row per customer, no aggregation. Which pattern is designed for this?",
+    verifySetup: `CREATE TABLE customers (cust_id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1,'Alice'),(2,'Bob'),(3,'Carmen');
+CREATE TABLE orders (order_id INT PRIMARY KEY, cust_id INT, ordered_at TEXT, total REAL);
+INSERT INTO orders VALUES (100,1,'2026-01-01',50.0),(101,1,'2026-03-01',75.0),(102,2,'2026-02-01',20.0);`,
+    verifyMain: `SELECT c.name,
+       (SELECT o.total FROM orders o
+         WHERE o.cust_id = c.cust_id
+         ORDER BY o.ordered_at DESC LIMIT 1) AS latest_total
+FROM customers c;`,
+    options: [
+      { label: "A plain INNER JOIN on cust_id", hint: "Pairs each customer with every order", correct: false },
+      { label: "A LATERAL join, or a correlated subquery that picks the max per customer", hint: "The right side sees the current left row", correct: true },
+      { label: "A CROSS JOIN", hint: "", correct: false },
+      { label: "A UNION of customers and orders", hint: "", correct: false }
+    ],
+    feedback: "A plain join hands you every order and leaves you to filter; a LATERAL join (or a correlated subquery, as in the verified query here) lets the right side reference the current customer row, so you return exactly that customer's latest order and nothing else. <code>DISTINCT ON</code> in PostgreSQL and <code>ROW_NUMBER() OVER (PARTITION BY cust_id ORDER BY ordered_at DESC)</code> filtered to 1 are the other two common spellings."
+  }
+];
+
+const jpsState = { idx: 0, score: 0, answered: false };
+
+function jpsQuestionHtml(idx, total, question){
+  let html = `<div class="quiz-progress">Question ${idx + 1} of ${total}</div>`;
+  html += `<div class="quiz-q">${escapeHtml(question.q)}</div>`;
+  question.options.forEach((opt, i) => {
+    html += `<button class="quiz-opt" data-idx="${i}">
+      <span class="opt-label">${String.fromCharCode(65 + i)}.</span>${escapeHtml(opt.label)}
+      ${opt.hint ? `<span class="opt-hint">${escapeHtml(opt.hint)}</span>` : ''}
+    </button>`;
+  });
+  html += `<div class="quiz-feedback-slot"></div>`;
+  html += `<div class="quiz-nav">
+    <button class="btn secondary quiz-verify-btn" style="display:none;">▶ Verify against real SQLite</button>
+    <button class="btn next-btn" style="display:none;">Next →</button>
+  </div>`;
+  html += `<div class="cell-output quiz-verify-output" style="background:var(--code-bg); border-radius:8px; padding:12px 14px;"></div>`;
+  html += `<div class="quiz-score">Score: <span class="score-val">0</span> / ${total}</div>`;
+  return html;
+}
+
+function jpsDoneHtml(score, total){
+  return `<div class="quiz-done">
+    <div class="big-score">${score} / ${total}</div>
+    <p>${score === total ? "Perfect score." : "Review the ones you missed above, then try again."}</p>
+    <button class="btn secondary restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+
+function initJpsQuiz(){
+  jpsState.idx = 0;
+  jpsState.score = 0;
+  jpsState.answered = false;
+  renderJpsQuiz();
+}
+
+function renderJpsQuiz(){
+  const wrap = document.getElementById('jps-wrap');
+  if (jpsState.idx >= JOIN_PATTERN_QUESTIONS.length) {
+    wrap.innerHTML = jpsDoneHtml(jpsState.score, JOIN_PATTERN_QUESTIONS.length);
+    wrap.querySelector('.restart-btn').addEventListener('click', initJpsQuiz);
+    return;
+  }
+  const q = JOIN_PATTERN_QUESTIONS[jpsState.idx];
+  wrap.innerHTML = jpsQuestionHtml(jpsState.idx, JOIN_PATTERN_QUESTIONS.length, q);
+  wrap.querySelector('.score-val').textContent = jpsState.score;
+  wrap.querySelectorAll('.quiz-opt').forEach(btn => {
+    btn.addEventListener('click', () => jpsSelectOption(parseInt(btn.getAttribute('data-idx'), 10)));
+  });
+  wrap.querySelector('.next-btn').addEventListener('click', jpsNext);
+  wrap.querySelector('.quiz-verify-btn').addEventListener('click', jpsVerify);
+}
+
+function jpsSelectOption(optIdx){
+  if (jpsState.answered) return;
+  jpsState.answered = true;
+  const q = JOIN_PATTERN_QUESTIONS[jpsState.idx];
+  const wrap = document.getElementById('jps-wrap');
+  const opts = wrap.querySelectorAll('.quiz-opt');
+  const chosen = q.options[optIdx];
+  opts.forEach((btn, i) => {
+    btn.classList.add('disabled');
+    if (q.options[i].correct) btn.classList.add('correct');
+    else if (i === optIdx) btn.classList.add('incorrect');
+  });
+  const slot = wrap.querySelector('.quiz-feedback-slot');
+  if (chosen.correct) {
+    jpsState.score++;
+    wrap.querySelector('.score-val').textContent = jpsState.score;
+    slot.innerHTML = `<div class="quiz-feedback correct">✓ Correct. ${escapeHtml(q.feedback || '')}</div>`;
+  } else {
+    slot.innerHTML = `<div class="quiz-feedback incorrect">✖ Not quite. ${escapeHtml(q.feedback || '')}</div>`;
+  }
+  wrap.querySelector('.next-btn').style.display = 'inline-block';
+  wrap.querySelector('.quiz-verify-btn').style.display = 'inline-block';
+}
+
+async function jpsVerify(){
+  const q = JOIN_PATTERN_QUESTIONS[jpsState.idx];
+  const wrap = document.getElementById('jps-wrap');
+  const out = wrap.querySelector('.quiz-verify-output');
+  out.classList.add('show');
+  await runSqlAgainstFreshDb(q.verifySetup, q.verifyMain, out);
+}
+
+function jpsNext(){
+  jpsState.idx++;
+  jpsState.answered = false;
+  renderJpsQuiz();
+}
+
+/* ============ Anti-Join Logic Builder widget ============ */
+const AJB_PRODUCTS = [[1,'Widget'],[2,'Gadget'],[3,'Doohickey'],[4,'Thingamajig'],[5,'Whatsit']];
+const AJB_SALES_BASE = [['S1',1],['S2',2],['S3',2]];
+const AJB_SALES_NULL_ROW = ['S4', null];
+// Ground truth: which products have a REAL (non-NULL) matching sale. This never changes with the
+// NULL toggle or the chosen method -- it's what "should" survive the anti-join, independent of
+// whether the query being demoed actually gets that right.
+const AJB_MATCHED_PRODUCT_IDS = new Set(AJB_SALES_BASE.map(row => row[1]));
+
+const AJB_STEPS = {
+  notin: {
+    withNull: [
+      "Build the subquery list: the subquery SELECT product_id FROM Sales produces the list {1, 2, 2, NULL}. Each product's ID will be checked against this list.",
+      "Evaluate NOT IN for each product: ⚠ NULL in the list poisons NOT IN. SQL uses three-valued logic: 3 NOT IN {1, 2, NULL} evaluates as UNKNOWN, not TRUE, because 3 ≠ NULL is UNKNOWN. UNKNOWN rows are excluded. Zero rows returned.",
+      "Result: 0 rows. Because the subquery contained NULL, every NOT IN check returns UNKNOWN rather than TRUE — so ALL rows are excluded. This is a classic silent bug."
+    ],
+    noNull: [
+      "Build the subquery list: the subquery SELECT product_id FROM Sales produces the list {1, 2, 2} — no NULLs this time. Each product's ID will be checked against this list.",
+      "Evaluate NOT IN for each product: with no NULL in the list, every comparison resolves cleanly to TRUE or FALSE — 3 NOT IN {1, 2} is TRUE, 1 NOT IN {1, 2} is FALSE. No UNKNOWN results to worry about.",
+      "Result: 3 rows. With the NULL removed, NOT IN works exactly as expected — the products that were never sold (3, 4, 5) are correctly returned. Toggle the NULL back on to see this exact query silently break."
+    ]
+  },
+  notexists: {
+    withNull: [
+      "For each product, run a correlated subquery: NOT EXISTS runs a correlated subquery for each product row. It asks, \"does any Sales row exist where s.product_id = p.product_id?\"",
+      "NULL rows in Sales never match: the Sales row with NULL product_id is tested as NULL = p.product_id → UNKNOWN. That row never satisfies the EXISTS condition — it's harmless. Only exact equality matches count.",
+      "Result: products 3, 4, 5. NOT EXISTS is NULL-safe because it tests row existence with =, and NULL = anything is never TRUE. It works correctly even with NULLs in Sales."
+    ],
+    noNull: [
+      "For each product, run a correlated subquery: the same correlated subquery, now against a Sales table with no NULL rows at all.",
+      "Nothing changes without the NULL row: NOT EXISTS was never affected by the NULL in the first place — removing it changes nothing about how the check runs.",
+      "Result: products 3, 4, 5 — identical to the NULL-included case. That's the whole point: NOT EXISTS gives the same correct answer whether or not Sales has NULLs."
+    ]
+  },
+  leftjoin: {
+    withNull: [
+      "Build the LEFT JOIN: every Products row is preserved, with matching Sales rows attached where they exist. The Sales row with NULL product_id can't match any product (NULL = anything is UNKNOWN), so it simply attaches to nothing.",
+      "Filter to WHERE s.product_id IS NULL: keep only the Products rows where no Sales row attached — that's the anti-join condition. Products with a real match (1, 2) get filtered out; products with nothing attached (3, 4, 5) survive.",
+      "Result: products 3, 4, 5. The stray NULL row in Sales never attaches to any product, so it has zero effect on the result — LEFT JOIN + IS NULL is just as NULL-safe as NOT EXISTS."
+    ],
+    noNull: [
+      "Build the LEFT JOIN: the same LEFT JOIN, now against a Sales table with no NULL rows to begin with.",
+      "Filter to WHERE s.product_id IS NULL: nothing changes in the filtering logic — products 1 and 2 still have real matches and get excluded; 3, 4, 5 still have none.",
+      "Result: products 3, 4, 5 — identical to the NULL-included case, for the same reason: this pattern was never sensitive to NULLs in Sales to begin with."
+    ]
+  }
+};
+
+const AJB_METHOD_LABELS = { notin: 'NOT IN', notexists: 'NOT EXISTS', leftjoin: 'LEFT JOIN' };
+
+const ajbState = { method: 'notin', includeNull: true, step: 0 };
+
+function ajbMiniTable(columns, rows, highlightAll){
+  let html = '<table class="mini"><thead><tr>';
+  for (const c of columns) html += `<th>${escapeHtml(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += `<tr class="${highlightAll ? 'result-row' : ''}">`;
+    for (const v of row) html += v === null ? `<td class="is-null">NULL</td>` : `<td>${escapeHtml(v)}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+function ajbProductsTable(){
+  // Rendered plain -- eliminated/survives classes are applied afterward by ajbApplyProductColors,
+  // since whether (and how) a product row is colored depends on which step we're on.
+  let html = '<table class="mini"><thead><tr><th>product_id</th><th>name</th></tr></thead><tbody>';
+  for (const [id, name] of AJB_PRODUCTS) {
+    html += `<tr data-pid="${id}"><td>${id}</td><td>${escapeHtml(name)}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+// Ground-truth survivors (products with no real match in Sales) -- used to color the Products
+// table on every step except the final one, where the color instead reflects whatever the live
+// query actually returned (so a buggy query, like NOT IN poisoned by a NULL, visibly disagrees
+// with this ground truth).
+const AJB_GROUND_TRUTH_SURVIVORS = new Set(AJB_PRODUCTS.map(p => p[0]).filter(id => !AJB_MATCHED_PRODUCT_IDS.has(id)));
+
+// Per method: the step index (0-based) at which Products coloring first appears, and the step
+// index at which the Sales row with a NULL product_id gets called out as "tested and rejected".
+// null means "never" for that method.
+const AJB_COLOR_CONFIG = {
+  notin:     { productsFrom: 1, salesNullFrom: null },
+  notexists: { productsFrom: 0, salesNullFrom: 1 },
+  leftjoin:  { productsFrom: 1, salesNullFrom: null }
+};
+
+function ajbApplyProductColors(survivorSet){
+  const tbl = document.getElementById('ajb-products-table');
+  if (!tbl) return;
+  tbl.querySelectorAll('tbody tr').forEach(tr => {
+    tr.classList.remove('eliminated', 'survives');
+    if (!survivorSet) return;
+    const id = Number(tr.getAttribute('data-pid'));
+    tr.classList.add(survivorSet.has(id) ? 'survives' : 'eliminated');
+  });
+}
+
+function ajbApplySalesNullHighlight(shouldHighlight){
+  const tbl = document.getElementById('ajb-sales-table');
+  if (!tbl) return;
+  tbl.querySelectorAll('tbody tr').forEach(tr => {
+    const hasNullCell = !!tr.querySelector('td.is-null');
+    tr.classList.toggle('eliminated', hasNullCell && shouldHighlight);
+  });
+}
+
+function ajbBuildSql(method, includeNull){
+  const listComment = includeNull ? '{1, 2, 2, NULL}' : '{1, 2, 2}';
+  if (method === 'notin') {
+    return `SELECT product_id, name
+FROM   Products
+WHERE  product_id NOT IN (
+    SELECT product_id
+    FROM   Sales
+    -- Sales.product_id values: ${listComment}
+);
+
+${includeNull ? '-- ⚠ NULL in subquery → NOT IN returns 0 rows!' : '-- No NULL in subquery → NOT IN works correctly.'}`;
+  }
+  if (method === 'notexists') {
+    return `SELECT p.product_id, p.name
+FROM   Products p
+WHERE  NOT EXISTS (
+    SELECT 1
+    FROM   Sales s
+    WHERE  s.product_id = p.product_id
+    -- Correlated: checks each product row
+);
+-- NULL rows in Sales never match (= NULL is UNKNOWN)
+-- Returns products with no exact match → 3, 4, 5`;
+  }
+  return `SELECT p.product_id, p.name
+FROM   Products p
+LEFT JOIN Sales s
+    ON  s.product_id = p.product_id
+WHERE  s.product_id IS NULL;
+-- NULL in Sales.product_id never matches
+-- Returns products with no matching sale → 3, 4, 5`;
+}
+
+function ajbBuildSetupSql(includeNull){
+  const salesRows = includeNull
+    ? `('S1',1), ('S2',2), ('S3',2), ('S4',NULL)`
+    : `('S1',1), ('S2',2), ('S3',2)`;
+  return `CREATE TABLE Products (product_id INTEGER PRIMARY KEY, name TEXT);
+INSERT INTO Products VALUES (1,'Widget'), (2,'Gadget'), (3,'Doohickey'), (4,'Thingamajig'), (5,'Whatsit');
+CREATE TABLE Sales (sale_id TEXT PRIMARY KEY, product_id INTEGER);
+INSERT INTO Sales VALUES ${salesRows};`;
+}
+
+function ajbMainQuery(method){
+  if (method === 'notin') return `SELECT product_id, name FROM Products WHERE product_id NOT IN (SELECT product_id FROM Sales);`;
+  if (method === 'notexists') return `SELECT p.product_id, p.name FROM Products p WHERE NOT EXISTS (SELECT 1 FROM Sales s WHERE s.product_id = p.product_id);`;
+  return `SELECT p.product_id, p.name FROM Products p LEFT JOIN Sales s ON s.product_id = p.product_id WHERE s.product_id IS NULL;`;
+}
+
+function ajbRenderReferenceTables(){
+  const salesRows = ajbState.includeNull ? [...AJB_SALES_BASE, AJB_SALES_NULL_ROW] : AJB_SALES_BASE;
+  document.getElementById('ajb-products-table').innerHTML = ajbProductsTable();
+  document.getElementById('ajb-sales-table').innerHTML = ajbMiniTable(['sale_id','product_id'], salesRows, false);
+  document.getElementById('ajb-products-count').textContent = `${AJB_PRODUCTS.length} rows`;
+  document.getElementById('ajb-sales-count').textContent = `${salesRows.length} rows`;
+  const badge = document.getElementById('ajb-null-badge');
+  if (ajbState.includeNull) {
+    badge.textContent = 'NULL present in Sales';
+    badge.className = 'badge amber';
+  } else {
+    badge.textContent = 'No NULL in Sales';
+    badge.className = 'badge green';
+  }
+}
+
+function ajbClearResult(){
+  document.getElementById('ajb-result-table').innerHTML = '';
+  document.getElementById('ajb-result-count').textContent = '—';
+  const ph = document.getElementById('ajb-result-placeholder');
+  ph.classList.remove('hidden');
+  ph.textContent = 'Run through the steps to see the result…';
+}
+
+async function ajbRunQuery(){
+  const ph = document.getElementById('ajb-result-placeholder');
+  const countEl = document.getElementById('ajb-result-count');
+  const tableEl = document.getElementById('ajb-result-table');
+  try {
+    const SQLmod = await getSqlJsModule();
+    const db = new SQLmod.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    db.run(ajbBuildSetupSql(ajbState.includeNull));
+    const res = db.exec(ajbMainQuery(ajbState.method));
+    db.close();
+    const cols = res.length ? res[0].columns : ['product_id','name'];
+    const rows = res.length ? res[0].values : [];
+    tableEl.innerHTML = ajbMiniTable(cols, rows, true);
+    countEl.textContent = `${rows.length} row${rows.length===1?'':'s'}`;
+    ph.classList.add('hidden');
+    if (rows.length === 0) {
+      ph.classList.remove('hidden');
+      ph.textContent = '⚠ 0 rows — NOT IN + NULL = empty result';
+    }
+    // Color the Products table by what the query ACTUALLY returned, not the ground truth --
+    // this is what makes the NOT IN + NULL bug visible: every product flips to "eliminated"
+    // even though 3, 4, 5 genuinely have no sale.
+    const survivorIds = new Set(rows.map(r => Number(r[0])));
+    ajbApplyProductColors(survivorIds);
+  } catch (e) {
+    tableEl.innerHTML = '';
+    countEl.textContent = 'error';
+    ph.classList.remove('hidden');
+    ph.textContent = `✗ ${e.message}`;
+    ajbApplyProductColors(null);
+  }
+}
+
+function ajbRenderStepDots(total){
+  const dots = document.getElementById('ajb-step-dots');
+  let html = '';
+  for (let i = 0; i < total; i++) {
+    const cls = i < ajbState.step ? 'done' : (i === ajbState.step ? 'current' : '');
+    html += `<span class="dot ${cls}"></span>`;
+  }
+  dots.innerHTML = html;
+}
+
+function ajbRenderStepUI(){
+  const total = 3;
+  document.getElementById('ajb-step-label').textContent = `Step ${ajbState.step + 1} / ${total}`;
+  ajbRenderStepDots(total);
+  document.getElementById('ajb-prev').disabled = ajbState.step === 0;
+  const nextBtn = document.getElementById('ajb-next');
+  const isFinalStep = ajbState.step === total - 1;
+  if (isFinalStep) {
+    nextBtn.textContent = '✓ Done';
+    nextBtn.disabled = true;
+  } else {
+    nextBtn.textContent = 'Next →';
+    nextBtn.disabled = false;
+  }
+  const stepsForMethod = AJB_STEPS[ajbState.method][ajbState.includeNull ? 'withNull' : 'noNull'];
+  document.getElementById('ajb-step-explain').textContent = stepsForMethod[ajbState.step];
+  document.getElementById('ajb-result-method').textContent = AJB_METHOD_LABELS[ajbState.method];
+
+  const cfg = AJB_COLOR_CONFIG[ajbState.method];
+  const showSalesNullHighlight = cfg.salesNullFrom !== null && ajbState.step >= cfg.salesNullFrom;
+  ajbApplySalesNullHighlight(showSalesNullHighlight);
+
+  if (isFinalStep) {
+    // Final step: colors are set inside ajbRunQuery() from the REAL result, once it resolves.
+    ajbRunQuery();
+  } else {
+    ajbClearResult();
+    const showProductColors = ajbState.step >= cfg.productsFrom;
+    ajbApplyProductColors(showProductColors ? AJB_GROUND_TRUTH_SURVIVORS : null);
+  }
+}
+
+function ajbRenderAll(){
+  document.querySelectorAll('#ajb-tabs .mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-method') === ajbState.method);
+  });
+  document.getElementById('ajb-sql').textContent = ajbBuildSql(ajbState.method, ajbState.includeNull);
+  ajbRenderReferenceTables();
+  ajbRenderStepUI();
+}
+
+function initAjbWidget(){
+  document.getElementById('ajb-null-toggle').addEventListener('change', (e) => {
+    ajbState.includeNull = e.target.checked;
+    ajbState.step = 0;
+    ajbRenderAll();
+  });
+  document.querySelectorAll('#ajb-tabs .mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      ajbState.method = btn.getAttribute('data-method');
+      ajbState.step = 0;
+      ajbRenderAll();
+    });
+  });
+  document.getElementById('ajb-prev').addEventListener('click', () => {
+    if (ajbState.step > 0) { ajbState.step--; ajbRenderStepUI(); }
+  });
+  document.getElementById('ajb-next').addEventListener('click', () => {
+    if (ajbState.step < 2) { ajbState.step++; ajbRenderStepUI(); }
+  });
+  ajbRenderAll();
+}
+
+/* ============ boot ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  initAllCells();
+  document.getElementById('jps-quiz').innerHTML = '<div class="quiz-wrap" id="jps-wrap"></div>';
+  initJpsQuiz();
+  initAjbWidget();
+});
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: The Five Join Patterns ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const STEPS = [
+    { name: 'INNER JOIN', tag: 'matching rows only',
+      action: 'Keeps a row only when a match exists on both sides. That is the default meaning of JOIN — and it is why an unmatched customer disappears from the result without any warning.',
+      artLabel: 'Artifact · the matched pairs',
+      art: 'SELECT c.name, o.id\nFROM customers c\nJOIN orders o ON o.customer_id = c.id\n\n  a customer with zero orders -> dropped silently' },
+    { name: 'LEFT JOIN', tag: 'keep every left row',
+      action: 'Keeps every row from the left table and fills the right-hand columns with NULL where no match exists. This is how one query can list customers with no orders and customers with orders at the same time.',
+      artLabel: 'Artifact · unmatched rows survive',
+      art: 'LEFT JOIN orders o ON o.customer_id = c.id\n\n  Ada   | 1001\n  Alan  | NULL   <- no orders, row kept\n  Maya  | 1002' },
+    { name: 'SEMI-JOIN', tag: 'does a match exist?',
+      action: 'Keeps left rows that have at least one match, but adds no columns from the right side. Written as EXISTS, or as an INNER JOIN plus DISTINCT when you also need to avoid duplicate amplification.',
+      artLabel: 'Artifact · one row per left row',
+      art: 'WHERE EXISTS (SELECT 1 FROM orders o\n              WHERE o.customer_id = c.id)\n\n  one row per customer — never duplicated' },
+    { name: 'ANTI-JOIN', tag: 'no match at all',
+      action: 'Keeps left rows with no match whatsoever. Write it as NOT EXISTS: NOT IN looks equivalent, but returns nothing at all if the subquery yields even one NULL.',
+      artLabel: 'Artifact · the leftovers',
+      art: 'WHERE NOT EXISTS (SELECT 1 FROM orders o\n                  WHERE o.customer_id = c.id)\n\n  customers with zero orders' },
+    { name: 'LATERAL (latest per group)', tag: 'per left row',
+      action: 'Sometimes the right side must be evaluated separately for every left row — "the latest order for each customer". A lateral join says that directly, instead of a window function wrapped in a subquery.',
+      artLabel: 'Artifact · top-1 per left row',
+      art: 'FROM customers c\nJOIN LATERAL (SELECT * FROM orders o\n             WHERE o.customer_id = c.id\n             ORDER BY o.placed_at DESC LIMIT 1) latest\n  ON true' },
+    { name: 'Check the row count', tag: 'the real test',
+      action: 'Before running anything, predict the row count. An M:N join multiplies rows, a forgotten ON clause produces a cartesian product, and an INNER JOIN quietly loses unmatched rows — three of the most common production bugs.',
+      artLabel: 'Artifact · predict, then run',
+      art: 'INNER  -> only matched pairs\nLEFT   -> at least |left|\nCROSS  -> |A| x |B|\nnone   -> a cartesian product (always a bug)' },
+  ];
+  let i = 0;
+  const rail = byId('jpstep-rail'), body = byId('jpstep-body');
+  if (!body) return;
+  function railRender(){
+    rail.innerHTML = STEPS.map((s, k) =>
+      `<div class="qstep-node${k === i ? ' active' : (k < i ? ' done' : '')}" data-i="${k}"><span class="qstep-idx">${k + 1}</span>${esc(s.name)}</div>`).join('');
+    rail.querySelectorAll('.qstep-node').forEach(n => n.addEventListener('click', () => { i = +n.dataset.i; render(); }));
+  }
+  function render(){
+    const s = STEPS[i];
+    body.innerHTML =
+      `<div class="qstep-head"><div class="qstep-name">${esc(s.name)}</div><div class="qstep-layer">${esc(s.tag)}</div></div>` +
+      `<div class="qstep-action">${esc(s.action)}</div>` +
+      `<div class="qstep-art"><span class="art-label">${esc(s.artLabel)}</span>${esc(s.art)}</div>`;
+    railRender();
+    byId('jpstep-count').textContent = `Pattern ${i + 1} of ${STEPS.length}`;
+    byId('jpstep-back').disabled = i === 0;
+    byId('jpstep-next').disabled = i === STEPS.length - 1;
+  }
+  byId('jpstep-back').addEventListener('click', () => { if (i > 0) { i--; render(); } });
+  byId('jpstep-next').addEventListener('click', () => { if (i < STEPS.length - 1) { i++; render(); } });
+  byId('jpstep-restart').addEventListener('click', () => { i = 0; render(); });
+  render();
+})();
+</script>
+
+<script>
+/* ===== Join type simulator ===== */
+(function () {
+  const byId = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const EMP  = [[1, 'Alice', 10], [2, 'Bob', 20], [3, 'Carol', 30], [4, 'Dave', 10]];
+  const PROJ = [['P1', 'Alpha', 10], ['P2', 'Beta', 20], ['P3', 'Gamma', 40]];
+
+  /* Result rows below are exactly what the sqlite3 CLI produces for this data
+     (row counts 3 / 4 / 4 / 5 / 12) — the widget transcribes them, never guesses. */
+  const M1 = { left: EMP[0], right: PROJ[0], kind: 'match' };
+  const M2 = { left: EMP[1], right: PROJ[1], kind: 'match' };
+  const M3 = { left: EMP[3], right: PROJ[0], kind: 'match' };
+  const CAROL = { left: EMP[2], right: null, kind: 'left' };
+  const GAMMA = { left: null, right: PROJ[2], kind: 'right' };
+
+  const JOINS = [
+    {
+      id: 'inner', label: 'Inner join', venn: 'inner',
+      note: '<strong>INNER JOIN</strong> returns only rows where the join condition is met in <em>both</em> tables. Unmatched rows from either side are discarded entirely.',
+      sql: 'SELECT e.name, p.title\nFROM   employees e\nINNER JOIN projects p\n  ON e.dept_id = p.dept_id;',
+      empMark: [], projMark: [],
+      rows: [M1, M2, M3]
+    },
+    {
+      id: 'left', label: 'Left outer join', venn: 'left',
+      note: '<strong>LEFT JOIN</strong> keeps <em>all</em> rows from the left table. Where no match exists in the right table, right-side columns are filled with <strong>NULL</strong>. Classic pattern for "find employees with no project."',
+      sql: 'SELECT e.name, p.title\nFROM   employees e\nLEFT JOIN projects p\n  ON e.dept_id = p.dept_id;\n-- NULLs appear where no project matches',
+      empMark: ['', '', 'r-left', ''], projMark: [],
+      rows: [M1, M2, CAROL, M3]
+    },
+    {
+      id: 'right', label: 'Right outer join', venn: 'right',
+      note: '<strong>RIGHT JOIN</strong> keeps <em>all</em> rows from the right table. Unmatched left-side columns become <strong>NULL</strong>. Projects without any employee show up here.',
+      sql: 'SELECT e.name, p.title\nFROM   employees e\nRIGHT JOIN projects p\n  ON e.dept_id = p.dept_id;\n-- NULLs appear where no employee matches',
+      empMark: [], projMark: ['', '', 'r-right'],
+      rows: [M1, M2, M3, GAMMA]
+    },
+    {
+      id: 'full', label: 'Full outer join', venn: 'full',
+      note: '<strong>FULL OUTER JOIN</strong> keeps every row from both tables. Unmatched rows on either side get NULLs for the missing columns.',
+      sql: 'SELECT e.name, p.title\nFROM   employees e\nFULL OUTER JOIN projects p\n  ON e.dept_id = p.dept_id;\n-- NULLs on both sides for unmatched rows',
+      empMark: ['', '', 'r-left', ''], projMark: ['', '', 'r-right'],
+      rows: [M1, M2, CAROL, M3, GAMMA]
+    },
+    {
+      id: 'cross', label: 'Cross join', venn: 'cross',
+      note: '<strong>CROSS JOIN</strong> produces the Cartesian product — every row in Employees paired with every row in Projects. No condition needed; row count = left &times; right.',
+      sql: 'SELECT e.name, p.title\nFROM   employees e\nCROSS JOIN projects p;\n-- No ON clause — every combination returned',
+      empMark: [], projMark: [],
+      rows: EMP.reduce((acc, e) => acc.concat(PROJ.map(p => ({ left: e, right: p, kind: 'match' }))), [])
+    }
+  ];
+  const explored = {};
+
+  /* ---- syntax colouring: one pass so a keyword inside a -- comment is never re-wrapped ---- */
+  function sqlHtml(sql) {
+    const re = /(--[^\n]*)|(\bSELECT\b|\bFROM\b|\bWHERE\b)|(\bINNER JOIN\b|\bLEFT JOIN\b|\bRIGHT JOIN\b|\bFULL OUTER JOIN\b|\bCROSS JOIN\b)|(\bON\b)/g;
+    const out = [];
+    let last = 0, m;
+    while ((m = re.exec(sql)) !== null) {
+      out.push(esc(sql.slice(last, m.index)));
+      const cls = m[1] ? 'c' : m[2] ? 'k' : m[3] ? 'k2' : 'k3';
+      out.push('<span class="' + cls + '">' + esc(m[0]) + '</span>');
+      last = m.index + m[0].length;
+    }
+    out.push(esc(sql.slice(last)));
+    return out.join('');
+  }
+
+  /* ---- the picture: overlap is always the shaded region ---- */
+  const SH = 'fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"';
+  const PL = 'fill="#FFFFFF" stroke="#A8B0A0" stroke-width="1.6"';
+
+  function venn(kind) {
+    if (kind === 'cross') {
+      return '<svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CROSS JOIN pairs the Employees box with the Projects box, producing the Cartesian product." font-family="IBM Plex Mono, monospace">' +
+        '<rect x="56" y="46" width="104" height="84" rx="10" fill="#EBE4F2" stroke="#6B4C8A" stroke-width="1.6"/>' +
+        '<text x="108" y="94" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">Employees</text>' +
+        '<rect x="200" y="46" width="104" height="84" rx="10" fill="#E4EBF2" stroke="#2F5D8A" stroke-width="1.6"/>' +
+        '<text x="252" y="94" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">Projects</text>' +
+        '<text x="180" y="166" text-anchor="middle" font-size="12" fill="#4A564F">Cartesian ×</text>' +
+      '</svg>';
+    }
+    const aShaded = kind === 'left'  || kind === 'full';
+    const bShaded = kind === 'right' || kind === 'full';
+    return '<svg viewBox="0 0 360 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two overlapping sets: Emp and Proj. The shaded region shows which rows each join type keeps." font-family="IBM Plex Mono, monospace">' +
+      '<circle cx="140" cy="96" r="70" ' + (aShaded ? SH : PL) + '/>' +
+      '<circle cx="220" cy="96" r="70" ' + (bShaded ? SH : PL) + '/>' +
+      '<path d="M180,38.6 A70,70 0 0 1 180,153.4 A70,70 0 0 1 180,38.6 Z" ' + SH + '/>' +
+      '<text x="110" y="101" text-anchor="middle" font-size="12" font-weight="700" fill="#1E2A25">Emp</text>' +
+      '<text x="250" y="101" text-anchor="middle" font-size="12" font-weight="700" fill="#1E2A25">Proj</text>' +
+    '</svg>';
+  }
+
+  function tableHtml(cols, rows, marks) {
+    return '<table class="jts-tbl"><thead><tr>' + cols.map(c => '<th>' + esc(c) + '</th>').join('') + '</tr></thead><tbody>' +
+      rows.map((r, i) => '<tr class="' + ((marks && marks[i]) || '') + '">' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('') +
+    '</tbody></table>';
+  }
+
+  function resultHtml(rows) {
+    const head = ['emp_id', 'name', 'e.dept_id', 'proj_id', 'title', 'p.dept_id'];
+    return '<table class="jts-tbl"><thead><tr>' + head.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead><tbody>' +
+      rows.map(r => {
+        const l = r.left, p = r.right;
+        const cells = [l ? l[0] : null, l ? l[1] : null, l ? l[2] : null,
+                       p ? p[0] : null, p ? p[1] : null, p ? p[2] : null];
+        return '<tr class="r-' + r.kind + '">' + cells.map(c =>
+          c === null ? '<td class="jts-null">NULL</td>' : '<td>' + esc(c) + '</td>').join('') + '</tr>';
+      }).join('') +
+    '</tbody></table>';
+  }
+
+  function render(j) {
+    explored[j.id] = true;
+    byId('jts-modes').querySelectorAll('.jts-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.id === j.id));
+    byId('jts-dots').innerHTML = JOINS.map(x => '<span class="dot' + (explored[x.id] ? ' done' : '') + '"></span>').join('');
+    const seen = JOINS.filter(x => explored[x.id]).length;
+    byId('jts-explored-count').textContent = seen + '/5';
+    byId('jts-venn').innerHTML = venn(j.venn);
+    byId('jts-note').innerHTML = j.note;
+    byId('jts-sql').innerHTML = sqlHtml(j.sql);
+    byId('jts-emp').innerHTML = tableHtml(['emp_id', 'name', 'dept_id'], EMP, j.empMark);
+    byId('jts-proj').innerHTML = tableHtml(['proj_id', 'title', 'dept_id'], PROJ, j.projMark);
+    byId('jts-count').textContent = j.rows.length + ' rows';
+    byId('jts-result').innerHTML = resultHtml(j.rows);
+    byId('jts-complete').innerHTML = seen === JOINS.length
+      ? '<div class="callout green">✓ You\u2019ve explored all join types! You can see how NULL padding differs between LEFT, RIGHT, and FULL OUTER joins, and why INNER JOIN only returns matched rows.</div>'
+      : '';
+  }
+
+  function init() {
+    const m = byId('jts-modes');
+    if (!m) return;
+    m.innerHTML = JOINS.map(j => '<button class="jts-mode-btn" data-id="' + j.id + '">' + esc(j.label) + '</button>').join('');
+    m.querySelectorAll('.jts-mode-btn').forEach(b =>
+      b.addEventListener('click', () => render(JOINS.filter(x => x.id === b.dataset.id)[0])));
+    render(JOINS[0]);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

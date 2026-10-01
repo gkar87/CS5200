@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · Relational Algebra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, .cell, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:900px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:680px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0;}
+
+.step-card{border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:20px 22px; margin:22px 0;}
+.step-card .step-num{display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600; margin-right:10px;}
+.step-card h3{display:flex; align-items:center; margin-top:0;}
+
+.cell{background:var(--code-bg); border-radius:8px; margin:14px 0; overflow:hidden; border:1px solid var(--code-rule);}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75;}
+.cell textarea{
+  width:100%; min-height:0; background:var(--code-bg); color:var(--code-text);
+  border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; resize:none; outline:none; line-height:1.55; overflow:hidden; display:block; tab-size:2;
+}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+table.dbtable{border-collapse:collapse; margin:8px 0; font-size:12.5px; width:100%;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-align:left; padding:5px 10px; border:1px solid var(--code-rule);}
+table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text);}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.quiz-wrap{border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:20px 22px; margin:18px 0;}
+.quiz-progress{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
+.quiz-q{font-weight:600; margin-bottom:12px; font-size:1.05em;}
+.quiz-opt{display:block; width:100%; text-align:left; padding:10px 14px; margin-bottom:8px; border:1px solid var(--rule); border-radius:8px; background:var(--paper); cursor:pointer; font-family:"Source Serif 4",serif; font-size:.98em;}
+.quiz-opt:hover{border-color:var(--blue);}
+.quiz-opt .opt-label{font-weight:600; margin-right:6px;}
+.quiz-opt .opt-hint{display:block; font-size:.85em; color:var(--ink-soft); margin-top:2px;}
+.quiz-opt.correct{border-color:var(--green); background:var(--green-soft);}
+.quiz-opt.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.quiz-opt.disabled{cursor:default;}
+.quiz-feedback{margin-top:12px; padding:12px 14px; border-radius:8px; font-size:.95em;}
+.quiz-feedback.correct{background:var(--green-soft); color:var(--green);}
+.quiz-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.quiz-nav{margin-top:14px;}
+.quiz-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft); margin-top:8px;}
+.quiz-done{text-align:center; padding:20px;}
+.quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:hover{opacity:.9;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+/* ===== Canonical figure container (shared by every playground) ===== */
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+/* ---- widget: operator explorer ---- */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.05em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:16px;}
+.mode-toggle{display:flex; gap:8px; margin-bottom:16px;}
+.mode-btn{flex:1; padding:10px; border-radius:8px; border:1.5px solid var(--rule); background:var(--paper); cursor:pointer; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13px; color:var(--ink-soft);}
+.mode-btn.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.explored-badge{display:none; background:var(--green-soft); color:var(--green); border-radius:8px; padding:8px 14px; font-size:.85em; margin-bottom:14px; font-weight:600;}
+.explored-badge.show{display:block;}
+.control-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+.control-row label{font-size:12.5px; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace; display:flex; flex-direction:column; gap:4px;}
+.control-row select, .control-row input[type="text"]{
+  font-family:"IBM Plex Mono",monospace; font-size:13px; padding:7px 10px; border-radius:6px; border:1px solid var(--rule); background:#fff; color:var(--ink);
+}
+.col-checks{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+.col-checks label{display:flex; align-items:center; gap:6px; font-family:"IBM Plex Mono",monospace; font-size:13px; background:#fff; border:1px solid var(--rule); border-radius:6px; padding:6px 10px; cursor:pointer;}
+.expr-box{font-family:"IBM Plex Mono",monospace; background:var(--code-bg); color:#F4C97A; padding:10px 14px; border-radius:6px; font-size:14px; margin-bottom:12px;}
+.widget-tables{display:flex; gap:18px; flex-wrap:wrap;}
+.widget-table-col{flex:1; min-width:260px;}
+.widget-table-col h4{font-size:.85em; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin:0 0 6px;}
+table.mini{border-collapse:collapse; width:100%; font-size:12.5px;}
+table.mini th{background:var(--blue-soft); color:var(--blue); padding:5px 8px; text-align:left; border:1px solid var(--rule); font-family:"IBM Plex Mono",monospace;}
+table.mini td{padding:5px 8px; border:1px solid var(--rule); font-family:"IBM Plex Mono",monospace;}
+table.mini tr.result-row{background:var(--green-soft);}
+.row-count{font-size:.8em; color:var(--ink-soft); margin-top:4px;}
+
+/* ---- widget: division visualizer ---- */
+.scenario-tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+.scenario-tab{padding:8px 14px; border-radius:8px; border:1.5px solid var(--rule); background:var(--paper); cursor:pointer; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; color:var(--ink-soft);}
+.scenario-tab.active{border-color:var(--purple); background:var(--purple-soft); color:var(--purple);}
+.required-badge-row{margin-bottom:14px;}
+.required-chip{display:inline-block; background:var(--amber-soft); color:var(--amber); border-radius:20px; padding:4px 12px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; margin-right:6px;}
+table.division-grid{border-collapse:collapse; width:100%; margin-bottom:14px; font-size:13px;}
+table.division-grid th{background:var(--blue-soft); color:var(--blue); padding:8px 10px; border:1px solid var(--rule); font-family:"IBM Plex Mono",monospace; text-align:center;}
+table.division-grid th.required-col{background:var(--amber-soft); color:var(--amber);}
+table.division-grid td{padding:8px 10px; border:1px solid var(--rule); text-align:center;}
+table.division-grid td.student-id{font-family:"IBM Plex Mono",monospace; font-weight:600; text-align:left;}
+.division-result{margin-top:16px;}
+.division-outcome{display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; margin:4px 6px 4px 0;}
+.division-outcome.survives{background:var(--green-soft); color:var(--green);}
+.division-outcome.excluded{background:var(--rust-soft); color:var(--rust);}
+.division-sql{margin-top:14px;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+  .widget-tables{flex-direction:column;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical cell buttons (shared) ===== */
+.cell .btn{ background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace; }
+.cell .btn:hover{ opacity:.9; }
+.cell .btn.secondary{ background:transparent; color:var(--code-text); border:1px solid var(--code-rule); }
+.cell .btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+th.required-col,table.division-grid th.required-col{color:#7A560F;}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">Overview</a>
+      <a href="#selection-projection">Selection &amp; Projection</a>
+      <a href="#order-matters">Filter First, Then Project</a>
+      <div class="grp">Combining Relations</div>
+      <a href="#products-joins">Products &amp; Joins</a>
+      <a href="#set-ops">Set Operations</a>
+      <a href="#rename">Rename &amp; Self-Join</a>
+      <a href="#division">Division — the “For-All” Op</a>
+      <div class="grp">Reasoning About Algebra</div>
+      <a href="#equivalences">Recognizing Equivalent Expressions</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-translate">English → Algebra → SQL</a>
+      <a href="#worked-rewrite">Query Rewriting for Optimization</a>
+      <a href="#worked-division-trace">Division by Trace</a>
+      <div class="grp">Apply It</div>
+      <a href="#operator-chooser">Algebra Operator Chooser</a>
+      <a href="#algebra-evaluation">Evaluating an Expression</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+          <div class="grp">2026 Status</div>
+      <a href="#in-2026">In 2026: What Has Changed</a>
+</nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>Relational Algebra</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">When you write <code>SELECT ... FROM ... WHERE ...</code>, the database doesn't run your query character by character — it first translates it into a small set of mathematical operators it can rewrite, reorder, and cost. This playground makes those operators tangible: drag through selection and projection, watch a join build itself row by row, and compute a real division against a live SQLite engine.</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>Overview</h2>
+      <p>If you learn SQL first, you learn <em>what to type</em>. If you learn relational algebra, you learn <em>how the database actually thinks</em>. Relational algebra treats data as sets and provides a specific, small set of operations to transform those sets into answers. It is <strong>procedural</strong> — it describes the step-by-step path to a result — which is exactly why a query optimizer can reason about it: rewrite one path into a cheaper, provably equivalent path.</p>
+      <div class="callout">
+        <strong>How to use this page:</strong> gray boxes are real SQLite queries you can edit and run. The two colored widgets below are live — every click recomputes a real result against an in-browser database, not a scripted animation.
+      </div>
+    </section>
+
+    <section id="selection-projection">
+      <div class="kicker">Foundations</div>
+      <h2>Filtering and Pruning: Selection and Projection</h2>
+      <p>The two most basic operations in relational algebra are about narrowing down what you're looking at. Think of a large spreadsheet — you usually want to hide the rows you don't need, and hide the columns you don't need.</p>
+      <p><strong>Selection (σ)</strong> filters rows. You provide a condition, and the operator returns only the tuples that satisfy it:</p>
+      <div class="schema-line">σ<sub>dept='Sales'</sub>(Employees)</div>
+      <p><strong>Projection (π)</strong> filters columns. If you only care about names and salaries out of twenty columns, projection strips the rest away:</p>
+      <div class="schema-line">π<sub>name,salary</sub>(Employees)</div>
+      <p>The real power comes from combining them — relational algebra is <strong>compositional</strong>, meaning the output of one operation is the input to the next:</p>
+      <div class="schema-line">π<sub>name</sub>(σ<sub>dept='Sales'</sub>(Employees))</div>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 820 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Selection keeps the rows that match a predicate and projection keeps the named columns; composed, they isolate a subset of the relation." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="ra7-blue" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2F5D8A"/></marker>
+            <marker id="ra7-amber" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#A9781F"/></marker>
+          </defs>
+
+          <text x="455" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">ORIGINAL TABLE (RELATION)</text>
+
+          <!-- table surface -->
+          <rect x="250" y="50" width="380" height="194" fill="#FFFFFF"/>
+          <rect x="250" y="50" width="380" height="34" fill="#F6F7F2"/>
+          <!-- columns kept by π -->
+          <rect x="345" y="50" width="190" height="194" fill="#F4EBD6"/>
+          <!-- cells kept by σ ∩ π -->
+          <rect x="345" y="84" width="190" height="80" fill="#ECC886"/>
+
+          <!-- grid -->
+          <line x1="345" y1="50" x2="345" y2="244" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="440" y1="50" x2="440" y2="244" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="535" y1="50" x2="535" y2="244" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="250" y1="84" x2="630" y2="84" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="250" y1="124" x2="630" y2="124" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="250" y1="164" x2="630" y2="164" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="250" y1="204" x2="630" y2="204" stroke="#C9CFC2" stroke-width="1"/>
+          <rect x="250" y="50" width="380" height="194" fill="none" stroke="#1E2A25" stroke-width="1.4"/>
+
+          <!-- header -->
+          <text x="297.5" y="71" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">student_id</text>
+          <text x="392.5" y="71" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">name</text>
+          <text x="487.5" y="71" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">dept</text>
+          <text x="582.5" y="71" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">gpa</text>
+
+          <!-- rows -->
+          <text x="297.5" y="108" text-anchor="middle" font-size="11" fill="#1E2A25">1</text>
+          <text x="392.5" y="108" text-anchor="middle" font-size="11" fill="#1E2A25">Ada</text>
+          <text x="487.5" y="108" text-anchor="middle" font-size="11" fill="#1E2A25">CS</text>
+          <text x="582.5" y="108" text-anchor="middle" font-size="11" fill="#1E2A25">3.9</text>
+          <text x="297.5" y="148" text-anchor="middle" font-size="11" fill="#1E2A25">2</text>
+          <text x="392.5" y="148" text-anchor="middle" font-size="11" fill="#1E2A25">Bo</text>
+          <text x="487.5" y="148" text-anchor="middle" font-size="11" fill="#1E2A25">CS</text>
+          <text x="582.5" y="148" text-anchor="middle" font-size="11" fill="#1E2A25">3.4</text>
+          <text x="297.5" y="188" text-anchor="middle" font-size="11" fill="#1E2A25">3</text>
+          <text x="392.5" y="188" text-anchor="middle" font-size="11" fill="#1E2A25">Cy</text>
+          <text x="487.5" y="188" text-anchor="middle" font-size="11" fill="#1E2A25">Math</text>
+          <text x="582.5" y="188" text-anchor="middle" font-size="11" fill="#1E2A25">3.7</text>
+          <text x="297.5" y="228" text-anchor="middle" font-size="11" fill="#1E2A25">4</text>
+          <text x="392.5" y="228" text-anchor="middle" font-size="11" fill="#1E2A25">Di</text>
+          <text x="487.5" y="228" text-anchor="middle" font-size="11" fill="#1E2A25">Bio</text>
+          <text x="582.5" y="228" text-anchor="middle" font-size="11" fill="#1E2A25">2.8</text>
+
+          <!-- dashed bands: rows kept (blue), columns kept (amber) -->
+          <rect x="244" y="78" width="392" height="92" fill="none" stroke="#2F5D8A" stroke-width="2" stroke-dasharray="7,5" data-beat="1"/>
+          <rect x="339" y="44" width="202" height="206" fill="none" stroke="#A9781F" stroke-width="2" stroke-dasharray="7,5" data-beat="2"/>
+
+          <!-- 1. SELECTION -->
+          <g data-beat="1">
+            <text x="16" y="124" font-size="13" font-weight="700" fill="#2F5D8A">1. SELECTION (σ)</text>
+            <text x="16" y="145" font-size="11" fill="#1E2A25">σ_dept='CS'(Students)</text>
+            <text x="16" y="165" font-size="10.5" fill="#4A564F">→ Picks specific ROWS</text>
+            <line x1="196" y1="128" x2="244" y2="128" stroke="#2F5D8A" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#ra7-blue)"/>
+          </g>
+
+          <!-- 2. PROJECTION -->
+          <g data-beat="2">
+            <text x="652" y="124" font-size="13" font-weight="700" fill="#A9781F">2. PROJECTION (π)</text>
+            <text x="652" y="145" font-size="11" fill="#1E2A25">π_name,dept(Table)</text>
+            <text x="652" y="165" font-size="10.5" fill="#4A564F">→ Picks specific COLUMNS</text>
+            <line x1="650" y1="128" x2="545" y2="128" stroke="#A9781F" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#ra7-amber)"/>
+          </g>
+
+          <!-- flow to the isolated subset -->
+          <path d="M330,252 C330,300 400,286 400,324" fill="none" stroke="#A9781F" stroke-width="2" marker-end="url(#ra7-amber)"/>
+          <path d="M560,252 C560,300 490,286 490,324" fill="none" stroke="#A9781F" stroke-width="2" marker-end="url(#ra7-amber)"/>
+
+          <!-- subset -->
+          <rect x="360" y="330" width="190" height="100" fill="#F4EBD6" stroke="#A9781F" stroke-width="1.5"/>
+          <line x1="455" y1="330" x2="455" y2="430" stroke="#A9781F" stroke-width="1"/>
+          <line x1="360" y1="360" x2="550" y2="360" stroke="#A9781F" stroke-width="1"/>
+          <line x1="360" y1="395" x2="550" y2="395" stroke="#A9781F" stroke-width="1"/>
+          <text x="407.5" y="349" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1E2A25">name</text>
+          <text x="502.5" y="349" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1E2A25">dept</text>
+          <text x="407.5" y="381" text-anchor="middle" font-size="11" fill="#1E2A25">Ada</text>
+          <text x="502.5" y="381" text-anchor="middle" font-size="11" fill="#1E2A25">CS</text>
+          <text x="407.5" y="416" text-anchor="middle" font-size="11" fill="#1E2A25">Bo</text>
+          <text x="502.5" y="416" text-anchor="middle" font-size="11" fill="#1E2A25">CS</text>
+
+          <text x="455" y="455" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2A25">ISOLATED SUBSET</text>
+          <text x="455" y="474" text-anchor="middle" font-size="10.5" fill="#4A564F">σ keeps the rows, then π keeps the columns</text>
+        </svg>
+        <figcaption>How selection and projection work together to isolate a specific subset of a relation — <code>σ</code> first removes rows, then <code>π</code> removes columns.</figcaption>
+      </figure>
+
+      <div class="widget" id="explorer-widget">
+        <div class="widget-title">Relational Operator Explorer</div>
+        <div class="widget-sub">Toggle between Selection (σ) and Projection (π) to see how each operator filters rows or columns from the <code>Students</code> relation.</div>
+        <div class="explored-badge" id="explorer-badge">✓ Both operators explored! You've seen how σ filters rows and π filters columns.</div>
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="explorer-mode-select" data-mode="select">σ Selection</button>
+          <button class="mode-btn" id="explorer-mode-project" data-mode="project">π Projection</button>
+        </div>
+        <div class="expr-box" id="explorer-expr">σ<sub>gpa ≥ 3.5</sub>(Students)</div>
+        <div id="explorer-controls"></div>
+        <p class="small" id="explorer-explain">Selection σ keeps only the rows that satisfy a predicate, returning all columns. Adjust the predicate above and watch which rows survive.</p>
+        <div class="widget-tables">
+          <div class="widget-table-col">
+            <h4>Input — Students</h4>
+            <div id="explorer-input-table"></div>
+          </div>
+          <div class="widget-table-col">
+            <h4>Result</h4>
+            <div id="explorer-result-table"></div>
+          </div>
+        </div>
+      </div>
+
+      <p>Run it yourself against real SQLite:</p>
+      <div class="cell" data-cell="sel_proj_compose">
+        <div class="cell-head"><span class="cell-title">selection_then_projection.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="order-matters">
+      <div class="kicker">Foundations</div>
+      <div class="step-card">
+        <h3>Notice the Order: Filter First, Then Project</h3>
+        <p>We filter the rows first, then we cut the columns. In a real database, this is usually the most efficient order: selection typically shrinks the row count dramatically before projection has to touch anything, so the engine moves less data overall. Flip the order and — as the next section shows — you can lose the very column you needed to filter on.</p>
+      </div>
+    </section>
+
+    <section id="products-joins">
+      <div class="kicker">Combining Relations</div>
+      <h2>Combining Tables: Products and Joins</h2>
+      <p>Data is rarely stored in one giant table. We split it up to avoid repetition: students in one table, courses in another, a third to track who's enrolled in what. To answer any interesting question, we have to put these tables back together.</p>
+
+      <h3>Cartesian Product (×)</h3>
+      <p>The most basic way to combine tables is the Cartesian Product. This is a "dumb" operation — it takes every row of table A and pairs it with every single row of table B. If A has 10 rows and B has 10 rows, the product has 100 rows. Most of these pairings are nonsense.</p>
+      <div class="cell" data-cell="cartesian_product">
+        <div class="cell-head"><span class="cell-title">cartesian_product.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+      <h3>Natural Join (⋈)</h3>
+      <p>To make pairings meaningful, we use the Join. The <strong>Natural Join</strong> is the most common version — it looks for columns with the same name in both tables and pairs rows only when those values match.</p>
+      <div class="cell" data-cell="natural_join">
+        <div class="cell-head"><span class="cell-title">natural_join.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Compare the row counts: the Cartesian product above has rows × rows; the join has only the rows where <code>dept_id</code> actually matches.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 820 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two tables, Students and Grades, joined on the shared ID column to produce one combined result table with one row per matching pair." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="ra7-join-amber" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#A9781F"/></marker>
+            <marker id="ra7-join-blue" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2F5D8A"/></marker>
+          </defs>
+
+          <!-- ============ Students ============ -->
+          <text x="30" y="44" font-size="14" font-weight="700" fill="#1E2A25">Students</text>
+          <rect x="30" y="52" width="220" height="120" fill="#FFFFFF"/>
+          <rect x="30" y="52" width="220" height="24" fill="#F6F7F2"/>
+          <line x1="70" y1="52" x2="70" y2="172" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="150" y1="52" x2="150" y2="172" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="30" y1="76" x2="250" y2="76" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="30" y1="108" x2="250" y2="108" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="30" y1="140" x2="250" y2="140" stroke="#C9CFC2" stroke-width="1"/>
+          <rect x="30" y="52" width="220" height="120" fill="none" stroke="#1E2A25" stroke-width="1.3"/>
+          <text x="50" y="68" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">ID</text>
+          <text x="110" y="68" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">Name</text>
+          <text x="200" y="68" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">Major</text>
+          <text x="50" y="96" text-anchor="middle" font-size="11" fill="#1E2A25">101</text>
+          <text x="110" y="96" text-anchor="middle" font-size="11" fill="#1E2A25">Alice</text>
+          <text x="200" y="96" text-anchor="middle" font-size="11" fill="#1E2A25">Comp Sci</text>
+          <text x="50" y="128" text-anchor="middle" font-size="11" fill="#1E2A25">102</text>
+          <text x="110" y="128" text-anchor="middle" font-size="11" fill="#1E2A25">Bob</text>
+          <text x="200" y="128" text-anchor="middle" font-size="11" fill="#1E2A25">Physics</text>
+          <text x="50" y="160" text-anchor="middle" font-size="11" fill="#1E2A25">103</text>
+          <text x="110" y="160" text-anchor="middle" font-size="11" fill="#1E2A25">Charlie</text>
+          <text x="200" y="160" text-anchor="middle" font-size="11" fill="#1E2A25">Math</text>
+
+          <!-- ============ Grades ============ -->
+          <text x="30" y="208" font-size="14" font-weight="700" fill="#1E2A25">Grades</text>
+          <rect x="30" y="216" width="220" height="152" fill="#FFFFFF"/>
+          <rect x="30" y="216" width="220" height="24" fill="#F6F7F2"/>
+          <line x1="70" y1="216" x2="70" y2="368" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="190" y1="216" x2="190" y2="368" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="30" y1="240" x2="250" y2="240" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="30" y1="272" x2="250" y2="272" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="30" y1="304" x2="250" y2="304" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="30" y1="336" x2="250" y2="336" stroke="#C9CFC2" stroke-width="1"/>
+          <rect x="30" y="216" width="220" height="152" fill="none" stroke="#1E2A25" stroke-width="1.3"/>
+          <text x="50" y="232" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">ID</text>
+          <text x="130" y="232" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">Course</text>
+          <text x="220" y="232" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">Grade</text>
+          <text x="50" y="260" text-anchor="middle" font-size="11" fill="#1E2A25">101</text>
+          <text x="130" y="260" text-anchor="middle" font-size="11" fill="#1E2A25">CS101</text>
+          <text x="220" y="260" text-anchor="middle" font-size="11" fill="#1E2A25">A</text>
+          <text x="50" y="292" text-anchor="middle" font-size="11" fill="#1E2A25">101</text>
+          <text x="130" y="292" text-anchor="middle" font-size="11" fill="#1E2A25">MATH201</text>
+          <text x="220" y="292" text-anchor="middle" font-size="11" fill="#1E2A25">A-</text>
+          <text x="50" y="324" text-anchor="middle" font-size="11" fill="#1E2A25">102</text>
+          <text x="130" y="324" text-anchor="middle" font-size="11" fill="#1E2A25">PHY101</text>
+          <text x="220" y="324" text-anchor="middle" font-size="11" fill="#1E2A25">B</text>
+          <text x="50" y="356" text-anchor="middle" font-size="11" fill="#1E2A25">103</text>
+          <text x="130" y="356" text-anchor="middle" font-size="11" fill="#1E2A25">CS101</text>
+          <text x="220" y="356" text-anchor="middle" font-size="11" fill="#1E2A25">B+</text>
+
+          <!-- ============ connectors ============ -->
+          <path d="M250,92 C310,92 320,197 376,197" fill="none" stroke="#2F5D8A" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#ra7-join-blue)"/>
+          <path d="M250,98 C310,98 320,231 376,231" fill="none" stroke="#2F5D8A" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#ra7-join-blue)"/>
+          <path d="M250,124 C310,124 320,265 376,265" fill="none" stroke="#2F5D8A" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#ra7-join-blue)"/>
+          <path d="M250,156 C310,156 320,299 376,299" fill="none" stroke="#2F5D8A" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#ra7-join-blue)"/>
+          <path d="M250,256 C310,256 320,209 376,209" fill="none" stroke="#A9781F" stroke-width="1.5" marker-end="url(#ra7-join-amber)"/>
+          <path d="M250,288 C310,288 320,243 376,243" fill="none" stroke="#A9781F" stroke-width="1.5" marker-end="url(#ra7-join-amber)"/>
+          <path d="M250,320 C310,320 320,277 376,277" fill="none" stroke="#A9781F" stroke-width="1.5" marker-end="url(#ra7-join-amber)"/>
+          <path d="M250,352 C310,352 320,311 376,311" fill="none" stroke="#A9781F" stroke-width="1.5" marker-end="url(#ra7-join-amber)"/>
+
+          <!-- ============ joined result ============ -->
+          <text x="590" y="138" text-anchor="middle" font-size="26" font-weight="700" fill="#1E2A25">Joined Result Table</text>
+          <rect x="380" y="156" width="420" height="166" fill="#E4EBF2"/>
+          <rect x="380" y="156" width="420" height="30" fill="#D2E1EF"/>
+          <line x1="425" y1="156" x2="425" y2="322" stroke="#2F5D8A" stroke-width="1"/>
+          <line x1="505" y1="156" x2="505" y2="322" stroke="#2F5D8A" stroke-width="1"/>
+          <line x1="615" y1="156" x2="615" y2="322" stroke="#2F5D8A" stroke-width="1"/>
+          <line x1="725" y1="156" x2="725" y2="322" stroke="#2F5D8A" stroke-width="1"/>
+          <line x1="380" y1="186" x2="800" y2="186" stroke="#2F5D8A" stroke-width="1.2"/>
+          <line x1="380" y1="220" x2="800" y2="220" stroke="#A8B0A0" stroke-width="1"/>
+          <line x1="380" y1="254" x2="800" y2="254" stroke="#A8B0A0" stroke-width="1"/>
+          <line x1="380" y1="288" x2="800" y2="288" stroke="#A8B0A0" stroke-width="1"/>
+          <rect x="380" y="156" width="420" height="166" fill="none" stroke="#2F5D8A" stroke-width="1.6"/>
+          <text x="402.5" y="175" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">ID</text>
+          <text x="465" y="175" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">Name</text>
+          <text x="560" y="175" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">Major</text>
+          <text x="670" y="175" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">Course</text>
+          <text x="762.5" y="175" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">Grade</text>
+          <text x="402.5" y="207" text-anchor="middle" font-size="11" fill="#1E2A25">101</text>
+          <text x="465" y="207" text-anchor="middle" font-size="11" fill="#1E2A25">Alice</text>
+          <text x="560" y="207" text-anchor="middle" font-size="11" fill="#1E2A25">Comp Sci</text>
+          <text x="670" y="207" text-anchor="middle" font-size="11" fill="#1E2A25">CS101</text>
+          <text x="762.5" y="207" text-anchor="middle" font-size="11" fill="#1E2A25">A</text>
+          <text x="402.5" y="241" text-anchor="middle" font-size="11" fill="#1E2A25">101</text>
+          <text x="465" y="241" text-anchor="middle" font-size="11" fill="#1E2A25">Alice</text>
+          <text x="560" y="241" text-anchor="middle" font-size="11" fill="#1E2A25">Comp Sci</text>
+          <text x="670" y="241" text-anchor="middle" font-size="11" fill="#1E2A25">MATH201</text>
+          <text x="762.5" y="241" text-anchor="middle" font-size="11" fill="#1E2A25">A-</text>
+          <text x="402.5" y="275" text-anchor="middle" font-size="11" fill="#1E2A25">102</text>
+          <text x="465" y="275" text-anchor="middle" font-size="11" fill="#1E2A25">Bob</text>
+          <text x="560" y="275" text-anchor="middle" font-size="11" fill="#1E2A25">Physics</text>
+          <text x="670" y="275" text-anchor="middle" font-size="11" fill="#1E2A25">PHY101</text>
+          <text x="762.5" y="275" text-anchor="middle" font-size="11" fill="#1E2A25">B</text>
+          <text x="402.5" y="309" text-anchor="middle" font-size="11" fill="#1E2A25">103</text>
+          <text x="465" y="309" text-anchor="middle" font-size="11" fill="#1E2A25">Charlie</text>
+          <text x="560" y="309" text-anchor="middle" font-size="11" fill="#1E2A25">Math</text>
+          <text x="670" y="309" text-anchor="middle" font-size="11" fill="#1E2A25">CS101</text>
+          <text x="762.5" y="309" text-anchor="middle" font-size="11" fill="#1E2A25">B+</text>
+
+          <!-- ============ annotations ============ -->
+          <text x="315" y="64" text-anchor="middle" font-size="10" fill="#2F5D8A">shared join key: ID</text>
+          <text x="590" y="344" text-anchor="middle" font-size="10.5" fill="#4A564F">Combined result table — inner join on ID</text>
+          <line x1="30" y1="394" x2="78" y2="394" stroke="#A9781F" stroke-width="2"/>
+          <text x="80" y="398" font-size="10" fill="#4A564F">solid — one result row per Grades row</text>
+          <line x1="30" y1="414" x2="78" y2="414" stroke="#2F5D8A" stroke-width="2" stroke-dasharray="5,4"/>
+          <text x="80" y="418" font-size="10" fill="#4A564F">dashed — the matching Students row (same ID)</text>
+        </svg>
+        <figcaption>A visual representation of a join connecting related data across different tables. Student 101 has <em>two</em> grades, so one Students row matches two Grades rows — which is why three students produce four result rows.</figcaption>
+      </figure>
+
+      <h3>Theta Join</h3>
+      <p>Sometimes you need to join on a condition other than "names match." This is a <strong>Theta Join</strong> — you might join Orders with Promotions where the order date falls between the promotion's start and end dates:</p>
+      <div class="schema-line">Orders ⋈<sub>start &lt; order_date &lt; end</sub> Promotions</div>
+      <div class="cell" data-cell="theta_join">
+        <div class="cell-head"><span class="cell-title">theta_join.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="set-ops">
+      <div class="kicker">Combining Relations</div>
+      <h2>Set Operations and Renaming</h2>
+      <p>Because relations are mathematically sets, we can use standard set theory on them. These operations require <strong>union compatibility</strong> — a fancy way of saying the two tables must have the same number of columns, with matching types.</p>
+      <table class="compare">
+        <tr><th>Operator</th><th>Meaning</th><th>Example use</th></tr>
+        <tr><td><strong>Union (∪)</strong></td><td>All rows from both tables, duplicates removed</td><td>Customers who bought something in January <em>or</em> February</td></tr>
+        <tr><td><strong>Intersection (∩)</strong></td><td>Only rows that appear in both tables</td><td>Customers who bought something in <em>both</em> January and February</td></tr>
+        <tr><td><strong>Set Difference (−)</strong></td><td>Rows in the first table that are not in the second</td><td>Customers who bought in January but stayed away in February</td></tr>
+      </table>
+      <div class="cell" data-cell="set_operations">
+        <div class="cell-head"><span class="cell-title">set_operations.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="rename">
+      <div class="kicker">Combining Relations</div>
+      <div class="step-card">
+        <h3>The Rename Operator (ρ) and Self-Joins</h3>
+        <p>Sometimes you need to compare a table to itself. Imagine a <code>Staff</code> table where one column is <code>employee_id</code> and another is <code>manager_id</code>. To find out who reports to whom, you have to join the table to itself — and without an alias, the database can't tell which copy of <code>Staff</code> a column reference means. The <strong>Rename operator (ρ)</strong> gives a table (or column) a temporary alias so the two copies stay distinguishable:</p>
+        <div class="schema-line">ρ<sub>Managers</sub>(Staff) ⋈<sub>Staff.manager_id = Managers.employee_id</sub> Staff</div>
+        <div class="cell" data-cell="rename_selfjoin">
+          <div class="cell-head"><span class="cell-title">rename_self_join.sql</span></div>
+          <textarea spellcheck="false"></textarea>
+          <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+          <div class="cell-output"></div>
+        </div>
+        <p class="small">In SQL, <code>ρ</code> is just a table alias (<code>AS m</code>). It's not optional here — <code>Staff JOIN Staff ON ...</code> with no aliases is ambiguous and won't parse.</p>
+      </div>
+      <div class="callout">
+        <strong>Halfway checkpoint.</strong> You now have selection, projection, product, joins, set operators, and rename — six operators that cover 90% of everyday queries. Next: one more operator (division), then reasoning about which rewrites are safe and why the query optimizer cares.
+      </div>
+    </section>
+
+    <section id="division">
+      <div class="kicker">Combining Relations</div>
+      <h2>The Division Operator: The "For-All" Problem</h2>
+      <p>The hardest operator to grasp is <strong>Division (÷)</strong>. You reach for it whenever a question contains the words "all," "every," or "each."</p>
+      <p>Consider two tables: <code>Requirements</code> — the courses needed to graduate — and <code>Completed</code> — every course every student has finished. To find students who've finished <em>all</em> the requirements, you divide:</p>
+      <div class="schema-line">Completed ÷ Requirements</div>
+      <p>Mathematically, division returns the values in the first table that are associated with <em>every</em> value in the second. If a student is only associated with two out of three required courses, they're dropped. It's the logical inverse of the Cartesian product.</p>
+
+      <div class="widget" id="division-widget">
+        <div class="widget-title">The Division Visualizer</div>
+        <div class="widget-sub">Toggle which courses each student has completed, then compute <code>Enrolled(student, course) ÷ Required(course)</code> — real SQL, run fresh every time you click.</div>
+        <div class="scenario-tabs" id="division-tabs"></div>
+        <div class="required-badge-row" id="division-required"></div>
+        <div id="division-grid"></div>
+        <div class="cell-actions" style="padding:0; background:none; border:none; margin:14px 0;">
+          <button class="btn" id="division-compute">÷ Compute Division</button>
+          <button class="btn secondary" id="division-reset">Reset checkboxes</button>
+        </div>
+        <div class="division-result" id="division-result"></div>
+        <div class="division-sql" id="division-sql"></div>
+      </div>
+    </section>
+
+    <section id="equivalences">
+      <div class="kicker">Reasoning About Algebra</div>
+      <h2>Recognizing Equivalent Expressions</h2>
+      <p>One of the most important skills in relational algebra is recognizing that there's often more than one way to write a query — and knowing which rewrites preserve the answer and which silently change it.</p>
+
+      <h3>When Operator Order Matters</h3>
+      <p>Consider <code>π<sub>name</sub>(σ<sub>dept='Sales'</sub>(Employees))</code>. Would projecting first and filtering after give the same answer?</p>
+      <div class="cell" data-cell="order_matters">
+        <div class="cell-head"><span class="cell-title">order_matters.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="callout rust">
+        <strong>No — these are not equivalent.</strong> If we project only <code>name</code> first, the <code>dept</code> column disappears. The selection can't then find "Sales" because that data is already gone. Swapping projection and selection is only safe when the selection's condition references attributes that survive the projection.
+      </div>
+
+      <h3>When Operator Order Does NOT Matter</h3>
+      <p>Other rewrites are always safe. Two selections in a row are provably the same as one selection with an AND condition:</p>
+      <div class="schema-line">σ<sub>price&gt;100</sub>(σ<sub>color='Red'</sub>(Products)) &nbsp;=&nbsp; σ<sub>price&gt;100 ∧ color='Red'</sub>(Products)</div>
+      <div class="cell" data-cell="combine_selections">
+        <div class="cell-head"><span class="cell-title">combine_selections.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">The equals sign here is a mathematical identity — for any <code>Products</code> table, both expressions produce the same set of tuples. This distinction between safe and answer-changing rewrites is exactly what the query optimizer relies on: it only applies rewrites from a proven catalog of equivalence laws, never guesses.</p>
+
+      <h3>The Optimizer's Rewrite Catalog</h3>
+      <table class="compare">
+        <tr><th>Rule</th><th>Equivalence</th><th>Condition</th></tr>
+        <tr><td>Push selection past join</td><td><code>σ<sub>c</sub>(R ⋈ S) ≡ σ<sub>c</sub>(R) ⋈ S</code></td><td><code>c</code> references only R's attributes</td></tr>
+        <tr><td>Combine adjacent selections</td><td><code>σ<sub>c1</sub>(σ<sub>c2</sub>(R)) ≡ σ<sub>c1∧c2</sub>(R)</code></td><td>always safe</td></tr>
+        <tr><td>Push projection past join</td><td><code>π<sub>L</sub>(R ⋈ S) ≡ π<sub>L</sub>(R ⋈ π<sub>L'</sub>(S))</code></td><td>L' = L's attributes from S, plus the join key</td></tr>
+        <tr><td>Commutativity of join</td><td><code>R ⋈ S ≡ S ⋈ R</code></td><td>always safe (cost may differ)</td></tr>
+        <tr><td>Associativity of join</td><td><code>(R ⋈ S) ⋈ T ≡ R ⋈ (S ⋈ T)</code></td><td>always safe (cost may differ)</td></tr>
+      </table>
+      <p class="small">The optimizer searches this equivalence space and picks whichever equivalent plan has the lowest estimated cost.</p>
+    </section>
+
+    <section id="worked-translate">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Translating "English → Algebra → SQL"</h2>
+      <p><strong>Question:</strong> "Find the names of students who received an A in a course taught by Professor Chen."</p>
+      <p>Given: <code>Student(sid, sname, major)</code>, <code>Enroll(sid, cid, grade)</code>, <code>Course(cid, cname, prof)</code>.</p>
+      <p>Building from the inside out:</p>
+      <ol>
+        <li>Filter enrollments to only A's: <code>σ<sub>grade='A'</sub>(Enroll)</code></li>
+        <li>Filter courses to only Chen's: <code>σ<sub>prof='Chen'</sub>(Course)</code></li>
+        <li>Join those two on the shared <code>cid</code>: <code>σ<sub>grade='A'</sub>(Enroll) ⋈ σ<sub>prof='Chen'</sub>(Course)</code></li>
+        <li>Join to Student on <code>sid</code>: <code>(above) ⋈ Student</code></li>
+        <li>Project the name: <code>π<sub>sname</sub>(…)</code></li>
+      </ol>
+      <div class="schema-line">π<sub>sname</sub>(Student ⋈ (σ<sub>grade='A'</sub>(Enroll) ⋈ σ<sub>prof='Chen'</sub>(Course)))</div>
+      <p>The SQL — same logic, imperative shape:</p>
+      <div class="cell" data-cell="worked_translate">
+        <div class="cell-head"><span class="cell-title">worked_english_algebra_sql.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Every <code>⋈</code> in the algebra corresponds to a <code>JOIN</code> in SQL. Every <code>σ</code> corresponds to a <code>WHERE</code> conjunct. The final <code>π</code> is the <code>SELECT</code> list. <code>DISTINCT</code> mirrors the algebra's set semantics — algebra returns sets, SQL returns bags by default.</p>
+    </section>
+
+    <section id="worked-rewrite">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Query Rewriting for Optimization</h2>
+      <p>The optimizer's job is to find the cheapest algebra expression equivalent to your query. Consider:</p>
+      <div class="schema-line">π<sub>sname</sub>(σ<sub>grade='A'</sub>(Student ⋈ Enroll))</div>
+      <p>This joins the <em>entire</em> Student table with the <em>entire</em> Enroll table first, then filters. If Enroll has a million rows and only a hundred are A's, that's a huge intermediate join. Since <code>grade='A'</code> only touches attributes from Enroll, it can be pushed down past the join:</p>
+      <div class="schema-line">π<sub>sname</sub>(Student ⋈ σ<sub>grade='A'</sub>(Enroll))</div>
+      <p>Now the join happens on the hundred A-grade rows instead of a million. Same answer, dramatically less work — run both below and check the result sets match:</p>
+      <div class="cell" data-cell="worked_rewrite">
+        <div class="cell-head"><span class="cell-title">worked_query_rewrite.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="worked-division-trace">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: The Division Operator by Trace</h2>
+      <p>Division confuses people because SQL has no <code>÷</code> operator — you simulate it with <code>NOT EXISTS</code>. Trace it by hand first:</p>
+      <table class="compare">
+        <tr><th>Student</th><th>Courses taken</th><th>Contains {C1, C2}?</th><th>Result</th></tr>
+        <tr><td>S1</td><td>{C1, C2, C3}</td><td>Yes</td><td>✓ included</td></tr>
+        <tr><td>S2</td><td>{C1, C2}</td><td>Yes</td><td>✓ included</td></tr>
+        <tr><td>S3</td><td>{C1}</td><td>No — missing C2</td><td>✗ excluded</td></tr>
+      </table>
+      <p>Read the nested <code>NOT EXISTS</code> carefully: <em>"for each student e1, there is no required course r for which the student has not enrolled."</em> That's the definition of "the student has taken every required course."</p>
+      <div class="cell" data-cell="worked_division_trace">
+        <div class="cell-head"><span class="cell-title">worked_division_trace.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">The <code>COUNT(DISTINCT ...) = (SELECT COUNT(*) FROM Required)</code> version (also in the cell above) is easier to read; the double <code>NOT EXISTS</code> version is what SQL query generators typically produce, because it handles NULLs and generalizes cleanly to other for-all questions.</p>
+    </section>
+
+    <section id="operator-chooser">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Algebra Operator Chooser</h2>
+      <p>Given a question in English, pick the right relational-algebra operator or rewrite: σ, π, ⋈, ⋉ (semi-join), ▷ (anti-join), ÷ (division) — or name the optimizer rule.</p>
+      <div id="opq-quiz"></div>
+    </section>
+
+    <section id="algebra-evaluation">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Evaluating an Expression, Operator by Operator</h2>
+      <p>Relational algebra is read <em>inside-out</em>. Walk a single expression one operator at a time and watch both the row count and the schema change — that habit is what makes an unfamiliar expression readable.</p>
+
+      <div class="widget">
+        <div class="widget-title">Evaluating a Relational Expression</div>
+        <div class="widget-sub">π name,dept_name ( σ salary&gt;100 ( Employee ) ⋈ Department )</div>
+        <div class="qstep-rail" id="algstep-rail"></div>
+        <div class="qstep-body" id="algstep-body"></div>
+        <div class="qstep-controls">
+          <button class="qstep-restart-btn" id="algstep-back">◀ Back</button>
+          <button class="qstep-next-btn" id="algstep-next">Next operator ▶</button>
+          <button class="qstep-restart-btn" id="algstep-restart">↺ Restart</button>
+          <span class="qstep-count" id="algstep-count"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. Employees in high-budget departments</h4>
+        <p>Given <code>Employee(eid, name, dept, salary)</code> and <code>Department(did, dname, budget)</code>, write a relational algebra expression returning the names of employees who work in departments with a budget over $1M.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <div class="schema-line">π<sub>name</sub>(Employee ⋈<sub>dept=did</sub> σ<sub>budget&gt;1000000</sub>(Department))</div>
+            <p>Step by step: (1) filter Department to only high-budget rows — <code>σ<sub>budget&gt;1000000</sub>(Department)</code>; (2) join with Employee on the department key — a theta join, since the attribute names differ (<code>dept</code> vs <code>did</code>); (3) project the name. The filter is pushed early — good practice, and exactly what an optimizer would do to your SQL.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Prove σ<sub>c</sub>(R ∪ S) ≡ σ<sub>c</sub>(R) ∪ σ<sub>c</sub>(S)</h4>
+        <p>Give a concrete example demonstrating this equivalence.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><strong>Proof intuition:</strong> a tuple <code>t</code> is in <code>σ<sub>c</sub>(R∪S)</code> iff (<code>t</code> is in R or <code>t</code> is in S) AND <code>t</code> satisfies <code>c</code>. Distributing: (<code>t</code> in R AND satisfies c) OR (<code>t</code> in S AND satisfies c) — exactly the right-hand side.</p>
+            <p><strong>Concrete example:</strong> R = {(1,'A'), (2,'B')}, S = {(2,'B'), (3,'C')}, predicate c: <code>attr1 &gt; 1</code>.</p>
+            <p>LHS: <code>σ(R∪S) = σ((1,A),(2,B),(3,C)) = (2,B),(3,C)</code>. RHS: <code>σ(R)∪σ(S) = {(2,B)} ∪ {(2,B),(3,C)} = (2,B),(3,C)</code>. Equal. This equivalence lets the optimizer push selection past union — often useful with partitioned tables.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Translate SQL to algebra</h4>
+        <p><code>SELECT DISTINCT c.name FROM Customer c JOIN Order o ON o.cid = c.cid WHERE o.total &gt; 500 AND c.country = 'USA';</code></p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <div class="schema-line">π<sub>name</sub>(σ<sub>country='USA'</sub>(Customer) ⋈<sub>cid</sub> σ<sub>total&gt;500</sub>(Order))</div>
+            <p>Both selections have been pushed down past the join (safe, since each references only one side's attributes). This is what the optimizer would rewrite <code>π<sub>name</sub>(σ<sub>country='USA' ∧ total&gt;500</sub>(Customer ⋈<sub>cid</sub> Order))</code> into — both are equivalent, but the pushed-down version is cheaper.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. Semi-join vs. anti-join vs. division</h4>
+        <p>Given <code>Enrolled(sid, cid)</code> and <code>Required(cid)</code>, express "students who've taken at least one required course" (semi-join) and "students who've taken none of the required courses" (anti-join). Contrast both with division.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><strong>At least one (semi-join):</strong> <code>π<sub>sid</sub>(Enrolled) ⋉ Required</code>, equivalently <code>π<sub>sid</sub>(Enrolled ⋈ Required)</code>. SQL: <code>SELECT DISTINCT sid FROM Enrolled WHERE cid IN (SELECT cid FROM Required)</code>.</p>
+            <p><strong>None (anti-join):</strong> <code>π<sub>sid</sub>(Enrolled) − π<sub>sid</sub>(Enrolled ⋈ Required)</code>. SQL: <code>WHERE cid NOT IN (...)</code> (watch for the NULL caveat) or <code>WHERE NOT EXISTS (...)</code>.</p>
+            <p><strong>Every required course (division):</strong> <code>π<sub>sid,cid</sub>(Enrolled) ÷ Required</code>. Semi-join asks "any match?"; anti-join asks "no match?"; division asks "all matches?" — three quantifier flavors (∃, ¬∃, ∀), and the reason relational algebra needs three separate operators.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>5. Is this rewrite valid?</h4>
+        <p>Is <code>π<sub>sname</sub>(σ<sub>grade='A'</sub>(Student ⋈ Enroll))</code> equivalent to <code>π<sub>sname</sub>(Student ⋈ σ<sub>grade='A'</sub>(Enroll))</code>? Justify.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><strong>Yes, equivalent.</strong> <code>grade='A'</code> references only the <code>grade</code> attribute, which comes exclusively from Enroll — this satisfies the push-selection-past-join rule: <code>σ<sub>c</sub>(R⋈S) ≡ R⋈σ<sub>c</sub>(S)</code> when c references only S's attributes. The second form is typically much faster: the selection shrinks Enroll before the join, meaning fewer comparisons and a smaller intermediate result.</p>
+            <p><strong>Counter-example for the invariance rule:</strong> <code>σ<sub>sname='Alice'</sub>(Student⋈Enroll)</code> cannot be pushed into Enroll, because <code>sname</code> is a Student attribute — Enroll has no such column. It can only be pushed into Student: <code>σ<sub>sname='Alice'</sub>(Student)⋈Enroll</code>. The optimizer only pushes a selection into the side where its referenced attributes actually live.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p>Relational algebra rarely appears by name in interviews, but its ideas show up constantly through the query optimizer.</p>
+        <p><strong>"Explain how the query optimizer works."</strong> This question filters candidates aggressively. A weak answer says "it figures out the best plan." A strong answer says: "The parser produces a logical plan expressed in relational algebra. The optimizer applies rewrite rules from the algebra's equivalence laws — push selections down, reorder joins, combine adjacent projections — to enumerate equivalent plans. Then a cost model, using statistics like row counts, distinct values, and index availability, picks the cheapest." That signals staff-level depth.</p>
+        <p><strong>The "why is my query slow?" question.</strong> Behind almost every query-tuning interview problem is one of a handful of algebra-level issues:</p>
+        <ul class="criteria-list">
+          <li><span class="c-num">1.</span><strong>Selection didn't push down past a join</strong> — filtered on billions of post-join rows instead of the source table pre-join. Fix: rewrite so the <code>WHERE</code> references only one side.</li>
+          <li><span class="c-num">2.</span><strong>Cross product masquerading as a join</strong> — a missing <code>ON</code> clause turns an intended <code>INNER JOIN</code> into a Cartesian product. A common accidental bug, catastrophic on big tables.</li>
+          <li><span class="c-num">3.</span><strong>Redundant projection</strong> — <code>SELECT *</code>-style patterns force the executor to move columns it never needs. Fix: name only what you use.</li>
+          <li><span class="c-num">4.</span><strong>Join order matters</strong> — three-way joins have factorial-many possible orders. The optimizer picks one, but if statistics are stale, it picks badly.</li>
+        </ul>
+        <p><strong>The "division operator" test.</strong> Interviewers occasionally ask "how would you find users who purchased every product in category X?" as a filter for people who know the for-all pattern. The elegant answer uses double <code>NOT EXISTS</code> or <code>HAVING COUNT(DISTINCT ...) = (SELECT COUNT(*) FROM ...)</code>. Recognizing this as the SQL translation of relational division is worth calling out explicitly.</p>
+        <p class="small"><strong>Rule of thumb:</strong> any interview conversation that touches "why is this slow?" or "why did the optimizer pick that plan?" is a conversation about relational-algebra equivalences and cost estimation. Speaking that language is exactly what a senior data engineer or database engineer sounds like.</p>
+      </div>
+    </section>
+
+    <section id="in-2026">
+      <div class="kicker">2026 Status</div>
+      <h2>In 2026: What Has Changed</h2>
+      <p>Algebra used to be exam material. In 2026 it is how you predict what the optimizer will do to a query you did not write.</p>
+      <ul>
+        <li><strong>The optimizer rewrites your SQL.</strong> Reading σ/π/⋈ is how you predict which plan it will pick, and why pushing a selection down is always safe.</li>
+        <li><strong>Verifying AI-written SQL</strong> is now a routine task; relational algebra is how you check that a generated query computes what it claims.</li>
+        <li><strong>Decorrelation</strong> — rewriting a correlated subquery as a join or semi-join — is the single most common optimizer transformation.</li>
+        <li><strong>EXISTS, IN and joins are not interchangeable.</strong> With NULLs in play they give different answers, and the algebra is what explains why.</li>
+      </ul>
+      <p class="small">You rarely write algebra, but you constantly read its consequences — in query plans, in rewrite rules, and in code review.</p>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="6_relational_mapping_playground.html">← 6. Relational Mapping</a>
+        <a class="pgnav-pos" href="index.html">Playground 7 of 15</a>
+        <a class="pgnav-next" href="8_constraint_violation_predictor_playground.html">8. DDL Constraints →</a>
+      </nav>
+    </footer>
+
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
+const CELLS = {
+  sel_proj_compose: {
+    setup: ``,
+    starter:
+`CREATE TABLE Students (id INTEGER PRIMARY KEY, name TEXT, major TEXT, gpa REAL, year INTEGER);
+INSERT INTO Students VALUES
+  (1,'Alice','CS',3.9,3),(2,'Bob','Math',3.2,2),(3,'Carmen','CS',3.7,4),
+  (4,'David','Bio',2.8,1),(5,'Emma','Math',3.5,3),(6,'Felix','CS',2.5,2),
+  (7,'Grace','Bio',3.8,4),(8,'Henry','Math',3.1,1);
+
+-- sigma: keep only rows with gpa >= 3.5
+SELECT * FROM Students WHERE gpa >= 3.5;
+
+-- pi: keep only id, name, major (projection removes duplicates by definition)
+SELECT DISTINCT id, name, major FROM Students;`
+  },
+  cartesian_product: {
+    setup: ``,
+    starter:
+`CREATE TABLE Employees (eid INTEGER PRIMARY KEY, name TEXT, dept_id INTEGER);
+CREATE TABLE Departments (dept_id INTEGER PRIMARY KEY, dept_name TEXT);
+
+INSERT INTO Employees VALUES (1, 'Alice', 10), (2, 'Bob', 20);
+INSERT INTO Departments VALUES (10, 'Sales'), (20, 'Eng');
+
+-- Cartesian product: every employee paired with every department (2 x 2 = 4 rows)
+SELECT * FROM Employees, Departments;`
+  },
+  natural_join: {
+    setup: ``,
+    starter:
+`CREATE TABLE Employees (eid INTEGER PRIMARY KEY, name TEXT, dept_id INTEGER);
+CREATE TABLE Departments (dept_id INTEGER PRIMARY KEY, dept_name TEXT);
+
+INSERT INTO Employees VALUES (1, 'Alice', 10), (2, 'Bob', 20);
+INSERT INTO Departments VALUES (10, 'Sales'), (20, 'Eng');
+
+-- Natural join: only pairs where dept_id actually matches (2 rows, not 4)
+SELECT Employees.name, Departments.dept_name
+FROM Employees JOIN Departments ON Employees.dept_id = Departments.dept_id;`
+  },
+  theta_join: {
+    setup: ``,
+    starter:
+`CREATE TABLE Orders (oid INTEGER PRIMARY KEY, order_date TEXT);
+CREATE TABLE Promotions (promo TEXT, start TEXT, end TEXT);
+
+INSERT INTO Orders VALUES (1, '2024-06-15');
+INSERT INTO Promotions VALUES ('SummerSale', '2024-06-01', '2024-06-30');
+
+-- Theta join: joined on a range condition, not on matching column names
+SELECT * FROM Orders
+JOIN Promotions ON Orders.order_date > Promotions.start AND Orders.order_date < Promotions.end;`
+  },
+  set_operations: {
+    setup: ``,
+    starter:
+`CREATE TABLE JanBuyers (customer TEXT);
+CREATE TABLE FebBuyers (customer TEXT);
+
+INSERT INTO JanBuyers VALUES ('Alice'), ('Bob');
+INSERT INTO FebBuyers VALUES ('Bob'), ('Carmen');
+
+-- Union: bought in January OR February
+SELECT customer FROM JanBuyers UNION SELECT customer FROM FebBuyers;
+
+-- Intersection: bought in BOTH January and February
+SELECT customer FROM JanBuyers INTERSECT SELECT customer FROM FebBuyers;
+
+-- Set difference: bought in January but NOT February
+SELECT customer FROM JanBuyers EXCEPT SELECT customer FROM FebBuyers;`
+  },
+  rename_selfjoin: {
+    setup: ``,
+    starter:
+`CREATE TABLE Staff (employee_id INTEGER PRIMARY KEY, name TEXT, manager_id INTEGER);
+
+INSERT INTO Staff VALUES (1, 'Carol', NULL), (2, 'Dave', 1), (3, 'Eve', 1), (4, 'Felix', 2);
+
+-- rho: alias one copy of Staff as "m" (the Managers view) so the self-join isn't ambiguous
+SELECT s.name AS employee, m.name AS manager
+FROM Staff s JOIN Staff m ON s.manager_id = m.employee_id;`
+  },
+  order_matters: {
+    setup: ``,
+    starter:
+`CREATE TABLE Employees2 (eid INTEGER PRIMARY KEY, name TEXT, dept TEXT);
+INSERT INTO Employees2 VALUES (1, 'Alice', 'Sales'), (2, 'Bob', 'Eng');
+
+-- Correct order: filter first (dept column still exists), then project
+SELECT name FROM Employees2 WHERE dept = 'Sales';
+
+-- Try this: project first, THEN try to filter on the column we just dropped.
+-- This is expected to fail -- that's the point.
+SELECT name FROM (SELECT name FROM Employees2) WHERE dept = 'Sales';`
+  },
+  combine_selections: {
+    setup: ``,
+    starter:
+`CREATE TABLE Products (pid INTEGER PRIMARY KEY, color TEXT, price REAL);
+INSERT INTO Products VALUES (1, 'Red', 150), (2, 'Red', 50), (3, 'Blue', 200);
+
+-- Two selections nested
+SELECT * FROM (SELECT * FROM Products WHERE color = 'Red') WHERE price > 100;
+
+-- One selection, AND-combined -- same result set
+SELECT * FROM Products WHERE price > 100 AND color = 'Red';`
+  },
+  worked_translate: {
+    setup: ``,
+    starter:
+`CREATE TABLE Student (sid INTEGER PRIMARY KEY, sname TEXT, major TEXT);
+CREATE TABLE Enroll (sid INTEGER, cid TEXT, grade TEXT);
+CREATE TABLE Course (cid TEXT PRIMARY KEY, cname TEXT, prof TEXT);
+
+INSERT INTO Student VALUES (1, 'Alice', 'CS'), (2, 'Bob', 'Math');
+INSERT INTO Course VALUES ('C1', 'Databases', 'Chen'), ('C2', 'Calculus', 'Lovelace');
+INSERT INTO Enroll VALUES (1, 'C1', 'A'), (1, 'C2', 'B'), (2, 'C1', 'B');
+
+SELECT DISTINCT s.sname
+FROM Student s
+JOIN Enroll e ON e.sid = s.sid
+JOIN Course c ON c.cid = e.cid
+WHERE e.grade = 'A' AND c.prof = 'Chen';`
+  },
+  worked_rewrite: {
+    setup: ``,
+    starter:
+`CREATE TABLE Student3 (sid INTEGER PRIMARY KEY, sname TEXT);
+CREATE TABLE Enroll3 (sid INTEGER, cid TEXT, grade TEXT);
+
+INSERT INTO Student3 VALUES (1, 'Alice'), (2, 'Bob');
+INSERT INTO Enroll3 VALUES (1, 'C1', 'A'), (1, 'C2', 'B'), (2, 'C1', 'B');
+
+-- Unoptimized: join everything, filter after
+SELECT DISTINCT s.sname FROM Student3 s JOIN Enroll3 e ON e.sid = s.sid WHERE e.grade = 'A';
+
+-- Optimized: filter Enroll3 down to A's FIRST, then join
+SELECT DISTINCT s.sname FROM Student3 s JOIN (SELECT * FROM Enroll3 WHERE grade = 'A') e ON e.sid = s.sid;
+
+-- Same answer both times -- but the second form joins against far fewer rows once Enroll3 is large.`
+  },
+  worked_division_trace: {
+    setup: ``,
+    starter:
+`CREATE TABLE Enrolled (sid TEXT, cid TEXT);
+CREATE TABLE Required (cid TEXT);
+
+INSERT INTO Enrolled VALUES ('S1','C1'), ('S1','C2'), ('S1','C3'), ('S2','C1'), ('S2','C2'), ('S3','C1');
+INSERT INTO Required VALUES ('C1'), ('C2');
+
+-- Division via double NOT EXISTS: "no required course is missing from this student's record"
+SELECT DISTINCT e1.sid FROM Enrolled e1
+WHERE NOT EXISTS (
+  SELECT r.cid FROM Required r
+  WHERE NOT EXISTS (
+    SELECT 1 FROM Enrolled e2 WHERE e2.sid = e1.sid AND e2.cid = r.cid
+  )
+);
+
+-- Division via COUNT/HAVING -- often more readable, same result
+SELECT sid FROM Enrolled
+WHERE cid IN (SELECT cid FROM Required)
+GROUP BY sid    HAVING COUNT(DISTINCT cid) = (SELECT COUNT(*) FROM Required);`
+  },
+  division_sql: {
+    // Built from the checkbox state at run time, so the cell always matches the widget above.
+    get setup(){ return divisionSetupSql(); },
+    starter:
+`SELECT DISTINCT e1.sid FROM Enrolled e1
+WHERE NOT EXISTS (
+  SELECT r.cid FROM Required r
+  WHERE NOT EXISTS (
+    SELECT 1 FROM Enrolled e2 WHERE e2.sid = e1.sid AND e2.cid = r.cid
+  )
+)
+ORDER BY e1.sid;`
+  }
+};
+
+/* ============ common error hints ============ */
+function commonErrorHint(msg){
+  const m = msg.toLowerCase();
+  if (m.includes('no such column')) {
+    return "That column doesn't exist in this intermediate result — likely because an earlier projection already dropped it. This is exactly the \\\"order matters\\\" trap from the reading.";
+  }
+  if (m.includes('foreign key constraint failed')) {
+    return "A foreign key stopped this. Either a row points at a parent that doesn't exist yet, or you tried to delete/update a parent row that a child still depends on.";
+  }
+  if (m.includes('unique constraint failed')) {
+    return "A UNIQUE or PRIMARY KEY constraint stopped this — the value (or combination of values) you inserted already exists.";
+  }
+  if (m.includes('ambiguous column name')) {
+    return "Both sides of the join have a column with this name — qualify it with a table alias (this is exactly what the Rename operator ρ solves).";
+  }
+  return null;
+}
+
+/* ============ SQL execution engine (uses iterateStatements so zero-row SELECTs and partial output before an error are preserved) ============ */
+let SQL = null;
+async function getSqlJsModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderResultTable(columns, rows){
+  if (!columns.length) return '';
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of columns) html += `<th>${escapeHtml(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += '<tr>';
+    for (const v of row) html += `<td>${v === null ? '<em>NULL</em>' : escapeHtml(v)}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+async function runSqlAgainstFreshDb(setupSql, mainSql, outputEl){
+  outputEl.innerHTML = '';
+  outputEl.classList.remove('err');
+  outputEl.classList.add('show');
+  try {
+    const SQLmod = await getSqlJsModule();
+    const db = new SQLmod.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setupSql && setupSql.trim()) db.run(setupSql);
+    let out = '';
+    let hadOutput = false;
+    let stmtIter;
+    try {
+      stmtIter = db.iterateStatements(mainSql);
+    } catch (e) {
+      throw e;
+    }
+    for (const stmt of stmtIter) {
+      try {
+        const cols = stmt.getColumnNames();
+        const rows = [];
+        while (stmt.step()) {
+          rows.push(stmt.get());
+        }
+        if (cols.length) {
+          out += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length===1?'':'s'}</div>`;
+          out += renderResultTable(cols, rows);
+          hadOutput = true;
+        }
+      } catch (stmtErr) {
+        const hint = commonErrorHint(stmtErr.message);
+        out += `<div style="color:#F0A38A; margin-top:8px;">✖ Error: ${escapeHtml(stmtErr.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+        hadOutput = true;
+        outputEl.innerHTML = out;
+        outputEl.classList.add('err');
+        db.close();
+        return;
+      }
+    }
+    if (!hadOutput) out = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    outputEl.innerHTML = out;
+    db.close();
+  } catch (e) {
+    const hint = commonErrorHint(e.message);
+    outputEl.innerHTML = `<div style="color:#F0A38A;">✖ Error: ${escapeHtml(e.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+    outputEl.classList.add('err');
+  }
+}
+
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+
+function wireCell(cellEl){
+  const id = cellEl.getAttribute('data-cell');
+  const spec = CELLS[id];
+  if (!spec) return;
+  const textarea = cellEl.querySelector('textarea');
+  const output = cellEl.querySelector('.cell-output');
+  const runBtn = cellEl.querySelector('.run-btn');
+  const resetBtn = cellEl.querySelector('.reset-btn');
+  textarea.value = spec.starter;
+  pgGrow(textarea);
+  textarea.addEventListener('input', () => pgGrow(textarea));
+  runBtn.addEventListener('click', () => {
+    runSqlAgainstFreshDb(spec.setup, textarea.value, output);
+  });
+  resetBtn.addEventListener('click', () => {
+    textarea.value = spec.starter;
+    pgGrow(textarea);
+    output.classList.remove('show', 'err');
+    output.innerHTML = '';
+  });
+}
+
+function initAllCells(){
+  document.querySelectorAll('.cell[data-cell]').forEach(wireCell);
+}
+
+/* ============ Relational Operator Explorer widget ============ */
+const EXPLORER_STUDENTS = [
+  {id:1, name:'Alice', major:'CS', gpa:3.9, year:3},
+  {id:2, name:'Bob', major:'Math', gpa:3.2, year:2},
+  {id:3, name:'Carmen', major:'CS', gpa:3.7, year:4},
+  {id:4, name:'David', major:'Bio', gpa:2.8, year:1},
+  {id:5, name:'Emma', major:'Math', gpa:3.5, year:3},
+  {id:6, name:'Felix', major:'CS', gpa:2.5, year:2},
+  {id:7, name:'Grace', major:'Bio', gpa:3.8, year:4},
+  {id:8, name:'Henry', major:'Math', gpa:3.1, year:1}
+];
+const EXPLORER_COLUMNS = ['id','name','major','gpa','year'];
+const EXPLORER_TEXT_COLS = new Set(['name','major']);
+const EXPLORER_OP_SYMBOLS = {'=':'=', '!=':'≠', '>':'>', '<':'<', '>=':'≥', '<=':'≤'};
+
+const explorerState = {
+  mode: 'select',
+  selColumn: 'gpa',
+  selOp: '>=',
+  selValue: '3.5',
+  projCols: new Set(['id','name','major']),
+  usedSelect: true,
+  usedProject: false
+};
+
+function explorerBuildDb(){
+  // Uses the real sql.js engine so results are computed, not hand-simulated.
+  return getSqlJsModule().then(SQLmod => {
+    const db = new SQLmod.Database();
+    db.run(`CREATE TABLE Students (id INTEGER, name TEXT, major TEXT, gpa REAL, year INTEGER);`);
+    const stmt = db.prepare(`INSERT INTO Students VALUES (?,?,?,?,?)`);
+    EXPLORER_STUDENTS.forEach(s => { stmt.run([s.id, s.name, s.major, s.gpa, s.year]); });
+    stmt.free();
+    return db;
+  });
+}
+
+function explorerRenderMiniTable(columns, rows, highlightAll){
+  let html = '<table class="mini"><thead><tr>';
+  for (const c of columns) html += `<th>${escapeHtml(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += `<tr class="${highlightAll ? 'result-row' : ''}">`;
+    for (const v of row) html += `<td>${v === null ? '' : escapeHtml(v)}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+function explorerRenderControls(){
+  const el = document.getElementById('explorer-controls');
+  if (explorerState.mode === 'select') {
+    el.innerHTML = `
+      <div class="control-row">
+        <label>Column
+          <select id="explorer-col">
+            ${EXPLORER_COLUMNS.map(c => `<option value="${c}" ${c===explorerState.selColumn?'selected':''}>${c}</option>`).join('')}
+          </select>
+        </label>
+        <label>Operator
+          <select id="explorer-op">
+            ${Object.keys(EXPLORER_OP_SYMBOLS).map(o => `<option value="${o}" ${o===explorerState.selOp?'selected':''}>${EXPLORER_OP_SYMBOLS[o]} (${o})</option>`).join('')}
+          </select>
+        </label>
+        <label>Value
+          <input type="text" id="explorer-val" value="${escapeHtml(explorerState.selValue)}" placeholder="Type a value to filter rows">
+        </label>
+      </div>`;
+    document.getElementById('explorer-col').addEventListener('change', e => { explorerState.selColumn = e.target.value; explorerRecompute(); });
+    document.getElementById('explorer-op').addEventListener('change', e => { explorerState.selOp = e.target.value; explorerRecompute(); });
+    document.getElementById('explorer-val').addEventListener('input', e => { explorerState.selValue = e.target.value; explorerRecompute(); });
+  } else {
+    el.innerHTML = `
+      <div class="col-checks">
+        ${EXPLORER_COLUMNS.map(c => `<label><input type="checkbox" data-col="${c}" ${explorerState.projCols.has(c)?'checked':''}> ${c}</label>`).join('')}
+      </div>`;
+    el.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', e => {
+        const col = e.target.getAttribute('data-col');
+        if (e.target.checked) explorerState.projCols.add(col);
+        else explorerState.projCols.delete(col);
+        explorerRecompute();
+      });
+    });
+  }
+}
+
+async function explorerRecompute(){
+  const exprBox = document.getElementById('explorer-expr');
+  const explainEl = document.getElementById('explorer-explain');
+  const resultEl = document.getElementById('explorer-result-table');
+  const inputEl = document.getElementById('explorer-input-table');
+
+  inputEl.innerHTML = explorerRenderMiniTable(EXPLORER_COLUMNS, EXPLORER_STUDENTS.map(s => EXPLORER_COLUMNS.map(c => s[c])), false)
+    + `<div class="row-count">${EXPLORER_STUDENTS.length} rows</div>`;
+
+  const db = await explorerBuildDb();
+  try {
+    if (explorerState.mode === 'select') {
+      const sym = EXPLORER_OP_SYMBOLS[explorerState.selOp];
+      const quoted = EXPLORER_TEXT_COLS.has(explorerState.selColumn);
+      const rawVal = explorerState.selValue;
+      exprBox.innerHTML = `σ<sub>${escapeHtml(explorerState.selColumn)} ${sym} ${escapeHtml(rawVal)}</sub>(Students)`;
+      explainEl.textContent = 'Selection σ keeps only the rows that satisfy a predicate, returning all columns. Adjust the predicate above and watch which rows survive.';
+      let rows = [];
+      if (rawVal.trim() !== '') {
+        const valueLiteral = quoted ? `'${rawVal.replace(/'/g,"''")}'` : (isNaN(Number(rawVal)) ? null : Number(rawVal));
+        if (valueLiteral !== null) {
+          const sql = `SELECT * FROM Students WHERE ${explorerState.selColumn} ${explorerState.selOp} ${quoted ? valueLiteral : valueLiteral}`;
+          try {
+            const stmt = db.prepare(sql);
+            while (stmt.step()) rows.push(EXPLORER_COLUMNS.map(c => stmt.getAsObject()[c]));
+            stmt.free();
+          } catch (e) { rows = []; }
+        }
+      }
+      resultEl.innerHTML = explorerRenderMiniTable(EXPLORER_COLUMNS, rows, true) + `<div class="row-count">${rows.length} row${rows.length===1?'':'s'}</div>`;
+      explorerState.usedSelect = true;
+    } else {
+      const cols = EXPLORER_COLUMNS.filter(c => explorerState.projCols.has(c));
+      if (!cols.length) {
+        exprBox.textContent = 'π(Students) — pick at least one column';
+        resultEl.innerHTML = '<p class="small">Select at least one column to project.</p>';
+      } else {
+        exprBox.innerHTML = `π<sub>${cols.map(escapeHtml).join(', ')}</sub>(Students)`;
+        explainEl.textContent = 'Projection π keeps only the chosen columns across all rows, and automatically removes duplicate tuples. Toggle columns above to reshape the relation.';
+        const sql = `SELECT DISTINCT ${cols.join(', ')} FROM Students`;
+        const stmt = db.prepare(sql);
+        const rows = [];
+        while (stmt.step()) { const o = stmt.getAsObject(); rows.push(cols.map(c => o[c])); }
+        stmt.free();
+        resultEl.innerHTML = explorerRenderMiniTable(cols, rows, true) + `<div class="row-count">${rows.length} row${rows.length===1?'':'s'}</div>`;
+      }
+      explorerState.usedProject = true;
+    }
+  } finally {
+    db.close();
+  }
+
+  const badge = document.getElementById('explorer-badge');
+  if (explorerState.usedSelect && explorerState.usedProject) {
+    badge.classList.add('show');
+  }
+}
+
+function initExplorerWidget(){
+  document.getElementById('explorer-mode-select').addEventListener('click', () => {
+    explorerState.mode = 'select';
+    document.getElementById('explorer-mode-select').classList.add('active');
+    document.getElementById('explorer-mode-project').classList.remove('active');
+    explorerRenderControls();
+    explorerRecompute();
+  });
+  document.getElementById('explorer-mode-project').addEventListener('click', () => {
+    explorerState.mode = 'project';
+    document.getElementById('explorer-mode-project').classList.add('active');
+    document.getElementById('explorer-mode-select').classList.remove('active');
+    explorerRenderControls();
+    explorerRecompute();
+  });
+  explorerRenderControls();
+  explorerRecompute();
+}
+
+/* ============ Division Visualizer widget ============ */
+const DIVISION_SCENARIOS = [
+  {
+    key: 'two',
+    label: 'Scenario 1 of 3 — Two required',
+    required: ['C1','C2'],
+    courses: ['C1','C2','C3'],
+    students: [
+      {id:'S1', enrolled: ['C1','C2','C3']},
+      {id:'S2', enrolled: ['C1','C2']},
+      {id:'S3', enrolled: ['C1']}
+    ]
+  },
+  {
+    key: 'three',
+    label: 'Scenario 2 of 3 — Three required',
+    required: ['C1','C2','C3'],
+    courses: ['C1','C2','C3','C4'],
+    students: [
+      {id:'S1', enrolled: ['C1','C2','C3']},
+      {id:'S2', enrolled: ['C1','C2']},
+      {id:'S3', enrolled: ['C1','C2','C3','C4']}
+    ]
+  },
+  {
+    key: 'edge',
+    label: 'Scenario 3 of 3 — Edge cases',
+    required: ['C1','C2'],
+    courses: ['C1','C2','C3','C4','C5'],
+    students: [
+      {id:'S1', enrolled: ['C1','C2']},
+      {id:'S2', enrolled: []},
+      {id:'S3', enrolled: ['C1','C2','C3','C4','C5']},
+      {id:'S4', enrolled: ['C2']}
+    ]
+  }
+];
+
+const divisionState = {
+  scenarioIdx: 0,
+  checks: {}
+};
+
+function divisionResetChecks(){
+  const sc = DIVISION_SCENARIOS[divisionState.scenarioIdx];
+  const checks = {};
+  sc.students.forEach(s => {
+    checks[s.id] = {};
+    sc.courses.forEach(c => { checks[s.id][c] = s.enrolled.includes(c); });
+  });
+  divisionState.checks = checks;
+}
+
+// Rebuilds the Enrolled/Required tables from whatever the student has checked,
+// so the runnable division cell and the widget's own Compute button agree.
+function divisionSetupSql(){
+  const sc = DIVISION_SCENARIOS[divisionState.scenarioIdx];
+  let out = 'CREATE TABLE Enrolled (sid TEXT, cid TEXT);\nCREATE TABLE Required (cid TEXT);\n';
+  const enrolled = [];
+  sc.students.forEach(s => sc.courses.forEach(c => {
+    if (divisionState.checks[s.id][c]) enrolled.push(`('${s.id}','${c}')`);
+  }));
+  if (enrolled.length) out += `INSERT INTO Enrolled VALUES ${enrolled.join(', ')};\n`;
+  if (sc.required.length) out += `INSERT INTO Required VALUES ${sc.required.map(c => `('${c}')`).join(', ')};\n`;
+  return out;
+}
+
+function divisionRenderTabs(){
+  const el = document.getElementById('division-tabs');
+  el.innerHTML = DIVISION_SCENARIOS.map((sc, i) =>
+    `<button class="scenario-tab ${i===divisionState.scenarioIdx?'active':''}" data-idx="${i}">${i+1} / ${DIVISION_SCENARIOS.length}</button>`
+  ).join('');
+  el.querySelectorAll('.scenario-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      divisionState.scenarioIdx = parseInt(btn.getAttribute('data-idx'), 10);
+      divisionResetChecks();
+      divisionRenderAll();
+    });
+  });
+}
+
+function divisionRenderGrid(){
+  const sc = DIVISION_SCENARIOS[divisionState.scenarioIdx];
+  document.getElementById('division-required').innerHTML =
+    `<span class="small" style="margin-right:8px;">Required(course) — courses every student must have:</span>` +
+    sc.required.map(c => `<span class="required-chip">${c}</span>`).join('');
+
+  let html = '<table class="division-grid"><thead><tr><th>student \\ course</th>';
+  sc.courses.forEach(c => {
+    html += `<th class="${sc.required.includes(c) ? 'required-col' : ''}">${c}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+  sc.students.forEach(s => {
+    html += `<tr><td class="student-id">${s.id}</td>`;
+    sc.courses.forEach(c => {
+      const checked = divisionState.checks[s.id][c];
+      html += `<td><input type="checkbox" data-student="${s.id}" data-course="${c}" ${checked ? 'checked' : ''}></td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('division-grid').innerHTML = html;
+
+  document.querySelectorAll('#division-grid input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', e => {
+      const sid = e.target.getAttribute('data-student');
+      const cid = e.target.getAttribute('data-course');
+      divisionState.checks[sid][cid] = e.target.checked;
+    });
+  });
+
+  document.getElementById('division-result').innerHTML = '';
+  document.getElementById('division-sql').innerHTML = '';
+}
+
+function divisionRenderAll(){
+  const sc = DIVISION_SCENARIOS[divisionState.scenarioIdx];
+  document.querySelector('.widget-sub').textContent; // no-op, keep structure stable
+  divisionRenderTabs();
+  divisionRenderGrid();
+  const label = document.createElement('div');
+}
+
+async function divisionCompute(){
+  const sc = DIVISION_SCENARIOS[divisionState.scenarioIdx];
+  const SQLmod = await getSqlJsModule();
+  const db = new SQLmod.Database();
+  db.run(divisionSetupSql());
+
+  const sql = CELLS.division_sql.starter;
+
+  const survivors = new Set();
+  const stmt = db.prepare(sql);
+  while (stmt.step()) survivors.add(stmt.getAsObject().sid);
+  stmt.free();
+  db.close();
+
+  const resultEl = document.getElementById('division-result');
+  let html = `<div class="small" style="margin-bottom:8px;"><strong>π<sub>sid,cid</sub>(Enrolled) ÷ Required =</strong></div>`;
+  sc.students.forEach(s => {
+    if (survivors.has(s.id)) {
+      html += `<span class="division-outcome survives">✓ ${s.id} survives</span>`;
+    } else {
+      const missing = sc.required.filter(c => !divisionState.checks[s.id][c]);
+      html += `<span class="division-outcome excluded">✗ ${s.id} — missing ${missing.length ? missing.join(', ') : '(no courses at all)'}</span>`;
+    }
+  });
+  resultEl.innerHTML = html;
+
+  const holder = document.getElementById('division-sql');
+  holder.innerHTML =
+    `<div class="cell" data-cell="division_sql" style="margin-top:4px;">` +
+      `<div class="cell-head"><span class="cell-title">division.sql — edit it and run it yourself</span></div>` +
+      `<textarea spellcheck="false"></textarea>` +
+      `<div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>` +
+      `<div class="cell-output"></div>` +
+    `</div>`;
+  wireCell(holder.querySelector('.cell[data-cell]'));
+}
+
+function initDivisionWidget(){
+  divisionResetChecks();
+  divisionRenderAll();
+  document.getElementById('division-compute').addEventListener('click', divisionCompute);
+  document.getElementById('division-reset').addEventListener('click', () => {
+    divisionResetChecks();
+    divisionRenderGrid();
+  });
+}
+
+/* ============ Algebra Operator Chooser quiz ============ */
+const OPERATOR_CHOOSER_QUESTIONS = [
+  {
+    q: "You want the names of employees with salary greater than $100,000. In algebra you'd write π_name(σ_salary>100000(employees)). What English phrase describes what this expression does?",
+    options: [
+      { label: "Filter rows by salary, then keep only the name column", hint: "", correct: true },
+      { label: "Keep only the name column, then filter", hint: "", correct: false },
+      { label: "Join two tables", hint: "", correct: false },
+      { label: "Divide employees by salary", hint: "", correct: false }
+    ],
+    feedback: "Read from the inside out: σ (selection) runs first and filters rows by salary; π (projection) wraps around it and keeps only the name column. Filter first, then project."
+  },
+  {
+    q: "You have Employees(eid, name, dept_id) and Departments(dept_id, dept_name). You want each employee's name paired with their department's name. Which operator?",
+    options: [
+      { label: "Natural join (⋈)", hint: "Auto-match on shared attribute names", correct: true },
+      { label: "Cross product (×)", hint: "Every row with every row", correct: false },
+      { label: "Union (∪)", hint: "", correct: false },
+      { label: "Set difference (−)", hint: "", correct: false }
+    ],
+    feedback: "Both tables share a dept_id column, and you want rows matched on that shared key — the textbook case for a natural join. A cross product would pair every employee with every department, matching or not."
+  },
+  {
+    q: "You have Customers and Orders. You want customers who have placed at least one order — but you only want the customer columns in the result, not the order columns. Which operator?",
+    options: [
+      { label: "Inner join (⋈)", hint: "Combines all columns", correct: false },
+      { label: "Semi-join (⋉)", hint: "Filter A by matches in B, no B columns", correct: true },
+      { label: "Anti-join (▷)", hint: "A rows with NO match in B", correct: false },
+      { label: "Division (÷)", hint: "A rows matching every B value", correct: false }
+    ],
+    feedback: "A semi-join filters Customers down to only the rows that have a match in Orders, but the result schema stays Customers-only — exactly \"has at least one match, don't bring the other table's columns along.\""
+  },
+  {
+    q: "A query asks: 'find students who have completed EVERY course in the CS major.' Which algebra operator is designed for this?",
+    options: [
+      { label: "Inner join (⋈)", hint: "", correct: false },
+      { label: "Union (∪)", hint: "", correct: false },
+      { label: "Division (÷)", hint: "For-all / universal quantifier", correct: true },
+      { label: "Anti-join (▷)", hint: "", correct: false }
+    ],
+    feedback: "\"Every,\" \"all,\" and \"each\" are the tell for division — it's the one operator built specifically around the for-all quantifier."
+  },
+  {
+    q: "You want customers who have never placed an order. Which operator?",
+    options: [
+      { label: "Inner join (⋈)", hint: "", correct: false },
+      { label: "Semi-join (⋉)", hint: "", correct: false },
+      { label: "Anti-join (▷)", hint: "A rows with NO match in B", correct: true },
+      { label: "Intersection (∩)", hint: "", correct: false }
+    ],
+    feedback: "An anti-join returns rows from the first table that have no matching row at all in the second — precisely \"customers with zero orders.\""
+  },
+  {
+    q: "A query optimizer sees π_name(σ_dept='Eng'(employees ⋈ departments)). It rewrites this to π_name(σ_dept='Eng'(employees) ⋈ departments). What optimization is this?",
+    options: [
+      { label: "Push selection down past the join", hint: "Filter early, join late", correct: true },
+      { label: "Push selection up above the join", hint: "", correct: false },
+      { label: "Reorder the join", hint: "", correct: false },
+      { label: "Denormalize", hint: "", correct: false }
+    ],
+    feedback: "The selection moved from wrapping the join to wrapping just the employees side — that's pushing selection down past the join, valid because dept references only employees' attributes. It shrinks the join's input before the join runs."
+  },
+  {
+    q: "You want every employee paired with every project — all combinations — so you can then filter the promising ones. Which operator produces the full set of pairings?",
+    options: [
+      { label: "Cross product (×)", hint: "Every row with every row", correct: true },
+      { label: "Natural join (⋈)", hint: "Only rows that match on shared columns", correct: false },
+      { label: "Union (∪)", hint: "", correct: false },
+      { label: "Division (÷)", hint: "", correct: false }
+    ],
+    feedback: "The cross product pairs every row of one relation with every row of the other — no matching condition. It is rarely useful by itself, but it is exactly the starting point for a theta-join (σ over ×) and for pairing up things that share no column at all."
+  },
+  {
+    q: "You want to compare each employee with their manager, who is also a row in the employees table. Before joining the table to itself, you need the two copies to have distinguishable names. Which operator gives a relation a new name?",
+    options: [
+      { label: "Selection (σ)", hint: "Filters rows", correct: false },
+      { label: "Projection (π)", hint: "Chooses columns", correct: false },
+      { label: "Rename (ρ)", hint: "Renames the relation or its attributes", correct: true },
+      { label: "Join (⋈)", hint: "", correct: false }
+    ],
+    feedback: "Rename (ρ) is what makes a self-join expressible in the algebra: you bind the same base relation to two distinct names — say employees E and employees M — so the join condition can say E.manager_id = M.eid without the names colliding. It renames; it never changes the data."
+  },
+  {
+    q: "Two union-compatible tables, FallCourses(course_id, title) and SpringCourses(course_id, title), both exist. You want the courses offered in Fall but not in Spring. Which operator?",
+    options: [
+      { label: "Union (∪)", hint: "Rows in either", correct: false },
+      { label: "Intersection (∩)", hint: "Rows in both", correct: false },
+      { label: "Set difference (−)", hint: "Rows in the first but not the second", correct: true },
+      { label: "Division (÷)", hint: "", correct: false }
+    ],
+    feedback: "Set difference returns exactly the tuples that appear in the left relation and not the right one. Union and intersection answer different questions (\"either\" and \"both\"), and note that the operation requires union compatibility — the same number of columns with matching domains."
+  },
+  {
+    q: "You need the rows where dept = 'Eng' AND salary > 100000. Using only the basic selection operator, how is this expressed?",
+    options: [
+      { label: "One selection with a conjunction, or two selections applied in sequence", hint: "σ_{dept='Eng' ∧ salary>100000}, or σ_{salary>100000}(σ_{dept='Eng'}(...))", correct: true },
+      { label: "A join of two selections", hint: "", correct: false },
+      { label: "Project each condition, then union the results", hint: "", correct: false },
+      { label: "Division of employees by salaries", hint: "", correct: false }
+    ],
+    feedback: "Selection takes a predicate, and an AND of two predicates is still one predicate — σ_{dept='Eng' ∧ salary>100000}. Applied one at a time it is equally correct: σ_{salary>100000}(σ_{dept='Eng'}(employees)). The two forms are equivalent, which is why an optimizer can split or merge them freely."
+  }
+];
+
+/* ============ generic one-at-a-time multiple-choice quiz engine ============ */
+const quizState = {};
+
+function choiceQuizHtml(prefix, questions){
+  return `<div class="quiz-wrap" id="${prefix}-wrap"></div>`;
+}
+
+function choiceQuestionHtml(prefix, idx, total, question){
+  let html = `<div class="quiz-progress">Question ${idx + 1} of ${total}</div>`;
+  html += `<div class="quiz-q">${escapeHtml(question.q)}</div>`;
+  question.options.forEach((opt, i) => {
+    html += `<button class="quiz-opt" data-idx="${i}">
+      <span class="opt-label">${String.fromCharCode(65 + i)}.</span>${escapeHtml(opt.label)}
+      ${opt.hint ? `<span class="opt-hint">${escapeHtml(opt.hint)}</span>` : ''}
+    </button>`;
+  });
+  html += `<div class="quiz-feedback-slot"></div>`;
+  html += `<div class="quiz-nav"><button class="btn next-btn" style="display:none;">Next →</button></div>`;
+  html += `<div class="quiz-score">Score: <span class="score-val">0</span> / ${total}</div>`;
+  return html;
+}
+
+function choiceDoneHtml(prefix, score, total){
+  return `<div class="quiz-done">
+    <div class="big-score">${score} / ${total}</div>
+    <p>${score === total ? "Perfect score." : "Review the ones you missed above, then try again."}</p>
+    <button class="btn secondary restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+
+function initChoiceQuiz(prefix, questions){
+  quizState[prefix] = { idx: 0, score: 0, answered: false, questions };
+  renderChoiceQuiz(prefix);
+}
+
+function renderChoiceQuiz(prefix){
+  const state = quizState[prefix];
+  const wrap = document.getElementById(`${prefix}-wrap`);
+  if (state.idx >= state.questions.length) {
+    wrap.innerHTML = choiceDoneHtml(prefix, state.score, state.questions.length);
+    wrap.querySelector('.restart-btn').addEventListener('click', () => {
+      quizState[prefix] = { idx: 0, score: 0, answered: false, questions: state.questions };
+      renderChoiceQuiz(prefix);
+    });
+    return;
+  }
+  const q = state.questions[state.idx];
+  wrap.innerHTML = choiceQuestionHtml(prefix, state.idx, state.questions.length, q);
+  wrap.querySelector('.score-val').textContent = state.score;
+  wrap.querySelectorAll('.quiz-opt').forEach(btn => {
+    btn.addEventListener('click', () => choiceSelectOption(prefix, parseInt(btn.getAttribute('data-idx'), 10)));
+  });
+  const nextBtn = wrap.querySelector('.next-btn');
+  nextBtn.addEventListener('click', () => choiceNext(prefix));
+}
+
+function choiceSelectOption(prefix, optIdx){
+  const state = quizState[prefix];
+  if (state.answered) return;
+  state.answered = true;
+  const q = state.questions[state.idx];
+  const wrap = document.getElementById(`${prefix}-wrap`);
+  const opts = wrap.querySelectorAll('.quiz-opt');
+  const chosen = q.options[optIdx];
+  opts.forEach((btn, i) => {
+    btn.classList.add('disabled');
+    if (q.options[i].correct) btn.classList.add('correct');
+    else if (i === optIdx) btn.classList.add('incorrect');
+  });
+  const slot = wrap.querySelector('.quiz-feedback-slot');
+  if (chosen.correct) {
+    state.score++;
+    wrap.querySelector('.score-val').textContent = state.score;
+    slot.innerHTML = `<div class="quiz-feedback correct">✓ Correct. ${escapeHtml(q.feedback || '')}</div>`;
+  } else {
+    slot.innerHTML = `<div class="quiz-feedback incorrect">✖ Not quite. ${escapeHtml(q.feedback || '')}</div>`;
+  }
+  wrap.querySelector('.next-btn').style.display = 'inline-block';
+}
+
+function choiceNext(prefix){
+  const state = quizState[prefix];
+  state.idx++;
+  state.answered = false;
+  renderChoiceQuiz(prefix);
+}
+
+/* ============ boot ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  initAllCells();
+  initExplorerWidget();
+  initDivisionWidget();
+  document.getElementById('opq-quiz').innerHTML = choiceQuizHtml('opq', OPERATOR_CHOOSER_QUESTIONS);
+  initChoiceQuiz('opq', OPERATOR_CHOOSER_QUESTIONS);
+});
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: Evaluating a relational expression ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const STEPS = [
+    { name: '1 · Base relations', tag: 'inputs',
+      action: 'Every expression starts with base relations — the stored tables. Name them first and note their schemas, because every operator below changes only rows, only columns, or both.',
+      artLabel: 'Artifact · the inputs',
+      art: 'Employee( emp_id, name, dept_id, salary )\nDepartment( dept_id, dept_name )\n\n  read these BEFORE any operator runs' },
+    { name: '2 · Selection  σ', tag: 'filters rows',
+      action: 'σ keeps only the tuples whose predicate is true. It never touches the schema — the relation has exactly the same columns before and after, just fewer rows.',
+      artLabel: 'Artifact · after σ',
+      art: 'σ salary > 100 ( Employee )\n\n  rows   : 7  ->  3\n  schema : { emp_id, name, dept_id, salary }   unchanged' },
+    { name: '3 · Join  ⋈', tag: 'combines',
+      action: 'The join pairs tuples from both sides that satisfy the join condition. Schema-wise it is the union of both input schemas; row-wise it is the matched pairs only.',
+      artLabel: 'Artifact · after ⋈',
+      art: 'FilteredEmployee ⋈_{dept_id = dept_id} Department\n\n  schema : { emp_id, name, dept_id, salary, dept_name }\n  rows   : one per matching pair' },
+    { name: '4 · Projection  π', tag: 'keeps columns',
+      action: 'π keeps only the listed attributes — and because a relation is a set, it also removes duplicate tuples. That deduplication is why π can change the row count, and why σ-then-π is not the same as π-then-σ.',
+      artLabel: 'Artifact · after π',
+      art: 'π name, dept_name ( ... )\n\n  schema : { name, dept_name }   narrowed\n  duplicates : removed (set semantics)' },
+    { name: '5 · Rename  ρ', tag: 'disambiguates',
+      action: 'ρ renames a relation or its attributes so the same table can appear twice in one expression. Without it, a self-join like Employee ⋈ Employee cannot say which copy it means.',
+      artLabel: 'Artifact · after ρ',
+      art: 'ρ manager( emp_id, name ) ( Employee )\nρ report ( emp_id, name, mgr_id ) ( Employee )\n\n  now:  manager ⋈_{manager.emp_id = report.mgr_id} report' },
+    { name: '6 · Set operators', tag: '∪  ∩  −',
+      action: 'Union, intersection and difference combine two relations that are union-compatible: same number of columns, same types, same order. They compare whole tuples, so the column order is part of the contract.',
+      artLabel: 'Artifact · set semantics',
+      art: 'R ∪ S   -- tuples in either relation\nR ∩ S   -- tuples in both\nR − S   -- tuples in R, not in S\n\n  all three require union-compatible schemas' },
+    { name: '7 · Predict, then run', tag: 'the answer',
+      action: 'Finally read the whole expression inside-out and name the output schema and row count before you run anything. If you can state the columns and their types, you have actually understood the expression.',
+      artLabel: 'Artifact · the result',
+      art: 'Final schema : { name, dept_name }\n\n  -- the optimizer is free to reorder this evaluation,\n  -- as long as the RESULT is identical. That is the\n  -- whole game: same answer, cheaper order.' },
+  ];
+  let i = 0;
+  const rail = byId('algstep-rail'), body = byId('algstep-body');
+  if (!body) return;
+  function railRender(){
+    rail.innerHTML = STEPS.map((s, k) =>
+      `<div class="qstep-node${k === i ? ' active' : (k < i ? ' done' : '')}" data-i="${k}"><span class="qstep-idx">${k + 1}</span>${esc(s.name)}</div>`).join('');
+    rail.querySelectorAll('.qstep-node').forEach(n => n.addEventListener('click', () => { i = +n.dataset.i; render(); }));
+  }
+  function render(){
+    const s = STEPS[i];
+    body.innerHTML =
+      `<div class="qstep-head"><div class="qstep-name">${esc(s.name)}</div><div class="qstep-layer">${esc(s.tag)}</div></div>` +
+      `<div class="qstep-action">${esc(s.action)}</div>` +
+      `<div class="qstep-art"><span class="art-label">${esc(s.artLabel)}</span>${esc(s.art)}</div>`;
+    railRender();
+    byId('algstep-count').textContent = `Operator ${i + 1} of ${STEPS.length}`;
+    byId('algstep-back').disabled = i === 0;
+    byId('algstep-next').disabled = i === STEPS.length - 1;
+  }
+  byId('algstep-back').addEventListener('click', () => { if (i > 0) { i--; render(); } });
+  byId('algstep-next').addEventListener('click', () => { if (i < STEPS.length - 1) { i++; render(); } });
+  byId('algstep-restart').addEventListener('click', () => { i = 0; render(); });
+  render();
+})();
+</script>
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

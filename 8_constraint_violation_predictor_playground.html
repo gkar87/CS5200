@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · DDL Constraints &amp; the Constraint Violation Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, .cell, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:900px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:680px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+.step-card{border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:20px 22px; margin:22px 0;}
+.step-card .step-num{display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600; margin-right:10px;}
+.step-card h3{display:flex; align-items:center; margin-top:0;}
+
+.cell{background:var(--code-bg); border-radius:8px; margin:14px 0; overflow:hidden; border:1px solid var(--code-rule);}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75;}
+.cell textarea{
+  width:100%; min-height:0; background:var(--code-bg); color:var(--code-text);
+  border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; resize:none; outline:none; line-height:1.55; overflow:hidden; display:block; tab-size:2;
+}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+table.dbtable{border-collapse:collapse; margin:8px 0; font-size:12.5px; width:100%;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-align:left; padding:5px 10px; border:1px solid var(--code-rule);}
+table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text);}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.quiz-wrap{border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:20px 22px; margin:18px 0;}
+.quiz-progress{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
+.quiz-q{font-weight:600; margin-bottom:12px; font-size:1.05em;}
+.quiz-q .quiz-sql{display:block; margin-top:10px;}
+.quiz-opt{display:block; width:100%; text-align:left; padding:10px 14px; margin-bottom:8px; border:1px solid var(--rule); border-radius:8px; background:var(--paper); cursor:pointer; font-family:"Source Serif 4",serif; font-size:.98em;}
+.quiz-opt:hover{border-color:var(--blue);}
+.quiz-opt .opt-label{font-weight:600; margin-right:6px;}
+.quiz-opt .opt-hint{display:block; font-size:.85em; color:var(--ink-soft); margin-top:2px;}
+.quiz-opt.correct{border-color:var(--green); background:var(--green-soft);}
+.quiz-opt.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.quiz-opt.disabled{cursor:default;}
+.quiz-feedback{margin-top:12px; padding:12px 14px; border-radius:8px; font-size:.95em;}
+.quiz-feedback.correct{background:var(--green-soft); color:var(--green);}
+.quiz-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.quiz-nav{margin-top:14px;}
+.quiz-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft); margin-top:8px;}
+.quiz-done{text-align:center; padding:20px;}
+.quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+.quiz-verify-btn{margin-top:10px;}
+.quiz-verify-output{margin-top:10px; display:none;}
+.quiz-verify-output.show{display:block;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+.interview-box ol.steps{margin:10px 0;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:hover{opacity:.9;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip:hover{border-color:var(--blue);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.lm-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-answer-btn{background:transparent; color:var(--blue); border:1px solid var(--blue); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-answer-btn:hover:not(:disabled){background:var(--blue-soft);}
+.lm-answer-btn:disabled{color:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed;}
+.lm-key{margin-top:14px; border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:14px 16px;}
+.lm-key-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+.lm-key-row{display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:6px 0; border-bottom:1px dashed var(--rule); font-size:.9em;}
+.lm-key-row:last-child{border-bottom:none;}
+.lm-key-item{flex:1;}
+.lm-key-zone{font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:700; white-space:nowrap;}
+.lm-key-row.ok .lm-key-zone{color:var(--green);}
+.lm-key-row.bad .lm-key-zone{color:var(--rust);}
+.lm-key-row.bad .lm-key-item{color:var(--rust);}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+.interview-box ol.steps li{background:var(--paper-raised); border-radius:8px; padding:8px 14px; margin-bottom:6px; border-left:3px solid var(--purple); list-style:none;}
+
+/* ===== Constraint Violation Simulator ===== */
+.cs-ddl{font-family:"IBM Plex Mono",monospace; font-size:12.5px; line-height:1.6; background:var(--code-bg); color:var(--code-text); padding:14px 16px; border-radius:8px; margin:10px 0 4px; white-space:pre-wrap;}
+.cs-picker{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 4px;}
+.cs-act{font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; padding:8px 14px; border-radius:20px; border:1.5px solid var(--rule-strong); background:#fff; color:var(--ink); cursor:pointer;}
+.cs-act:hover{border-color:var(--blue);}
+.cs-act.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.cs-legend{display:flex; gap:18px; flex-wrap:wrap; font-size:.82em; color:var(--ink-soft); margin:12px 0 6px;}
+.cs-legend .cs-sw{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px;}
+.cs-legend .cs-sw.ok{background:var(--green);}
+.cs-legend .cs-sw.bad{background:var(--rust);}
+.cs-table-wrap{border:1px solid var(--code-rule); border-radius:8px; overflow:hidden; margin:6px 0 0; background:var(--code-bg);}
+.cs-table-wrap table.dbtable{margin:0;}
+.cs-table-wrap table.dbtable td{background:var(--code-bg);}
+table.dbtable tr.cs-rejected td{opacity:.9;}
+table.dbtable td.cs-bad{background:#5A2418; color:#FFB9A1; font-weight:700; box-shadow:inset 0 0 0 2px #C1553A;}
+table.dbtable td.cs-good{background:#1E3A26; color:#9FE0B2; font-weight:700; box-shadow:inset 0 0 0 2px #4E9C68;}
+table.dbtable tr.cs-new td{background:rgba(61,107,74,.16);}
+.cs-result{margin-top:14px; padding:13px 16px; border-radius:8px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; line-height:1.5;}
+.cs-result:empty{display:none;}
+.cs-result.ok{background:var(--green-soft); color:var(--green); border-left:4px solid var(--green);}
+.cs-result.blocked{background:var(--rust-soft); color:var(--rust); border-left:4px solid var(--rust);}
+.cs-result .cs-err{font-weight:700;}
+.cs-constraint{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; letter-spacing:.04em; padding:2px 9px; border-radius:20px; background:var(--rust); color:#fff; margin-right:8px;}
+.cs-constraint.ok{background:var(--green);}
+.cs-why{font-family:"Source Serif 4",serif; font-size:.93em; color:var(--ink-soft); margin-top:8px;}
+.cs-note{font-size:.9em; color:var(--ink-soft); margin-top:10px;}
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical cell buttons (shared) ===== */
+.cell .btn{ background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace; }
+.cell .btn:hover{ opacity:.9; }
+.cell .btn.secondary{ background:transparent; color:var(--code-text); border:1px solid var(--code-rule); }
+.cell .btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">Overview</a>
+      <a href="#primary-key">Primary Key</a>
+      <a href="#not-null-unique">NOT NULL &amp; UNIQUE</a>
+      <a href="#check">CHECK Constraints</a>
+      <div class="grp">Cross-Table Integrity</div>
+      <a href="#foreign-keys">Foreign Keys</a>
+      <a href="#referential-actions">Referential Actions</a>
+      <a href="#money">Storing Money Correctly</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-first-failure">Which Constraint Fires First?</a>
+      <div class="grp">Apply It</div>
+      <a href="#constraint-simulator">Constraint Violation Simulator</a>
+      <a href="#constraint-mapper">The Constraint Mapper</a>
+      <a href="#cvp">Constraint Violation Predictor</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+          <div class="grp">2026 Status</div>
+      <a href="#in-2026">In 2026: What Has Changed</a>
+</nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>DDL Constraints &amp; the Constraint Violation Predictor</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">A constraint is a promise the database enforces for you, whether or not the application code remembers to check. This playground walks through every constraint type — read the DDL, read the statement, predict whether it passes or fails, then run it for real against a live SQLite engine and see if you were right.</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>Overview</h2>
+      <p>Every <code>CREATE TABLE</code> statement is really two things at once: a description of what the data looks like, and a set of rules about what the data is <em>allowed</em> to look like. Those rules — <code>PRIMARY KEY</code>, <code>NOT NULL</code>, <code>UNIQUE</code>, <code>CHECK</code>, <code>FOREIGN KEY</code> — are enforced by the engine itself, on every single write, regardless of which application, script, or careless intern is doing the writing. That's the whole point: application-level validation can be forgotten, bypassed, or buggy. A constraint declared in the schema cannot be.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A good row passes down through the column constraints into the table, while a bad row with a negative age is rejected by the CHECK constraint before it lands." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="l8-ok" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3D6B4A"/></marker>
+            <marker id="l8-no" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#A1402A"/></marker>
+          </defs>
+
+          <!-- the good row -->
+          <text x="400" y="46" text-anchor="middle" font-size="12" font-weight="700" fill="#3D6B4A">GOOD ROW</text>
+          <line x1="400" y1="52" x2="400" y2="206" stroke="#3D6B4A" stroke-width="3" marker-end="url(#l8-ok)"/>
+
+          <!-- the bad row, and its rejection -->
+          <text x="555" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">BAD ROW</text>
+          <text x="555" y="56" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">(age = -5)</text>
+          <path d="M555,62 L555,152" stroke="#A1402A" stroke-width="3"/>
+          <text x="555" y="188" text-anchor="middle" font-size="22" font-weight="700" fill="#A1402A">✕</text>
+          <path d="M566,178 C600,152 634,124 660,78" fill="none" stroke="#A1402A" stroke-width="3" marker-end="url(#l8-no)"/>
+          <text x="690" y="38" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">constraints reject</text>
+          <text x="690" y="54" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">bad rows before</text>
+          <text x="690" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">they land</text>
+
+          <!-- one funnel per column = one constraint per column -->
+          <polygon points="215,208 275,208 253,248 237,248" fill="#E4EBF2" stroke="#2F5D8A" stroke-width="1.4"/>
+          <polygon points="370,208 430,208 408,248 392,248" fill="#E4EBF2" stroke="#2F5D8A" stroke-width="1.4"/>
+          <polygon points="525,208 585,208 563,248 547,248" fill="#E4EBF2" stroke="#2F5D8A" stroke-width="1.4"/>
+          <text x="207" y="222" text-anchor="end" font-size="10" font-weight="700" fill="#4A564F">PRIMARY</text>
+          <text x="207" y="238" text-anchor="end" font-size="10" font-weight="700" fill="#4A564F">KEY</text>
+          <text x="362" y="222" text-anchor="end" font-size="10" font-weight="700" fill="#4A564F">NOT NULL,</text>
+          <text x="362" y="238" text-anchor="end" font-size="10" font-weight="700" fill="#4A564F">UNIQUE</text>
+          <text x="517" y="222" text-anchor="end" font-size="10" font-weight="700" fill="#4A564F">CHECK</text>
+          <text x="517" y="238" text-anchor="end" font-size="10" font-weight="700" fill="#4A564F">(age &gt;= 0)</text>
+
+          <!-- the table the row has to get past -->
+          <rect x="190" y="250" width="420" height="150" fill="#FFFFFF"/>
+          <rect x="190" y="250" width="420" height="36" fill="#F6F7F2"/>
+          <line x1="300" y1="250" x2="300" y2="400" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="500" y1="250" x2="500" y2="400" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="190" y1="286" x2="610" y2="286" stroke="#1E2A25" stroke-width="1.2"/>
+          <rect x="190" y="250" width="420" height="150" fill="none" stroke="#1E2A25" stroke-width="1.4"/>
+          <text x="245" y="274" text-anchor="middle" font-size="11" font-weight="600" fill="#1E2A25">id</text>
+          <text x="400" y="274" text-anchor="middle" font-size="11" font-weight="600" fill="#1E2A25">email</text>
+          <text x="555" y="274" text-anchor="middle" font-size="11" font-weight="600" fill="#1E2A25">age</text>
+          <text x="400" y="352" text-anchor="middle" font-size="15" font-weight="700" fill="#4A564F">users</text>
+        </svg>
+        <figcaption>Visualizing how constraints act as filters at the top of every table column — a row that fails any one of them never reaches the table.</figcaption>
+      </figure>
+
+      <div class="callout">
+        <strong>How to use this page:</strong> gray boxes are real SQLite queries you can edit and run. Read the DDL and the statement underneath it, guess pass or fail <em>before</em> you click Run, then check yourself.
+      </div>
+    </section>
+
+    <section id="primary-key">
+      <div class="kicker">Foundations</div>
+      <h2>Primary Key</h2>
+      <p>A <code>PRIMARY KEY</code> is the constraint that says "this column (or set of columns) is the row's identity — no two rows may share a value, and the value must always be present." It combines uniqueness with a mandatory presence requirement, and a table may have exactly one.</p>
+      <div class="cell" data-cell="pk_basic">
+        <div class="cell-head"><span class="cell-title">primary_key_basic.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="callout amber">
+        <strong>SQLite quirk worth knowing:</strong> in standard SQL (and in PostgreSQL, MySQL, SQL Server), <code>PRIMARY KEY</code> automatically implies <code>NOT NULL</code> — you never need to write both. SQLite is the exception: unless the column is declared with the <em>exact</em> spelling <code>INTEGER PRIMARY KEY</code> (which makes it an alias for the internal row id, where <code>NULL</code> means "auto-assign the next id" rather than "no value"), SQLite will silently accept <code>NULL</code> as a primary key value. This playground's cells spell out <code>PRIMARY KEY NOT NULL</code> explicitly wherever it matters, which is also the safest habit to carry into any engine.
+      </div>
+    </section>
+
+    <section id="not-null-unique">
+      <div class="kicker">Foundations</div>
+      <h2>NOT NULL &amp; UNIQUE</h2>
+      <p><code>NOT NULL</code> and <code>UNIQUE</code> are independent constraints that are easy to conflate with <code>PRIMARY KEY</code> — and with each other. <code>NOT NULL</code> only says "this column can't be empty." <code>UNIQUE</code> only says "no two rows can share this value" — but unlike <code>PRIMARY KEY</code>, a <code>UNIQUE</code> column is still allowed to be <code>NULL</code>, and most engines (SQLite and PostgreSQL included) allow <em>multiple</em> rows to all be <code>NULL</code> at once, since <code>NULL</code> is never considered equal to another <code>NULL</code>.</p>
+      <div class="cell" data-cell="unique_nulls">
+        <div class="cell-head"><span class="cell-title">unique_allows_multiple_nulls.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">A table can have many <code>UNIQUE</code> columns but exactly one <code>PRIMARY KEY</code>. Think of <code>PRIMARY KEY</code> as "the row's identity" and <code>UNIQUE</code> as "no duplicates allowed, but this isn't necessarily the identity."</p>
+    </section>
+
+    <section id="check">
+      <div class="kicker">Foundations</div>
+      <h2>CHECK Constraints</h2>
+      <p>A <code>CHECK</code> constraint enforces a domain rule — any boolean expression the engine evaluates on every insert or update. It's how you encode business rules like "age can't be negative" or "price must be positive" directly into the schema, so they can never be violated no matter which code path writes the row.</p>
+      <div class="cell" data-cell="check_basic">
+        <div class="cell-head"><span class="cell-title">check_constraints.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="callout">
+        <strong>CHECK constraint or application check?</strong> Push validation into the database with a <code>CHECK</code> constraint whenever the rule is invariant across the whole domain — "age between 0 and 150" doesn't change based on which part of the app is writing. Application-level checks are bypassed by admin scripts, bulk imports, and eventually direct database access; database-level constraints are not. This is a defense-in-depth argument, not an either/or — validate early in the application for a good user experience, and enforce again in the schema so the rule can never be silently skipped.
+      </div>
+    </section>
+
+    <section id="foreign-keys">
+      <div class="kicker">Cross-Table Integrity</div>
+      <h2>Foreign Keys &amp; Referential Integrity</h2>
+      <p>A <code>FOREIGN KEY</code> says "this column's value must match some row's primary key in another table — or be <code>NULL</code>, if the column allows it." This is <strong>referential integrity</strong>: the guarantee that you can never have a pointer to something that doesn't exist.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A foreign key: books.author_id points at authors.author_id, linking each child book row to the parent author row it belongs to." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="l8-fk" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#A1402A"/></marker>
+          </defs>
+
+          <!-- child table -->
+          <text x="235" y="106" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">books</text>
+          <rect x="40" y="120" width="390" height="164" fill="#FFFFFF"/>
+          <rect x="40" y="120" width="390" height="32" fill="#F6F7F2"/>
+          <rect x="330" y="120" width="100" height="164" fill="#F6E4DE"/>
+          <line x1="150" y1="120" x2="150" y2="284" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="330" y1="120" x2="330" y2="284" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="40" y1="152" x2="430" y2="152" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="40" y1="196" x2="430" y2="196" stroke="#C9CFC2" stroke-width="1"/>
+          <line x1="40" y1="240" x2="430" y2="240" stroke="#C9CFC2" stroke-width="1"/>
+          <rect x="40" y="120" width="390" height="164" fill="none" stroke="#1E2A25" stroke-width="1.4"/>
+          <text x="95" y="140" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">book_id</text>
+          <text x="240" y="140" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">title</text>
+          <text x="380" y="140" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">author_id</text>
+          <text x="95" y="178" text-anchor="middle" font-size="11" fill="#1E2A25">10</text>
+          <text x="240" y="178" text-anchor="middle" font-size="11" fill="#1E2A25">'Earthsea'</text>
+          <text x="380" y="178" text-anchor="middle" font-size="11" fill="#1E2A25">1</text>
+          <text x="95" y="222" text-anchor="middle" font-size="11" fill="#1E2A25">11</text>
+          <text x="240" y="222" text-anchor="middle" font-size="11" fill="#1E2A25">'Kindred'</text>
+          <text x="380" y="222" text-anchor="middle" font-size="11" fill="#1E2A25">2</text>
+          <text x="95" y="266" text-anchor="middle" font-size="11" fill="#1E2A25">12</text>
+          <text x="240" y="266" text-anchor="middle" font-size="11" fill="#1E2A25">'Dispossessed'</text>
+          <text x="380" y="266" text-anchor="middle" font-size="11" fill="#1E2A25">1</text>
+
+          <!-- parent table -->
+          <text x="585" y="46" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">authors</text>
+          <rect x="470" y="60" width="230" height="120" fill="#FFFFFF"/>
+          <rect x="470" y="60" width="230" height="32" fill="#F6F7F2"/>
+          <rect x="470" y="60" width="100" height="120" fill="#F6E4DE"/>
+          <line x1="570" y1="60" x2="570" y2="180" stroke="#1E2A25" stroke-width="1"/>
+          <line x1="470" y1="92" x2="700" y2="92" stroke="#1E2A25" stroke-width="1.2"/>
+          <line x1="470" y1="136" x2="700" y2="136" stroke="#C9CFC2" stroke-width="1"/>
+          <rect x="470" y="60" width="230" height="120" fill="none" stroke="#1E2A25" stroke-width="1.4"/>
+          <text x="520" y="80" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">author_id</text>
+          <text x="635" y="80" text-anchor="middle" font-size="10" font-weight="600" fill="#1E2A25">name</text>
+          <text x="520" y="118" text-anchor="middle" font-size="11" fill="#1E2A25">1</text>
+          <text x="635" y="118" text-anchor="middle" font-size="11" fill="#1E2A25">'Le Guin'</text>
+          <text x="520" y="162" text-anchor="middle" font-size="11" fill="#1E2A25">2</text>
+          <text x="635" y="162" text-anchor="middle" font-size="11" fill="#1E2A25">'Butler'</text>
+
+          <!-- the foreign-key arrow: child column -> parent column -->
+          <path d="M400,284 C470,300 520,250 520,180" fill="none" stroke="#A1402A" stroke-width="3" marker-end="url(#l8-fk)"/>
+          <text x="545" y="252" font-size="11" font-weight="600" fill="#A1402A">REFERENCES</text>
+          <text x="545" y="270" font-size="11" font-weight="600" fill="#A1402A">authors(author_id)</text>
+
+          <text x="370" y="352" text-anchor="middle" font-size="15" font-weight="700" fill="#A1402A">child row (book) points at parent row (author)</text>
+        </svg>
+        <figcaption>How a foreign key from <code>books.author_id</code> points to <code>authors.author_id</code>, creating a parent–child link.</figcaption>
+      </figure>
+
+      <div class="cell" data-cell="fk_basic">
+        <div class="cell-head"><span class="cell-title">foreign_key_basic.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="referential-actions">
+      <div class="kicker">Cross-Table Integrity</div>
+      <h2>Referential Actions: CASCADE / RESTRICT / SET NULL</h2>
+      <p>Foreign keys don't just block bad inserts — they also decide what happens when the row they point to is <em>deleted</em>. That decision is the <code>ON DELETE</code> clause, and it's a business-rule question dressed up as a technical one.</p>
+      <table class="compare">
+        <tr><th>Action</th><th>What happens to the children</th><th>Typical use</th></tr>
+        <tr><td><code>RESTRICT</code> (the default)</td><td>The delete is blocked outright while any child row still references the parent.</td><td>The user cannot be deleted while orders exist — forces a "close account" flow that resolves order state first.</td></tr>
+        <tr><td><code>CASCADE</code></td><td>Deleting the parent automatically deletes every dependent child row too.</td><td>Rare for e-commerce (deletes real transaction history); common for dev/test seed data cleanup.</td></tr>
+        <tr><td><code>SET NULL</code></td><td>Child rows survive, but the foreign key column is set to <code>NULL</code>.</td><td>Orders should be preserved anonymously for accounting/tax reasons — the user has a right to be forgotten, but the business has a legal duty to keep transaction records.</td></tr>
+      </table>
+      <p>All three, run live against the same shape of data:</p>
+      <div class="cell" data-cell="ref_action_restrict">
+        <div class="cell-head"><span class="cell-title">restrict_default.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="cell" data-cell="ref_action_cascade">
+        <div class="cell-head"><span class="cell-title">cascade.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="cell" data-cell="ref_action_setnull">
+        <div class="cell-head"><span class="cell-title">set_null.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Notice that <code>RESTRICT</code> is what you get by default the moment foreign keys are enforced at all — you have to opt <em>in</em> to <code>CASCADE</code> or <code>SET NULL</code> explicitly, which is exactly the safety net you want: silently losing or orphaning data should never be the default behavior.</p>
+    </section>
+
+    <section id="money">
+      <div class="kicker">Cross-Table Integrity</div>
+      <h2>Aside: Storing Money Correctly</h2>
+      <p>This isn't a constraint type, but it's the question every schema-design conversation eventually hits: how do you store a currency amount? The wrong answer is <code>FLOAT</code> or <code>DOUBLE</code> — floating-point cannot exactly represent decimals like 0.10, so arithmetic on money silently drifts.</p>
+      <div class="cell" data-cell="money_float_error">
+        <div class="cell-head"><span class="cell-title">float_money_error.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">The correct answers are <code>DECIMAL(precision, scale)</code> (a true fixed-point type in most production engines — PostgreSQL, MySQL, SQL Server) or storing an integer number of cents (or millicents for crypto amounts), so ordinary integer arithmetic is exact by construction. Bonus points for storing the currency code in its own column — $100 USD and €100 are not the same number even when they print the same.</p>
+    </section>
+
+    <section id="worked-first-failure">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Which Constraint Fires First?</h2>
+      <p>When a single statement breaks more than one rule, a database does not hand you a list of everything wrong. It stops at the first constraint it evaluates and reports only that one. The practical consequence is easy to miss: fixing the error you were shown can reveal a <em>second</em> violation you never saw.</p>
+      <p>The table below declares a foreign key, a <code>CHECK</code>, and a <code>UNIQUE</code> pair on the same row. Insert a row that breaks both the foreign key and the range check, and read which message comes back.</p>
+      <div class="cell" data-cell="worked_first_failure">
+        <div class="cell-head"><span class="cell-title">which_constraint_fires.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p>SQLite answers with the <code>CHECK</code> failure — even though student <code>99</code> does not exist and the foreign key is broken too. Uncomment the second insert (with a legal grade) and the foreign-key error appears at last. Neither row was ever stored, so the outcome is the same either way; what changed is only which rule the engine happened to name first.</p>
+      <p class="small">The lesson for debugging: an error message names one constraint, not all of them. When a fix does not clear the failure, the statement was probably breaking more than one rule — reading the constraint names in the schema is more reliable than trusting the single message.</p>
+    </section>
+
+    <section id="constraint-simulator">
+      <div class="kicker">Apply It</div>
+      <h2>The Constraint Violation Simulator</h2>
+      <p>Every constraint fails in its own way. Pick a write below and watch the database either accept it or throw it out — the exact column that broke the rule lights up, and SQLite hands back the precise error it raised. Nothing here is scripted: each action runs against a real SQLite database created fresh in your browser.</p>
+
+      <div class="widget">
+        <div class="widget-title">The Constraint Violation Simulator</div>
+        <div class="widget-sub">one schema · six writes · watch which constraint catches each one</div>
+        <div class="widget-label">The schema under test</div>
+        <div class="cs-ddl">CREATE TABLE members (
+  member_id INTEGER PRIMARY KEY NOT NULL,
+  email     TEXT NOT NULL UNIQUE,
+  age       INTEGER CHECK (age &gt;= 0),
+  joined_on TEXT NOT NULL,
+  ends_on   TEXT,
+  mentor_id INTEGER REFERENCES members(member_id)
+);</div>
+        <div class="widget-label">Choose a write to attempt</div>
+        <div class="cs-picker" id="cs-picker"></div>
+        <div class="cs-legend">
+          <span><span class="cs-sw ok"></span>Accepted — the row is stored</span>
+          <span><span class="cs-sw bad"></span>Rejected — the offending value is lit up</span>
+        </div>
+        <div class="cs-table-wrap">
+          <table class="dbtable" id="cs-table">
+            <thead><tr><th>member_id</th><th>email</th><th>age</th><th>joined_on</th><th>ends_on</th><th>mentor_id</th></tr></thead>
+            <tbody id="cs-tbody"></tbody>
+          </table>
+        </div>
+        <div id="cs-result"></div>
+        <div class="cs-note" id="cs-note">The three rows above are already in the database. Pick a write — your candidate row is appended and judged.</div>
+      </div>
+    </section>
+
+    <section id="constraint-mapper">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: The Constraint Mapper</h2>
+      <p>Constraints differ in <em>scope</em>, not just in name. One kind guards a single column, another guards a combination of columns together, and a third guards the relationship to a different table. Sorting them by scope is what makes a schema review fast.</p>
+
+      <div class="widget">
+        <div class="widget-title">The Constraint Mapper</div>
+        <div class="widget-sub">single column · several columns · another table</div>
+        <div class="widget-label">Constraints to place</div>
+        <div class="lm-bank" id="cmbank"></div>
+        <div class="lm-zones">
+          <div class="lm-zone z-a" data-zone="single"><div class="lm-zone-head">Guards one column</div><div id="cmzone-single"></div></div>
+          <div class="lm-zone z-b" data-zone="combo"><div class="lm-zone-head">Guards several columns together</div><div id="cmzone-combo"></div></div>
+          <div class="lm-zone z-c" data-zone="cross"><div class="lm-zone-head">Guards a link to another table</div><div id="cmzone-cross"></div></div>
+        </div>
+        <div class="lm-hint">Tip: click a constraint, then click a scope. Click a placed constraint to send it back.</div>
+        <div class="qstep-controls">
+          <button class="lm-check-btn" id="cmcheck">Check mapping</button>
+          <button class="lm-answer-btn" id="cmanswer" disabled>Show correct mapping</button>
+          <button class="lm-restart-btn" id="cmrestart">↺ Restart</button>
+          <span class="lm-score" id="cmscore"></span>
+        </div>
+        <div id="cmfeedback"></div>
+        <div id="cmkey"></div>
+      </div>
+    </section>
+
+    <section id="cvp">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Constraint Violation Predictor</h2>
+      <p>Read the DDL, read the INSERT or DELETE, predict whether it passes or fails — and if it fails, which constraint catches it.</p>
+      <div id="cvp-quiz"></div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. DDL for a movies table</h4>
+        <p>Write DDL for a <code>movies</code> table with these rules: 4-digit ID, non-empty title (≤ 200 chars), release year between 1888 and 2100, an optional director name, and a duration in minutes that must be positive.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <div class="schema-line">CREATE TABLE movies (
+    movie_id     INT PRIMARY KEY CHECK (movie_id BETWEEN 1000 AND 9999),
+    title        VARCHAR(200) NOT NULL CHECK (LENGTH(TRIM(title)) &gt; 0),
+    release_year INT NOT NULL CHECK (release_year BETWEEN 1888 AND 2100),
+    director     VARCHAR(200),
+    duration_min INT NOT NULL CHECK (duration_min &gt; 0)
+);</div>
+            <p><strong>Notes:</strong> <code>title NOT NULL</code> alone doesn't stop empty strings — add <code>CHECK (LENGTH(TRIM(title)) &gt; 0)</code>. <code>director</code> is nullable (matches "optional"). The PK <code>CHECK</code> enforces the "4-digit" rule as a domain constraint.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Choosing ON DELETE actions</h4>
+        <p>Given <code>orders(order_id PK, customer_id FK → customers, total)</code>, choose the appropriate <code>ON DELETE</code> action for each business rule:</p>
+        <ul>
+          <li>"When a customer's account is closed, their order history should be preserved for financial reporting."</li>
+          <li>"You cannot delete a customer if they still have unpaid orders."</li>
+          <li>"When a test customer is removed during dev seeding, all their orders should be cleaned up too."</li>
+        </ul>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><code>ON DELETE SET NULL</code> — the order rows stay; <code>customer_id</code> becomes <code>NULL</code>, indicating "customer no longer exists." (Requires <code>customer_id</code> to be nullable.)</p>
+            <p><code>ON DELETE RESTRICT</code> — the DBMS blocks the delete until the FK dependency is resolved. This is the default in most systems.</p>
+            <p><code>ON DELETE CASCADE</code> — the delete propagates. Only appropriate when the child row is meaningless without the parent, or in dev/test setups. Rarely correct for financial data.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Which INSERTs succeed?</h4>
+        <p>Given:</p>
+        <div class="schema-line">CREATE TABLE products (
+    sku       CHAR(8) PRIMARY KEY,
+    name      VARCHAR(200) NOT NULL,
+    price     DECIMAL(10, 2) NOT NULL CHECK (price &gt; 0),
+    stock     INT DEFAULT 0 CHECK (stock &gt;= 0)
+);</div>
+        <ol>
+          <li><code>INSERT INTO products VALUES ('ABC12345', 'Widget', 9.99, 100);</code></li>
+          <li><code>INSERT INTO products VALUES ('ABC12345', 'Gadget', 12.00, 50);</code> (immediately after the previous)</li>
+          <li><code>INSERT INTO products (sku, name, price) VALUES ('XYZ99999', 'Sample', 4.00);</code></li>
+          <li><code>INSERT INTO products VALUES ('SHORT', 'Pen', 3.00, 10);</code></li>
+          <li><code>INSERT INTO products (sku, name, price, stock) VALUES ('DEF00000', NULL, 5.00, 5);</code></li>
+        </ol>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><strong>1. Pass.</strong> All constraints satisfied.</p>
+            <p><strong>2. Fail — PK violation.</strong> <code>sku = 'ABC12345'</code> already exists (from the previous insert).</p>
+            <p><strong>3. Pass.</strong> <code>stock</code> is omitted, so <code>DEFAULT</code> (0) fills it in; 0 passes <code>CHECK (stock &gt;= 0)</code>.</p>
+            <p><strong>4. Fail — CHAR(8) length mismatch.</strong> <code>'SHORT'</code> is 5 characters; in strict mode, the DBMS rejects it, or pads to 8 (<code>'SHORT '</code>) which usually isn't what you want. Better: add <code>CHECK (LENGTH(sku) = 8)</code> or use <code>CHAR(8) NOT NULL</code> and enforce format in the application.</p>
+            <p><strong>5. Fail — NOT NULL violation</strong> on <code>name</code>.</p>
+            <p class="small"><strong>Portability note:</strong> item 4 is engine-dependent — some engines pad or silently truncate instead of rejecting, and SQLite specifically stores <code>CHAR(n)</code> without enforcing the length at all, since SQLite uses dynamic typing with no true fixed-width string type. If a fixed length genuinely matters, don't rely on <code>CHAR(n)</code> alone — add an explicit <code>CHECK (LENGTH(sku) = 8)</code>, which every engine (including SQLite) will actually enforce.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. Dropping RESTRICT for performance</h4>
+        <p>Your teammate proposes dropping the <code>RESTRICT</code> referential action from a heavily-used FK because "the deletes are too slow with all these checks." What are the immediate and long-term consequences?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><strong>Immediate effect:</strong> parent rows can now be deleted while children still reference them. The children's FK columns will point to nonexistent parents — orphaned rows. The DBMS will no longer stop the delete, and no cascade or set-null takes over because they weren't defined.</p>
+            <p><strong>Long-term risk:</strong> joins against the parent will silently drop these orphans (<code>INNER JOIN</code>), which shows up as "missing data" in reports. Queries assuming referential integrity will produce wrong results. Restoring integrity requires manually finding all orphans and either fixing them or deleting them.</p>
+            <p>The correct fix if <code>RESTRICT</code> is "too slow" is almost never to drop the constraint. It's to fix the delete pattern (batch deletes, index the FK column) or to consciously change the action to <code>CASCADE</code> or <code>SET NULL</code> with the business's approval.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>5. PRIMARY KEY vs. UNIQUE</h4>
+        <p>Given <code>users(id INT PRIMARY KEY, email VARCHAR(200) UNIQUE, username VARCHAR(50) UNIQUE)</code>. Explain the practical difference between the two <code>UNIQUE</code> constraints and the <code>PRIMARY KEY</code>.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>All three enforce uniqueness. The differences:</p>
+            <p><strong>PRIMARY KEY:</strong> implicitly <code>NOT NULL</code>. There can be only one PK per table. It's the row's canonical identifier — foreign keys elsewhere will reference <code>id</code>.</p>
+            <p><strong>UNIQUE on email:</strong> allows <code>NULL</code> (in most DBMSes, multiple NULLs are allowed because <code>NULL ≠ NULL</code>). If a user hasn't confirmed their email yet, this column can be blank. Other tables typically don't reference this column.</p>
+            <p><strong>UNIQUE on username:</strong> same semantics as email — allows <code>NULL</code>, allows multiple NULLs (in standard SQL and PostgreSQL; SQL Server treats <code>NULL</code> differently and only allows one <code>NULL</code> per <code>UNIQUE</code> column).</p>
+            <p><strong>Practical lesson:</strong> <code>PRIMARY KEY</code> = "the row's identity." <code>UNIQUE</code> = "no two rows can share this value, but this isn't necessarily the identity." A table can have many <code>UNIQUE</code> columns but exactly one <code>PRIMARY KEY</code>.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p>DDL and constraints come up in every backend interview that touches persistence.</p>
+
+        <p><strong>The schema-migration question.</strong> "How would you add a NOT NULL column to a users table with 100M rows?" The correct multi-step answer:</p>
+        <ol class="steps">
+          <li><code>ALTER TABLE ... ADD COLUMN foo INT DEFAULT 0</code> — the default backfills without a table rewrite in modern PostgreSQL and MySQL 8+.</li>
+          <li>Backfill any nuanced values in batches.</li>
+          <li><code>ALTER TABLE ... ALTER COLUMN foo SET NOT NULL</code> — safe once every row is populated.</li>
+          <li>Deploy the application code that writes to <code>foo</code> on new rows.</li>
+        </ol>
+        <p>Naming this multi-step choreography is what separates a candidate who has shipped migrations from one who has only read about them.</p>
+
+        <p><strong>The referential-action question.</strong> "A user deletes their account. What do you set on the foreign key from <code>orders</code> to <code>users</code>?" The right answer depends on business rules:</p>
+        <ul class="criteria-list">
+          <li><span class="c-num">•</span><code>CASCADE</code> if orders should disappear with the user (rare for e-commerce; common for dev seeds).</li>
+          <li><span class="c-num">•</span><code>SET NULL</code> if orders should be preserved anonymously (typical for accounting/tax reasons; users have a right to be forgotten but the business has a legal duty to keep transaction records).</li>
+          <li><span class="c-num">•</span><code>RESTRICT</code> if the user cannot be deleted while orders exist (forces a "close account" flow that resolves order state first).</li>
+        </ul>
+        <p>Interviewers listen for whether you frame this as a business-rule question, not a technical one.</p>
+
+        <p><strong>The money-storage question.</strong> "How would you store a currency amount?" A candidate who says <code>FLOAT</code> or <code>DOUBLE</code> loses the round immediately — floating-point cannot exactly represent decimals like 0.10, so summing 100 cents can give 99.999...¢. Correct answers are <code>DECIMAL(precision, scale)</code> or storing integer cents (or millicents for crypto). Bonus points for mentioning currency codes as a separate column, because $100 USD and €100 are not comparable.</p>
+
+        <p><strong>The "check constraint or application check?" debate.</strong> "Where should we validate that a user's age is between 0 and 150?" Push validation into the database with a <code>CHECK</code> constraint whenever the rule is invariant across the whole domain. Application-level checks are bypassed by admin scripts, imports, and eventually direct database access; database-level constraints are not. Framing this as a defense-in-depth argument is the mature answer.</p>
+      </div>
+    </section>
+
+    <section id="in-2026">
+      <div class="kicker">2026 Status</div>
+      <h2>In 2026: What Has Changed</h2>
+      <p>Constraints have quietly grown into the most portable business-rule engine we have.</p>
+      <ul>
+        <li><strong>Generated columns</strong> (<code>STORED</code> or <code>VIRTUAL</code>) move derived values into the schema, where they can be indexed and checked.</li>
+        <li><strong>Partial and expression indexes</strong> enforce rules a plain UNIQUE cannot — 'unique among live rows', or 'unique on <code>lower(email)</code>'.</li>
+        <li><strong>Foreign-key actions</strong> (<code>ON DELETE CASCADE / RESTRICT / SET NULL</code>) are part of the design, not an afterthought, and can be deferred inside a transaction.</li>
+        <li><strong>Row-level security</strong> turns an access rule into a constraint the engine enforces per row, instead of a WHERE clause every developer has to remember.</li>
+      </ul>
+      <p class="small">Rules enforced by the engine survive every application, every script and every AI assistant that ever touches the data. Rules enforced by code do not.</p>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="7_relational_algebra_playground.html">← 7. Relational Algebra</a>
+        <a class="pgnav-pos" href="index.html">Playground 8 of 15</a>
+        <a class="pgnav-next" href="9_null_trap_detector_playground.html">9. Single-Table SELECT →</a>
+      </nav>
+    </footer>
+
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
+const CELLS = {
+  pk_basic: {
+    setup: ``,
+    starter:
+`CREATE TABLE users (
+  id INT PRIMARY KEY NOT NULL,
+  name TEXT
+);
+
+INSERT INTO users VALUES (1, 'Alice');
+
+-- Try this: a second row with the SAME id.
+-- Uncomment to see the PRIMARY KEY block it.
+-- INSERT INTO users VALUES (1, 'Bob');
+
+SELECT * FROM users;`
+  },
+  unique_nulls: {
+    setup: ``,
+    starter:
+`CREATE TABLE users2 (id INT PRIMARY KEY NOT NULL, email TEXT UNIQUE);
+
+INSERT INTO users2 VALUES (1, NULL);
+INSERT INTO users2 VALUES (2, NULL);  -- a second NULL -- UNIQUE does NOT block this
+
+SELECT * FROM users2;
+
+-- Try this: two rows with the SAME non-null email. THIS one is blocked.
+-- INSERT INTO users2 VALUES (3, 'shared@x.com');
+-- INSERT INTO users2 VALUES (4, 'shared@x.com');`
+  },
+  check_basic: {
+    setup: ``,
+    starter:
+`CREATE TABLE users3 (
+  id INT PRIMARY KEY NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  age INT CHECK (age >= 0)
+);
+
+INSERT INTO users3 VALUES (1, 'a@x.com', 25);
+
+SELECT * FROM users3;
+
+-- Try this: a negative age. CHECK blocks it.
+-- INSERT INTO users3 VALUES (2, 'b@x.com', -5);`
+  },
+  fk_basic: {
+    setup: ``,
+    starter:
+`CREATE TABLE authors (id INT PRIMARY KEY NOT NULL, name TEXT);
+CREATE TABLE books (
+  isbn CHAR(13) PRIMARY KEY NOT NULL,
+  title TEXT,
+  author_id INT REFERENCES authors(id)
+);
+
+INSERT INTO authors VALUES (1, 'Ada');
+INSERT INTO books VALUES ('9780000000001', 'A Book', 1);
+
+SELECT * FROM books;
+
+-- Try this: point at an author that doesn't exist. FK blocks it.
+-- INSERT INTO books VALUES ('9780000000002', 'Ghost Book', 99);`
+  },
+  ref_action_restrict: {
+    setup: ``,
+    starter:
+`CREATE TABLE customers (id INT PRIMARY KEY NOT NULL, name TEXT);
+CREATE TABLE orders (
+  order_id INT PRIMARY KEY NOT NULL,
+  customer_id INT REFERENCES customers(id),  -- no ON DELETE clause = RESTRICT
+  total NUMERIC
+);
+
+INSERT INTO customers VALUES (1, 'Bob');
+INSERT INTO orders VALUES (101, 1, 50);
+
+-- RESTRICT: deleting a customer who still has orders is blocked
+DELETE FROM customers WHERE id = 1;`
+  },
+  ref_action_cascade: {
+    setup: ``,
+    starter:
+`CREATE TABLE customers (id INT PRIMARY KEY NOT NULL, name TEXT);
+CREATE TABLE orders (
+  order_id INT PRIMARY KEY NOT NULL,
+  customer_id INT REFERENCES customers(id) ON DELETE CASCADE,
+  total NUMERIC
+);
+
+INSERT INTO customers VALUES (42, 'Acme');
+INSERT INTO orders VALUES (1, 42, 10), (2, 42, 20), (3, 42, 30);
+
+-- CASCADE: deleting the customer deletes all their orders too
+DELETE FROM customers WHERE id = 42;
+
+SELECT * FROM orders;
+SELECT * FROM customers;`
+  },
+  ref_action_setnull: {
+    setup: ``,
+    starter:
+`CREATE TABLE customers (id INT PRIMARY KEY NOT NULL, name TEXT);
+CREATE TABLE orders (
+  order_id INT PRIMARY KEY NOT NULL,
+  customer_id INT REFERENCES customers(id) ON DELETE SET NULL,
+  total NUMERIC
+);
+
+INSERT INTO customers VALUES (1, 'Bob');
+INSERT INTO orders VALUES (101, 1, 50);
+
+-- SET NULL: the order survives, but customer_id becomes NULL
+DELETE FROM customers WHERE id = 1;
+
+SELECT * FROM orders;`
+  },
+  money_float_error: {
+    setup: ``,
+    starter:
+`-- The classic float trap: 0.1 + 0.2 is NOT exactly 0.3 in IEEE-754 floating point
+SELECT (0.1 + 0.2) AS sum, (0.1 + 0.2 = 0.3) AS equals_expected, (0.1 + 0.2 - 0.3) AS leftover_error;
+
+-- Fix: integer cents. Ordinary integer arithmetic is exact by construction.
+CREATE TABLE ledger_cents (amount_cents INTEGER);
+INSERT INTO ledger_cents VALUES (10), (20);  -- 10 cents + 20 cents
+SELECT SUM(amount_cents) AS total_cents, SUM(amount_cents) / 100.0 AS total_dollars FROM ledger_cents;`
+  },
+  worked_first_failure: {
+    setup: ``,
+    starter:
+`-- A single INSERT can violate several constraints at once.
+-- The engine reports the FIRST rule it checks -- not every rule you broke.
+CREATE TABLE Student (student_id INT PRIMARY KEY);
+CREATE TABLE Enroll (
+  student_id INT NOT NULL REFERENCES Student(student_id),
+  course     TEXT NOT NULL,
+  grade      REAL CHECK (grade >= 0 AND grade <= 4.0),
+  UNIQUE (student_id, course)
+);
+INSERT INTO Student VALUES (1);
+INSERT INTO Enroll VALUES (1, 'CS101', 3.5);   -- valid
+
+-- This row breaks TWO rules: student 99 does not exist (FK),
+-- and grade 9.9 is out of range (CHECK). Run it and read which fires.
+INSERT INTO Enroll VALUES (99, 'CS201', 9.9);
+
+-- Now fix the grade only. The other violation is still there, waiting:
+-- INSERT INTO Enroll VALUES (99, 'CS201', 3.9);`
+  }
+};
+
+/* ============ common error hints ============ */
+function commonErrorHint(msg){
+  const m = msg.toLowerCase();
+  if (m.includes('foreign key constraint failed')) {
+    return "A foreign key stopped this. Either a row points at a parent that doesn't exist yet, or you tried to delete/update a parent row that a child still depends on (RESTRICT).";
+  }
+  if (m.includes('unique constraint failed')) {
+    return "A UNIQUE or PRIMARY KEY constraint stopped this — that value (or combination of values) already exists in the table.";
+  }
+  if (m.includes('check constraint failed')) {
+    return "A CHECK constraint stopped this — the row doesn't satisfy one of the table's business rules.";
+  }
+  if (m.includes('not null constraint failed')) {
+    return "A NOT NULL constraint stopped this — a required column was left empty.";
+  }
+  return null;
+}
+
+/* ============ SQL execution engine (uses iterateStatements so zero-row SELECTs and partial output before an error are preserved) ============ */
+let SQL = null;
+async function getSqlJsModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderResultTable(columns, rows){
+  if (!columns.length) return '';
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of columns) html += `<th>${escapeHtml(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += '<tr>';
+    for (const v of row) html += `<td>${v === null ? '<em>NULL</em>' : escapeHtml(v)}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+async function runSqlAgainstFreshDb(setupSql, mainSql, outputEl){
+  outputEl.innerHTML = '';
+  outputEl.classList.remove('err');
+  outputEl.classList.add('show');
+  try {
+    const SQLmod = await getSqlJsModule();
+    const db = new SQLmod.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setupSql && setupSql.trim()) db.run(setupSql);
+    let out = '';
+    let hadOutput = false;
+    let stmtIter;
+    try {
+      stmtIter = db.iterateStatements(mainSql);
+    } catch (e) {
+      throw e;
+    }
+    for (const stmt of stmtIter) {
+      try {
+        const cols = stmt.getColumnNames();
+        const rows = [];
+        while (stmt.step()) {
+          rows.push(stmt.get());
+        }
+        if (cols.length) {
+          out += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length===1?'':'s'}</div>`;
+          out += renderResultTable(cols, rows);
+          hadOutput = true;
+        }
+      } catch (stmtErr) {
+        const hint = commonErrorHint(stmtErr.message);
+        out += `<div style="color:#F0A38A; margin-top:8px;">✖ Error: ${escapeHtml(stmtErr.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+        hadOutput = true;
+        outputEl.innerHTML = out;
+        outputEl.classList.add('err');
+        db.close();
+        return;
+      }
+    }
+    if (!hadOutput) out = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    outputEl.innerHTML = out;
+    db.close();
+  } catch (e) {
+    const hint = commonErrorHint(e.message);
+    outputEl.innerHTML = `<div style="color:#F0A38A;">✖ Error: ${escapeHtml(e.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+    outputEl.classList.add('err');
+  }
+}
+
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+
+function wireCell(cellEl){
+  const id = cellEl.getAttribute('data-cell');
+  const spec = CELLS[id];
+  if (!spec) return;
+  const textarea = cellEl.querySelector('textarea');
+  const output = cellEl.querySelector('.cell-output');
+  const runBtn = cellEl.querySelector('.run-btn');
+  const resetBtn = cellEl.querySelector('.reset-btn');
+  textarea.value = spec.starter;
+  pgGrow(textarea);
+  textarea.addEventListener('input', () => pgGrow(textarea));
+  runBtn.addEventListener('click', () => {
+    runSqlAgainstFreshDb(spec.setup, textarea.value, output);
+  });
+  resetBtn.addEventListener('click', () => {
+    textarea.value = spec.starter;
+    pgGrow(textarea);
+    output.classList.remove('show', 'err');
+    output.innerHTML = '';
+  });
+}
+
+function initAllCells(){
+  document.querySelectorAll('.cell[data-cell]').forEach(wireCell);
+}
+
+/* ============ Constraint Violation Predictor quiz ============ */
+const CVP_QUESTIONS = [
+  {
+    q: "Given this table:",
+    ddl:
+`CREATE TABLE users (
+  id INT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  age INT CHECK (age >= 0)
+);`,
+    stmt: `INSERT INTO users VALUES (1, 'a@x.com', 25);`,
+    prompt: "Will this INSERT succeed?",
+    verifySetup: `CREATE TABLE users (
+  id INT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  age INT CHECK (age >= 0)
+);`,
+    verifyMain: `INSERT INTO users VALUES (1, 'a@x.com', 25);\nSELECT * FROM users;`,
+    options: [
+      { label: "Passes", hint: "All constraints satisfied", correct: true },
+      { label: "Fails: PK violation", hint: "", correct: false },
+      { label: "Fails: UNIQUE violation", hint: "", correct: false },
+      { label: "Fails: CHECK violation", hint: "", correct: false }
+    ],
+    feedback: "id=1 is new, email is new and non-null, and age=25 satisfies age >= 0. Every constraint is satisfied — this passes cleanly."
+  },
+  {
+    q: "With the previous row already inserted, will this next INSERT succeed?",
+    stmt: `INSERT INTO users VALUES (1, 'b@x.com', 30);`,
+    prompt: "",
+    verifySetup: `CREATE TABLE users (
+  id INT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  age INT CHECK (age >= 0)
+);
+INSERT INTO users VALUES (1, 'a@x.com', 25);`,
+    verifyMain: `INSERT INTO users VALUES (1, 'b@x.com', 30);`,
+    options: [
+      { label: "Passes", hint: "All constraints satisfied", correct: false },
+      { label: "Fails: PK violation", hint: "id=1 already exists", correct: true },
+      { label: "Fails: UNIQUE violation", hint: "email already exists", correct: false },
+      { label: "Fails: CHECK violation", hint: "age is invalid", correct: false }
+    ],
+    feedback: "id=1 already belongs to the first row. Even though the email and age are both fine on their own, the PRIMARY KEY catches the duplicate id before anything else is even considered."
+  },
+  {
+    q: "Given this table, will the INSERT succeed?",
+    ddl:
+`CREATE TABLE products (
+  sku CHAR(8) PRIMARY KEY,
+  name TEXT NOT NULL,
+  price NUMERIC NOT NULL CHECK (price > 0)
+);
+
+INSERT INTO products VALUES ('ABC12345', 'Widget', 0);`,
+    stmt: ``,
+    prompt: "",
+    verifySetup: `CREATE TABLE products (
+  sku CHAR(8) PRIMARY KEY,
+  name TEXT NOT NULL,
+  price NUMERIC NOT NULL CHECK (price > 0)
+);`,
+    verifyMain: `INSERT INTO products VALUES ('ABC12345', 'Widget', 0);`,
+    options: [
+      { label: "Passes", hint: "All constraints satisfied", correct: false },
+      { label: "Fails: PK violation", hint: "", correct: false },
+      { label: "Fails: NOT NULL violation", hint: "", correct: false },
+      { label: "Fails: CHECK violation", hint: "price = 0 fails CHECK", correct: true }
+    ],
+    feedback: "The sku is new and name is present, so PK and NOT NULL are both fine. But price = 0 fails CHECK (price > 0) — the condition is strictly greater than zero, and zero doesn't qualify."
+  },
+  {
+    q: "You have:",
+    ddl:
+`CREATE TABLE authors (id INT PRIMARY KEY, name TEXT);
+CREATE TABLE books (
+  isbn CHAR(13) PRIMARY KEY,
+  title TEXT,
+  author_id INT REFERENCES authors(id)
+);
+
+INSERT INTO authors VALUES (1, 'Ada');
+INSERT INTO books VALUES ('9780000000001', 'A Book', 99);`,
+    stmt: ``,
+    prompt: "What happens on the books INSERT?",
+    verifySetup: `CREATE TABLE authors (id INT PRIMARY KEY, name TEXT);
+CREATE TABLE books (
+  isbn CHAR(13) PRIMARY KEY,
+  title TEXT,
+  author_id INT REFERENCES authors(id)
+);
+INSERT INTO authors VALUES (1, 'Ada');`,
+    verifyMain: `INSERT INTO books VALUES ('9780000000001', 'A Book', 99);`,
+    options: [
+      { label: "Passes", hint: "", correct: false },
+      { label: "Fails: FK violation", hint: "author 99 doesn't exist", correct: true },
+      { label: "Fails: PK violation", hint: "", correct: false },
+      { label: "Fails: NOT NULL violation", hint: "", correct: false }
+    ],
+    feedback: "The isbn is new, so no PK problem. But author_id = 99 doesn't exist in authors — only id=1 ('Ada') does. The foreign key blocks a pointer to a row that isn't there."
+  },
+  {
+    q: "An orders table has FK customer_id REFERENCES customers(id) ON DELETE CASCADE. Customer 42 has 15 orders. You run:",
+    stmt: `DELETE FROM customers WHERE id = 42;`,
+    prompt: "What happens?",
+    verifySetup: `CREATE TABLE customers (id INT PRIMARY KEY, name TEXT);
+CREATE TABLE orders (
+  order_id INT PRIMARY KEY,
+  customer_id INT REFERENCES customers(id) ON DELETE CASCADE,
+  total NUMERIC
+);
+INSERT INTO customers VALUES (42, 'Acme');
+INSERT INTO orders
+  SELECT value, 42, 10 FROM (
+    SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5
+    UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10
+    UNION ALL SELECT 11 UNION ALL SELECT 12 UNION ALL SELECT 13 UNION ALL SELECT 14 UNION ALL SELECT 15
+  );`,
+    verifyMain: `DELETE FROM customers WHERE id = 42;\nSELECT COUNT(*) AS remaining_orders FROM orders;\nSELECT COUNT(*) AS remaining_customers FROM customers;`,
+    options: [
+      { label: "Blocked: FK violation", hint: "Cannot delete customer with orders", correct: false },
+      { label: "Succeeds: orders become orphaned", hint: "", correct: false },
+      { label: "Succeeds: customer AND all 15 orders deleted", hint: "", correct: true },
+      { label: "Succeeds: orders' customer_id set to NULL", hint: "", correct: false }
+    ],
+    feedback: "ON DELETE CASCADE means deleting the parent (customer 42) automatically deletes every dependent child row too — all 15 orders vanish along with the customer. That's the whole point of CASCADE: it propagates the delete instead of blocking it or orphaning the children."
+  },
+  {
+    q: "Same orders table, but now declared with a different FK: customer_id REFERENCES customers(id) ON DELETE SET NULL (and customer_id is nullable). Customer 7 has 3 orders. You run:",
+    stmt: `DELETE FROM customers WHERE id = 7;`,
+    prompt: "What happens?",
+    verifySetup: `CREATE TABLE customers (id INT PRIMARY KEY, name TEXT);
+CREATE TABLE orders (
+  order_id INT PRIMARY KEY,
+  customer_id INT REFERENCES customers(id) ON DELETE SET NULL,
+  total NUMERIC
+);
+INSERT INTO customers VALUES (7, 'Bob');
+INSERT INTO orders VALUES (1,7,10), (2,7,20), (3,7,30);`,
+    verifyMain: `DELETE FROM customers WHERE id = 7;\nSELECT * FROM orders;`,
+    options: [
+      { label: "Blocked: FK violation", hint: "Cannot delete customer with orders", correct: false },
+      { label: "Succeeds: customer AND all 3 orders deleted", hint: "", correct: false },
+      { label: "Succeeds: the 3 orders survive, customer_id becomes NULL", hint: "", correct: true },
+      { label: "Succeeds: orders keep pointing at the now-deleted id 7", hint: "", correct: false }
+    ],
+    feedback: "ON DELETE SET NULL preserves the child rows but clears the foreign key column on each of them. The 3 orders still exist — with their totals intact — but customer_id is now NULL on each, since the customer they pointed to is gone."
+  },
+  {
+    q: "Given this enrollment table, will the INSERT succeed?",
+    stmt: `INSERT INTO enrollment VALUES (1, 'MATH101', 'A');`,
+    prompt: "",
+    verifySetup: `CREATE TABLE enrollment (
+  student_id INT,
+  course_id TEXT,
+  grade TEXT,
+  PRIMARY KEY (student_id, course_id)
+);
+INSERT INTO enrollment VALUES (1, 'MATH101', 'B+');`,
+    verifyMain: `INSERT INTO enrollment VALUES (1, 'MATH101', 'A');`,
+    options: [
+      { label: "Passes", hint: "All constraints satisfied", correct: false },
+      { label: "Fails: PK violation", hint: "the pair (1, 'MATH101') already exists", correct: true },
+      { label: "Fails: NOT NULL violation", hint: "", correct: false },
+      { label: "Fails: CHECK violation", hint: "", correct: false }
+    ],
+    feedback: "Neither column is unique on its own — that is the point of a composite key — but the <em>pair</em> (1, 'MATH101') already exists, so the row is refused. SQLite reports it as <code>UNIQUE constraint failed: enrollment.student_id, enrollment.course_id</code>: a primary key is enforced as a uniqueness rule over its whole column set."
+  },
+  {
+    q: "Given this table, will the INSERT succeed?",
+    stmt: `INSERT INTO notes VALUES (1, NULL);`,
+    prompt: "",
+    verifySetup: `CREATE TABLE notes (
+  id INT PRIMARY KEY,
+  body TEXT NOT NULL
+);`,
+    verifyMain: `INSERT INTO notes VALUES (1, NULL);`,
+    options: [
+      { label: "Passes", hint: "NULL is a legal value", correct: false },
+      { label: "Fails: PK violation", hint: "", correct: false },
+      { label: "Fails: NOT NULL violation", hint: "body is required", correct: true },
+      { label: "Fails: CHECK violation", hint: "", correct: false }
+    ],
+    feedback: "<code>NULL</code> is not a value — it is the absence of one — so writing it into a <code>NOT NULL</code> column is exactly what the constraint forbids. SQLite reports <code>NOT NULL constraint failed: notes.body</code>. Note this fires even though the primary key is perfectly fine."
+  },
+  {
+    q: "Given this table, will the INSERT succeed?",
+    stmt: `INSERT INTO bookings VALUES (1, '2026-05-10', '2026-05-01');`,
+    prompt: "",
+    verifySetup: `CREATE TABLE bookings (
+  id INT PRIMARY KEY,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  CHECK (end_date > start_date)
+);`,
+    verifyMain: `INSERT INTO bookings VALUES (1, '2026-05-10', '2026-05-01');`,
+    options: [
+      { label: "Passes", hint: "All constraints satisfied", correct: false },
+      { label: "Fails: PK violation", hint: "", correct: false },
+      { label: "Fails: NOT NULL violation", hint: "", correct: false },
+      { label: "Fails: CHECK violation", hint: "the end date is before the start date", correct: true }
+    ],
+    feedback: "This is a <em>table-level</em> CHECK: it looks at two columns of the same row at once, so neither <code>NOT NULL</code> nor any single-column constraint could express it. The booking ends before it starts, so SQLite raises <code>CHECK constraint failed: end_date &gt; start_date</code>."
+  },
+  {
+    q: "Given this table, will the INSERT succeed?",
+    stmt: `INSERT INTO orders VALUES (10, 99);`,
+    prompt: "",
+    verifySetup: `CREATE TABLE customers (id INT PRIMARY KEY, name TEXT);
+INSERT INTO customers VALUES (1, 'Ada');
+CREATE TABLE orders (
+  id INT PRIMARY KEY,
+  customer_id INT NOT NULL REFERENCES customers(id)
+);`,
+    verifyMain: `INSERT INTO orders VALUES (10, 99);`,
+    options: [
+      { label: "Passes", hint: "All constraints satisfied", correct: false },
+      { label: "Fails: PK violation", hint: "", correct: false },
+      { label: "Fails: NOT NULL violation", hint: "", correct: false },
+      { label: "Fails: FK violation", hint: "customer 99 does not exist", correct: true }
+    ],
+    feedback: "The value 99 is not NULL, so the NOT NULL rule is satisfied — but it must also name a row that actually exists in <code>customers</code>, and no customer has id 99. SQLite reports <code>FOREIGN KEY constraint failed</code>. This is the same check that stopped the earlier <code>DELETE</code>, now firing on the insert side."
+  }
+];
+
+/* ============ CVP quiz rendering (extends the generic engine with a DDL/SQL preview and a live Verify button) ============ */
+const cvpState = { idx: 0, score: 0, answered: false };
+
+function cvpQuestionHtml(idx, total, question){
+  let sqlBlock = '';
+  if (question.ddl) sqlBlock += escapeHtml(question.ddl);
+  if (question.stmt) sqlBlock += (sqlBlock ? '\n\n' : '') + escapeHtml(question.stmt);
+
+  let html = `<div class="quiz-progress">Question ${idx + 1} of ${total}</div>`;
+  html += `<div class="quiz-q">${escapeHtml(question.q)}`;
+  if (sqlBlock) html += `<span class="quiz-sql schema-line">${sqlBlock}</span>`;
+  if (question.prompt) html += `<div style="margin-top:10px; font-weight:600;">${escapeHtml(question.prompt)}</div>`;
+  html += `</div>`;
+  question.options.forEach((opt, i) => {
+    html += `<button class="quiz-opt" data-idx="${i}">
+      <span class="opt-label">${String.fromCharCode(65 + i)}.</span>${escapeHtml(opt.label)}
+      ${opt.hint ? `<span class="opt-hint">${escapeHtml(opt.hint)}</span>` : ''}
+    </button>`;
+  });
+  html += `<div class="quiz-feedback-slot"></div>`;
+  html += `<div class="quiz-nav">
+    <button class="btn secondary quiz-verify-btn" style="display:none;">▶ Verify against real SQLite</button>
+    <button class="btn next-btn" style="display:none;">Next →</button>
+  </div>`;
+  html += `<div class="cell-output quiz-verify-output" style="background:var(--code-bg); border-radius:8px; padding:12px 14px;"></div>`;
+  html += `<div class="quiz-score">Score: <span class="score-val">0</span> / ${total}</div>`;
+  return html;
+}
+
+function cvpDoneHtml(score, total){
+  return `<div class="quiz-done">
+    <div class="big-score">${score} / ${total}</div>
+    <p>${score === total ? "Perfect score." : "Review the ones you missed above, then try again."}</p>
+    <button class="btn secondary restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+
+function initCvpQuiz(){
+  cvpState.idx = 0;
+  cvpState.score = 0;
+  cvpState.answered = false;
+  renderCvpQuiz();
+}
+
+function renderCvpQuiz(){
+  const wrap = document.getElementById('cvp-wrap');
+  if (cvpState.idx >= CVP_QUESTIONS.length) {
+    wrap.innerHTML = cvpDoneHtml(cvpState.score, CVP_QUESTIONS.length);
+    wrap.querySelector('.restart-btn').addEventListener('click', initCvpQuiz);
+    return;
+  }
+  const q = CVP_QUESTIONS[cvpState.idx];
+  wrap.innerHTML = cvpQuestionHtml(cvpState.idx, CVP_QUESTIONS.length, q);
+  wrap.querySelector('.score-val').textContent = cvpState.score;
+  wrap.querySelectorAll('.quiz-opt').forEach(btn => {
+    btn.addEventListener('click', () => cvpSelectOption(parseInt(btn.getAttribute('data-idx'), 10)));
+  });
+  wrap.querySelector('.next-btn').addEventListener('click', cvpNext);
+  wrap.querySelector('.quiz-verify-btn').addEventListener('click', cvpVerify);
+}
+
+function cvpSelectOption(optIdx){
+  if (cvpState.answered) return;
+  cvpState.answered = true;
+  const q = CVP_QUESTIONS[cvpState.idx];
+  const wrap = document.getElementById('cvp-wrap');
+  const opts = wrap.querySelectorAll('.quiz-opt');
+  const chosen = q.options[optIdx];
+  opts.forEach((btn, i) => {
+    btn.classList.add('disabled');
+    if (q.options[i].correct) btn.classList.add('correct');
+    else if (i === optIdx) btn.classList.add('incorrect');
+  });
+  const slot = wrap.querySelector('.quiz-feedback-slot');
+  if (chosen.correct) {
+    cvpState.score++;
+    wrap.querySelector('.score-val').textContent = cvpState.score;
+    slot.innerHTML = `<div class="quiz-feedback correct">✓ Correct. ${escapeHtml(q.feedback || '')}</div>`;
+  } else {
+    slot.innerHTML = `<div class="quiz-feedback incorrect">✖ Not quite. ${escapeHtml(q.feedback || '')}</div>`;
+  }
+  wrap.querySelector('.next-btn').style.display = 'inline-block';
+  wrap.querySelector('.quiz-verify-btn').style.display = 'inline-block';
+}
+
+async function cvpVerify(){
+  const q = CVP_QUESTIONS[cvpState.idx];
+  const wrap = document.getElementById('cvp-wrap');
+  const out = wrap.querySelector('.quiz-verify-output');
+  out.classList.add('show');
+  await runSqlAgainstFreshDb(q.verifySetup, q.verifyMain, out);
+}
+
+function cvpNext(){
+  cvpState.idx++;
+  cvpState.answered = false;
+  renderCvpQuiz();
+}
+
+/* ============ boot ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  initAllCells();
+  document.getElementById('cvp-quiz').innerHTML = '<div class="quiz-wrap" id="cvp-wrap"></div>';
+  initCvpQuiz();
+});
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: The Constraint Mapper ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const ZONES = ['single', 'combo', 'cross'];
+  const ITEMS = [
+    { id: 'a1', text: 'NOT NULL on one column', zone: 'single' },
+    { id: 'a2', text: 'CHECK (price > 0) on one column', zone: 'single' },
+    { id: 'a3', text: "DEFAULT 'active' on one column", zone: 'single' },
+    { id: 'b1', text: 'PRIMARY KEY (student_id, course_id)', zone: 'combo' },
+    { id: 'b2', text: 'UNIQUE (first_name, last_name)', zone: 'combo' },
+    { id: 'b3', text: 'CHECK (end_date > start_date) across two columns', zone: 'combo' },
+    { id: 'c1', text: 'FOREIGN KEY dept_id REFERENCES Department', zone: 'cross' },
+    { id: 'c2', text: 'ON DELETE CASCADE', zone: 'cross' },
+    { id: 'c3', text: 'ON DELETE SET NULL on a foreign key', zone: 'cross' },
+  ];
+  let placed = {}, selected = null, checked = false;
+  const bank = byId('cmbank');
+  if (!bank) return;
+  function keyHtml(){
+    return '<div class="lm-key"><div class="lm-key-head">Correct mapping</div>' +
+      ITEMS.map(it => {
+        const ok = placed[it.id] === it.zone;
+        const h = document.querySelector('.lm-zone[data-zone="' + it.zone + '"] .lm-zone-head');
+        const name = h ? h.textContent.split('·')[0].trim() : it.zone;
+        return '<div class="lm-key-row ' + (ok ? 'ok' : 'bad') + '"><span class="lm-key-item">' + (ok ? '✓' : '✗') + ' ' + esc(it.text) + '</span><span class="lm-key-zone">' + esc(name) + '</span></div>';
+      }).join('') + '</div>';
+  }
+  function render(){
+    const rest = ITEMS.filter(it => !placed[it.id]);
+    bank.innerHTML = rest.length ? rest.map(it =>
+      `<div class="lm-chip${selected === it.id ? ' selected' : ''}" data-id="${it.id}">${esc(it.text)}</div>`).join('')
+      : `<span class="lm-hint" style="margin:0;">${checked ? 'All constraints placed and checked.' : 'All constraints placed — press “Check mapping”.'}</span>`;
+    bank.querySelectorAll('.lm-chip').forEach(chip => chip.addEventListener('click', () => {
+      if (checked) return;
+      selected = selected === chip.dataset.id ? null : chip.dataset.id;
+      render();
+    }));
+    ZONES.forEach(z => {
+      byId('cmzone-' + z).innerHTML = ITEMS.filter(it => placed[it.id] === z).map(it => {
+        let cls = 'lm-item';
+        if (checked) cls += it.zone === z ? ' correct' : ' incorrect';
+        return `<div class="${cls}" data-id="${it.id}">${esc(it.text)}</div>`;
+      }).join('');
+      byId('cmzone-' + z).querySelectorAll('.lm-item').forEach(el => el.addEventListener('click', () => {
+        if (checked) return;
+        delete placed[el.dataset.id]; selected = null; render();
+      }));
+    });
+    document.querySelectorAll('.lm-zone').forEach(z => z.classList.toggle('armed', !!selected));
+    byId('cmcheck').disabled = Object.keys(placed).length < ITEMS.length;
+    byId('cmanswer').disabled = !checked;
+    if (!checked) byId('cmscore').textContent = `${Object.keys(placed).length} of ${ITEMS.length} placed`;
+  }
+  document.querySelectorAll('.lm-zone').forEach(z => z.addEventListener('click', () => {
+    if (checked || !selected) return;
+    placed[selected] = z.dataset.zone; selected = null; render();
+  }));
+  byId('cmcheck').addEventListener('click', () => {
+    checked = true;
+    const wrong = ITEMS.filter(it => placed[it.id] !== it.zone);
+    const score = ITEMS.length - wrong.length;
+    byId('cmfeedback').innerHTML = wrong.length === 0
+      ? `<div class="lm-feedback correct">✓ ${score} / ${ITEMS.length}. Notice the pattern: a composite PRIMARY KEY or UNIQUE is a <em>table-level</em> constraint, not a column one — it can only be false of a row as a whole. And anything mentioning another table is a referential constraint, where ON DELETE / ON UPDATE decide what happens to the child row.</div>`
+      : `<div class="lm-feedback incorrect">✗ ${score} / ${ITEMS.length}. The red ones are misplaced — click “Restart”. Ask: does this rule fail because of <em>one</em> value, because of a <em>combination</em> of values in the same row, or because of a value that lives in a <em>different table</em>?</div>`;
+    render();
+    byId('cmscore').textContent = `${score} / ${ITEMS.length} correct`;
+  });
+  byId('cmanswer').addEventListener('click', () => { byId('cmkey').innerHTML = keyHtml(); });
+  byId('cmrestart').addEventListener('click', () => {
+    placed = {}; selected = null; checked = false;
+    byId('cmfeedback').innerHTML = ''; byId('cmkey').innerHTML = ''; render();
+  });
+  render();
+})();
+</script>
+
+<script>
+/* ===== Constraint Violation Simulator ===== */
+(function () {
+  const byId = id => document.getElementById(id);
+  const esc = s => escapeHtml(String(s));
+  const CS_SCHEMA = `CREATE TABLE members (
+  member_id INTEGER PRIMARY KEY NOT NULL,
+  email     TEXT NOT NULL UNIQUE,
+  age       INTEGER CHECK (age >= 0),
+  joined_on TEXT NOT NULL,
+  ends_on   TEXT,
+  mentor_id INTEGER REFERENCES members(member_id)
+);`;
+  const CS_SEED = `INSERT INTO members VALUES (1,'ada@x.com',36,'2024-01-05',NULL,NULL);
+INSERT INTO members VALUES (2,'bo@x.com',29,'2024-03-11',NULL,1);
+INSERT INTO members VALUES (3,'chen@x.com',41,'2025-02-20',NULL,1);`;
+  const CS_SELECT = 'SELECT member_id,email,age,joined_on,ends_on,mentor_id FROM members ORDER BY member_id';
+
+  const ACTIONS = [
+    { key:'valid', label:'✅ A valid row', constraint:'ACCEPTED',
+      sql:"INSERT INTO members VALUES (4,'dana@x.com',30,'2026-01-15',NULL,1)",
+      row:[4,'dana@x.com',30,'2026-01-15',null,1], bad:-1,
+      why:'Every rule holds at once: a brand-new identity (4), an unused email, a non-negative age, a present join date, and a mentor (1) that really exists.' },
+    { key:'pk', label:'❌ Duplicate primary key', constraint:'PRIMARY KEY',
+      sql:"INSERT INTO members VALUES (1,'new@x.com',30,'2026-01-15',NULL,NULL)",
+      row:[1,'new@x.com',30,'2026-01-15',null,null], bad:0,
+      why:'member_id 1 already identifies Ada. A primary key is the row\u2019s identity, so the engine refuses to mint a second row wearing the same identity.' },
+    { key:'notnull', label:'❌ NULL in a NOT NULL column', constraint:'NOT NULL',
+      sql:"INSERT INTO members VALUES (5,NULL,30,'2026-01-15',NULL,NULL)",
+      row:[5,null,30,'2026-01-15',null,null], bad:1,
+      why:'email is declared NOT NULL, so the column may never be left empty \u2014 not by a bug, not by an import script, not by anyone.' },
+    { key:'unique', label:'❌ Duplicate in a UNIQUE column', constraint:'UNIQUE',
+      sql:"INSERT INTO members VALUES (6,'ada@x.com',30,'2026-01-15',NULL,NULL)",
+      row:[6,'ada@x.com',30,'2026-01-15',null,null], bad:1,
+      why:'Ada\u2019s email already exists. UNIQUE says no two rows may share the value \u2014 yet, unlike a primary key, the column is still allowed to hold NULLs.' },
+    { key:'check', label:'❌ Value that fails a CHECK', constraint:'CHECK',
+      sql:"INSERT INTO members VALUES (7,'eve@x.com',-5,'2026-01-15',NULL,NULL)",
+      row:[7,'eve@x.com',-5,'2026-01-15',null,null], bad:2,
+      why:'age is guarded by CHECK (age >= 0). The rule is evaluated on every write, so a negative age can never be stored no matter which code path tried.' },
+    { key:'fk', label:'❌ Foreign key to nowhere', constraint:'FOREIGN KEY',
+      sql:"INSERT INTO members VALUES (8,'finn@x.com',30,'2026-01-15',NULL,99)",
+      row:[8,'finn@x.com',30,'2026-01-15',null,99], bad:5,
+      why:'mentor_id 99 doesn\u2019t exist in members. Referential integrity guarantees you can never store a pointer to a row that isn\u2019t there.' },
+  ];
+
+  function cell(v, cls){
+    const t = v === null ? '<em>NULL</em>' : esc(v);
+    return '<td' + (cls ? ' class="' + cls + '"' : '') + '>' + t + '</td>';
+  }
+
+  function renderTable(rows, action, err){
+    let html = '';
+    rows.forEach(r => {
+      const isNew = !err && action && r[0] === action.row[0] && JSON.stringify(r) === JSON.stringify(action.row);
+      html += '<tr' + (isNew ? ' class="cs-new"' : '') + '>' + r.map(v => isNew ? cell(v, 'cs-good') : cell(v)).join('') + '</tr>';
+    });
+    if (err && action){
+      html += '<tr class="cs-rejected">' + action.row.map((v, i) => cell(v, i === action.bad ? 'cs-bad' : null)).join('') + '</tr>';
+    }
+    byId('cs-tbody').innerHTML = html;
+  }
+
+  function showResult(action, err, rowCount){
+    const el = byId('cs-result');
+    if (err){
+      el.className = 'cs-result blocked';
+      el.innerHTML = '<span class="cs-constraint">' + esc(action.constraint) + '</span><span class="cs-err">✖ ' + esc(err) + '</span>' +
+        '<div class="cs-why">' + esc(action.why) + '</div>';
+    } else {
+      el.className = 'cs-result ok';
+      el.innerHTML = '<span class="cs-constraint ok">✓ ACCEPTED</span><span>the write went through \u2014 the table now holds ' + rowCount + ' rows.</span>' +
+        '<div class="cs-why">' + esc(action.why) + '</div>';
+    }
+  }
+
+  async function runAction(action){
+    const el = byId('cs-result');
+    el.className = 'cs-result ok'; el.textContent = 'Running against SQLite\u2026';
+    try {
+      const SQLmod = await getSqlJsModule();
+      const db = new SQLmod.Database();
+      db.run('PRAGMA foreign_keys = ON;');
+      db.run(CS_SCHEMA);
+      db.run(CS_SEED);
+      let err = null;
+      try { db.run(action.sql); } catch (e) { err = e.message; }
+      const rows = [];
+      const st = db.prepare(CS_SELECT);
+      while (st.step()) rows.push(st.get());
+      st.free();
+      db.close();
+      renderTable(rows, action, err);
+      showResult(action, err, rows.length);
+      byId('cs-note').textContent = err
+        ? 'The rejected row is shown in red \u2014 it was never stored, so the table itself still holds ' + rows.length + ' rows.'
+        : 'The accepted row is shown in green. It is now genuinely part of the table \u2014 the engine kept its promise.';
+    } catch (e) {
+      el.className = 'cs-result blocked';
+      el.textContent = 'Could not reach the SQLite engine: ' + e.message;
+    }
+  }
+
+  async function seedTable(){
+    try {
+      const SQLmod = await getSqlJsModule();
+      const db = new SQLmod.Database();
+      db.run('PRAGMA foreign_keys = ON;');
+      db.run(CS_SCHEMA);
+      db.run(CS_SEED);
+      const rows = [];
+      const st = db.prepare(CS_SELECT);
+      while (st.step()) rows.push(st.get());
+      st.free();
+      db.close();
+      renderTable(rows, null, null);
+    } catch (e) {
+      byId('cs-note').textContent = 'Engine still loading \u2014 pick a write in a moment.';
+    }
+  }
+
+  function init(){
+    const picker = byId('cs-picker');
+    if (!picker) return;
+    ACTIONS.forEach(a => {
+      const b = document.createElement('button');
+      b.className = 'cs-act';
+      b.textContent = a.label;
+      b.dataset.key = a.key;
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.cs-act').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        runAction(a);
+      });
+      picker.appendChild(b);
+    });
+    seedTable();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

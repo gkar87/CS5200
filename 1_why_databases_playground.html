@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · Why Databases? From Files to DBMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --pink:#A73E7A; --pink-soft:#F5E3EE;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:920px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:700px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:hover{opacity:.9;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip:hover{border-color:var(--blue);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.lm-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-answer-btn{background:transparent; color:var(--blue); border:1px solid var(--blue); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-answer-btn:hover:not(:disabled){background:var(--blue-soft);}
+.lm-answer-btn:disabled{color:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed;}
+.lm-key{margin-top:14px; border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:14px 16px;}
+.lm-key-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+.lm-key-row{display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:6px 0; border-bottom:1px dashed var(--rule); font-size:.9em;}
+.lm-key-row:last-child{border-bottom:none;}
+.lm-key-item{flex:1;}
+.lm-key-zone{font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:700; white-space:nowrap;}
+.lm-key-row.ok .lm-key-zone{color:var(--green);}
+.lm-key-row.bad .lm-key-zone{color:var(--rust);}
+.lm-key-row.bad .lm-key-item{color:var(--rust);}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+table.dbtable{width:100%; border-collapse:collapse; margin:14px 0; font-size:13px; background:var(--code-bg); border-radius:6px; overflow:hidden;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); padding:8px 12px; text-align:left; border-bottom:1px solid var(--code-rule); font-weight:600;}
+table.dbtable td{padding:8px 12px; border-bottom:1px solid var(--code-rule); color:var(--code-text); background:var(--code-bg);}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+/* ---- generic widget shell ---- */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.widget-label:first-of-type{margin-top:0;}
+
+/* ---- Anomaly Interactive ---- */
+.ai-tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+.ai-tab-btn{border:1.5px solid var(--rule-strong); background:#fff; color:var(--ink); border-radius:20px; padding:8px 16px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.ai-tab-btn.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+.ai-panel{display:none;}
+.ai-panel.active{display:block;}
+.ai-steps{display:flex; gap:18px; margin:14px 0; flex-wrap:wrap; font-size:12.5px; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+.ai-steps .step-num{display:inline-flex; width:18px; height:18px; border-radius:50%; background:var(--rule-strong); color:#fff; align-items:center; justify-content:center; font-size:11px; margin-right:6px;}
+.ai-legend{display:flex; gap:16px; font-size:12px; color:var(--ink-soft); margin:8px 0 14px;}
+.ai-legend .swatch{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:middle;}
+.ai-row-deleted{opacity:.45; text-decoration:line-through;}
+.ai-row-deleted td{background:var(--rust-soft) !important;}
+.ai-row-flag td{background:var(--amber-soft) !important;}
+.ai-action-row{display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap;}
+.ai-result{margin-top:14px; display:none;}
+.ai-result.show{display:block;}
+
+/* ---- Schema & Instance Builder ---- */
+.sib-tabs{display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
+.sib-tab-btn{border:1.5px solid var(--rule-strong); background:#fff; color:var(--ink); border-radius:20px; padding:8px 16px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.sib-tab-btn.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.sib-panel{display:none;}
+.sib-panel.active{display:block;}
+.sib-col-row{display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--rule); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
+.sib-col-row input[type=text]{flex:1; font-family:"IBM Plex Mono",monospace; font-size:13.5px; padding:6px 10px; border:1px solid var(--rule-strong); border-radius:6px;}
+.sib-col-row select{font-family:"IBM Plex Mono",monospace; font-size:12.5px; padding:6px 8px; border:1px solid var(--rule-strong); border-radius:6px; background:#fff;}
+.sib-col-remove{background:transparent; border:1px solid var(--rule-strong); color:var(--ink-soft); border-radius:6px; padding:4px 8px; font-size:14px; cursor:pointer; line-height:1;}
+.sib-col-remove:hover{border-color:var(--rust); color:var(--rust);}
+.sib-add-col-btn{border:1.5px dashed var(--rule-strong); background:transparent; color:var(--ink-soft); border-radius:8px; padding:10px; width:100%; cursor:pointer; font-family:"IBM Plex Mono",monospace; font-size:12.5px; margin:6px 0 14px;}
+.sib-add-col-btn:hover{border-color:var(--blue); color:var(--blue);}
+.sib-row-inputs{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+.sib-row-inputs input{font-family:"IBM Plex Mono",monospace; font-size:13px; padding:7px 10px; border:1px solid var(--rule-strong); border-radius:6px; flex:1; min-width:120px;}
+.sib-error{color:var(--rust); font-size:12.5px; margin:6px 0; font-family:"IBM Plex Mono",monospace; display:none;}
+.sib-error.show{display:block;}
+.sib-rowlist{margin:10px 0;}
+.sib-rowlist-item{font-family:"IBM Plex Mono",monospace; font-size:12.5px; background:#fff; border:1px solid var(--rule); border-radius:6px; padding:6px 10px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;}
+.sib-step-nav{display:flex; gap:10px; margin-top:16px;}
+
+/* ---- Anomaly Diagnostic Tester quiz (mirrors act-/nfd- pattern) ---- */
+.adt-quiz{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:18px 0;}
+.adt-quiz-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+.adt-dots{display:inline-flex; gap:6px; align-items:center;}
+.adt-dots .dot{width:9px; height:9px; border-radius:50%; background:var(--rule-strong); display:inline-block;}
+.adt-dots .dot.current{background:var(--ink);}
+.adt-dots .dot.correct{background:var(--green);}
+.adt-dots .dot.incorrect{background:var(--rust);}
+.adt-dots-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-right:8px;}
+.adt-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft);}
+.adt-score b{color:var(--ink); font-size:1.1em;}
+.adt-progressbar{height:3px; background:var(--rule); border-radius:2px; margin:10px 0 18px; overflow:hidden;}
+.adt-progressbar-fill{height:100%; background:var(--blue); transition:width .2s ease;}
+.adt-scenario-card{background:#fff; border:1px solid var(--rule); border-radius:12px; padding:22px 24px;}
+.adt-scenario-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:10px;}
+.adt-scenario-text{font-size:1.05em; margin-bottom:6px;}
+.adt-scenario-text code{background:var(--paper-raised); padding:1px 5px; border-radius:4px;}
+.adt-pick-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:18px 0 10px;}
+.adt-options-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:600px){ .adt-options-grid{grid-template-columns:1fr;} }
+.adt-option-card{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+.adt-option-card:hover{border-color:var(--blue);}
+.adt-option-card.selected{border-color:var(--blue); background:var(--blue-soft);}
+.adt-option-card.correct{border-color:var(--green); background:var(--green-soft);}
+.adt-option-card.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.adt-option-card.disabled{cursor:default;}
+.adt-option-title{font-weight:700; font-size:.98em; font-family:"IBM Plex Mono",monospace;}
+.adt-option-hint{font-size:.8em; color:var(--ink-soft); margin-top:4px;}
+.adt-check-btn{margin-top:18px; padding:10px 20px; border-radius:8px; border:none; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13px; cursor:pointer;}
+.adt-check-btn:disabled{background:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.adt-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.adt-feedback.correct{background:var(--green-soft); color:var(--green);}
+.adt-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.btn.secondary.adt-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.adt-next-btn{margin-top:14px;}
+.adt-quiz-done{text-align:center; padding:24px;}
+.adt-quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical runnable cell (shared) ===== */
+.cell{background:var(--code-bg); border:1px solid var(--code-rule); border-radius:8px; margin:14px 0; overflow:hidden;}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule); font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--code-text);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75; font-family:"IBM Plex Mono",monospace;}
+.cell textarea{width:100%; min-height:0; resize:none; overflow:hidden; display:block; background:var(--code-bg); color:var(--code-text); border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; line-height:1.55; outline:none; tab-size:2;}
+.cell textarea:focus{outline:2px solid var(--blue); outline-offset:-2px;}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.cell .btn{background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace;}
+.cell .btn:hover{opacity:.9;}
+.cell .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.cell .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none; background:var(--code-bg);}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">Why Databases?</a>
+      <a href="#redundancy">The Problem with Redundancy</a>
+      <a href="#anomalies">The Three Data Anomalies</a>
+      <a href="#anomaly-interactive">The Anomaly Interactive</a>
+      <a href="#acid">The ACID Guarantee</a>
+      <a href="#schema-instance">Schema vs. Instance</a>
+      <a href="#schema-instance-builder">Schema &amp; Instance Builder</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-bank-transfer">Anatomy of a Failed Bank Transfer</a>
+      <a href="#worked-schema-change">When Schema Change Breaks the Instance</a>
+      <a href="#worked-concurrent-writes">Watching a Flat File Break Under Load</a>
+      <div class="grp">Apply It</div>
+      <a href="#anomaly-diagnostic-tester">Anomaly Diagnostic Tester</a>
+      <a href="#responsibility-mapper">Who Owns Which Responsibility?</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+      <div class="grp">2026 Status</div>
+      <a href="#modern-landscape">The Modern Database Landscape</a>
+    </nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>Why Databases? From Files to DBMS</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">Every app on your phone, every AI assistant that remembers a conversation, every payment that clears before you leave the coffee shop — all of them run on a database. And yet the software that makes this possible is invisible by design. To understand it, we have to go back to a simpler question: why does a database even exist? What does it do that a folder of files on a laptop cannot?</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>Why Databases?</h2>
+      <p>The problem is not the data itself. The problem is how the data is managed. When you store information in simple files, you are responsible for keeping everything organized, accurate, and safe. A Database Management System, or DBMS, is a piece of software that takes those responsibilities off your plate. It shifts the burden of "how to store it" away from the programmer and into a system designed specifically to handle the messiness of real-world information.</p>
+    </section>
+
+    <section id="redundancy">
+      <div class="kicker">Foundations</div>
+      <h2>The Problem with Redundancy</h2>
+      <p>In a basic file-based system, different departments often keep their own records. The registrar has a file for student grades. The housing office has a file for dorm assignments. The billing office has a file for tuition.</p>
+      <p>This leads to redundancy. The student's name, ID, and home address are stored in all three places. On the surface, this seems like a minor annoyance: you are just using extra disk space. But the real cost is not storage. The real cost is inconsistency.</p>
+      <p>Imagine a student moves to a new apartment. They call the registrar to update their address. The registrar updates their file, but the billing office still has the old address. A month later, the tuition bill goes to the wrong house. This is the "Data Redundancy Trap." When information is scattered across different files, you no longer have a single source of truth. You have several different versions of reality, and you can never be sure which one is right.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 50 700 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The same student details stored in three separate files, with the year drifting out of sync between them — showing how redundancy turns into inconsistent data." font-family="IBM Plex Mono, monospace">
+          <text x="350" y="70" text-anchor="middle" font-size="12" fill="#1E2A25">Student: J. Smith has three</text>
+          <text x="350" y="85" text-anchor="middle" font-size="12" fill="#1E2A25"><tspan font-weight="700">different addresses</tspan> across</text>
+          <text x="350" y="100" text-anchor="middle" font-size="12" fill="#1E2A25">the three departmental systems.</text>
+
+          <g>
+            <path d="M40,150 L40,270 L210,270 L210,175 L170,150 Z" fill="#8FD18F" stroke="#1E2A25" stroke-width="1.6"/>
+            <path d="M40,150 L70,130 L240,130 L210,150 Z" fill="#A8E0A8" stroke="#1E2A25" stroke-width="1.6"/>
+            <text x="116" y="143" font-size="10" fill="#1E2A25">Outdated</text>
+            <rect x="52" y="168" width="128" height="52" fill="#fff" stroke="#1E2A25" stroke-width="1.2"/>
+            <text x="60" y="184" font-size="9" fill="#1E2A25">STUDENT: J. SMITH</text>
+            <text x="60" y="200" font-size="9" fill="#1E2A25">ADDRESS: 123 Main St</text>
+            <text x="90" y="250" font-size="19" font-weight="700" fill="#1E2A25">Registrar</text>
+          </g>
+
+          <g>
+            <path d="M260,160 L260,280 L430,280 L430,185 L390,160 Z" fill="#fff" stroke="#1E2A25" stroke-width="1.6"/>
+            <path d="M260,160 L290,140 L460,140 L430,160 Z" fill="#fff" stroke="#1E2A25" stroke-width="1.6"/>
+            <text x="354" y="153" font-size="10" fill="#1E2A25">Current</text>
+            <rect x="272" y="178" width="128" height="52" fill="#F6F7F2" stroke="#1E2A25" stroke-width="1.2"/>
+            <text x="280" y="194" font-size="9" fill="#1E2A25">STUDENT: J. SMITH</text>
+            <text x="280" y="210" font-size="9" fill="#1E2A25">ADDRESS: 456 Elm Ave</text>
+            <text x="300" y="262" font-size="19" font-weight="700" fill="#1E2A25">Housing</text>
+          </g>
+
+          <g>
+            <path d="M460,160 L460,280 L630,280 L630,185 L590,160 Z" fill="#fff" stroke="#1E2A25" stroke-width="1.6"/>
+            <path d="M460,160 L490,140 L660,140 L630,160 Z" fill="#fff" stroke="#1E2A25" stroke-width="1.6"/>
+            <text x="563" y="153" font-size="10" fill="#1E2A25">Typo</text>
+            <rect x="472" y="178" width="128" height="52" fill="#F6F7F2" stroke="#1E2A25" stroke-width="1.2"/>
+            <text x="480" y="194" font-size="9" fill="#1E2A25">STUDENT: J. SMITH</text>
+            <text x="480" y="210" font-size="9" fill="#1E2A25">ADDRESS: 789 Oak Dr</text>
+            <text x="495" y="262" font-size="19" font-weight="700" fill="#1E2A25">Billing</text>
+          </g>
+        </svg>
+        <figcaption>The problem of data redundancy: when the same information is stored in multiple places, it eventually becomes inconsistent.</figcaption>
+      </figure>
+
+      <p>Don't take the diagram's word for it. Run the same story against a real database: first as a flat file with the office copied into every row, then with the office stored once and pointed at.</p>
+      <div class="cell" data-cell="flat_vs_relational">
+        <div class="cell-head"><span class="cell-title">flat_vs_relational.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">The flat version needed three coordinated writes to record one fact, and a single missed row left the database contradicting itself. The normalised version needed one. This is the difference the rest of the course is about.</p>
+    </section>
+
+    <section id="anomalies">
+      <div class="kicker">Foundations</div>
+      <h2>The Three Data Anomalies</h2>
+      <p>When you use a file-based approach, you run into three specific types of errors called anomalies. These are not just bugs. They are structural failures that happen because the data is not organized properly.</p>
+
+      <h3>The Update Anomaly</h3>
+      <p>This happens when you have redundant data and try to change it. If a professor's phone number is listed in ten different rows because they teach ten different classes, you have to update all ten rows. If you miss one, the data is now broken. A user looking at the first row sees one number, while a user looking at the last row sees another.</p>
+
+      <h3>The Insertion Anomaly</h3>
+      <p>This happens when you cannot record a piece of information because you are missing a different piece of information. Suppose your file structure stores "Course Data" and "Student Data" in the same row. If the college creates a new Advanced Robotics course but no students have signed up yet, you might not be able to add the course to the file at all. The system expects a student ID to create a record. You shouldn't need a student to exist just to acknowledge that a course exists.</p>
+
+      <h3>The Deletion Anomaly</h3>
+      <p>This is the most dangerous one. It happens when deleting one piece of information accidentally destroys something else you wanted to keep. Imagine a small department where only one student is majoring in Physics. If that student drops out and you delete their record, you might accidentally delete the information about the Physics major itself, including the department's office number and the dean's name. By removing the student, you have wiped the department off the map.</p>
+    </section>
+
+    <section id="anomaly-interactive">
+      <div class="kicker">Foundations</div>
+      <h2>The Anomaly Interactive</h2>
+      <p>Explore why flat-file data leads to update, deletion, and insertion anomalies — and why a DBMS exists to prevent them. Every action below runs against real in-browser state, not a scripted replay.</p>
+
+      <div class="widget">
+        <div class="widget-title">The Anomaly Interactive</div>
+        <div class="widget-sub">Explore why flat-file data leads to update, deletion, and insertion anomalies — and why DBMS exist.</div>
+        <div class="ai-tabs">
+          <button class="ai-tab-btn active" data-tab="deletion">🗑️ Deletion Anomaly</button>
+          <button class="ai-tab-btn" data-tab="update">✏️ Update Anomaly</button>
+          <button class="ai-tab-btn" data-tab="insertion">➕ Insertion Anomaly</button>
+        </div>
+
+        <div class="ai-panel active" data-panel="deletion">
+          <div class="callout purple"><strong>Scenario:</strong> A university stores everything in one flat file. Each row mixes <em>student info</em> with <em>course info</em>. Alice is the only student enrolled in <code>CS101</code>. Watch what happens when you delete her record.</div>
+          <div class="ai-steps"><span><span class="step-num">1</span>Select a student to delete</span><span><span class="step-num">2</span>Confirm deletion</span><span><span class="step-num">3</span>See the anomaly</span></div>
+          <div class="ai-legend">
+            <span><span class="swatch" style="background:var(--rust-soft); border:1px solid var(--rust);"></span>Deleted row</span>
+            <span><span class="swatch" style="background:var(--amber-soft); border:1px solid var(--amber);"></span>Side-effect / inconsistency</span>
+          </div>
+          <table class="dbtable" id="ai-del-table">
+            <thead><tr><th>STUDENT_ID</th><th>STUDENT_NAME</th><th>ADDRESS</th><th>COURSE_ID</th><th>COURSE_NAME</th><th>CREDITS</th></tr></thead>
+            <tbody id="ai-del-tbody"></tbody>
+          </table>
+          <div class="callout" id="ai-del-tip">👉 Click "Delete Alice" below to simulate removing her enrollment from the file.</div>
+          <div class="ai-action-row">
+            <button class="btn" id="ai-del-btn" style="background:var(--pink);">🗑️ Delete Alice (S001)</button>
+            <button class="btn secondary" id="ai-del-reset">↺ Reset</button>
+          </div>
+          <div class="ai-result" id="ai-del-result"></div>
+        </div>
+
+        <div class="ai-panel" data-panel="update">
+          <div class="callout purple"><strong>Scenario:</strong> Professor Chen teaches four sections. Her office number is redundantly stored in all four rows of this flat <code>Course</code> file. She moves to a new office. Simulate updating <em>only three of the four</em> rows — what a rushed, manual update looks like.</div>
+          <div class="ai-legend">
+            <span><span class="swatch" style="background:var(--green-soft); border:1px solid var(--green);"></span>Updated row</span>
+            <span><span class="swatch" style="background:var(--amber-soft); border:1px solid var(--amber);"></span>Missed row — inconsistency</span>
+          </div>
+          <table class="dbtable" id="ai-upd-table">
+            <thead><tr><th>COURSE_ID</th><th>COURSE_NAME</th><th>INSTRUCTOR</th><th>OFFICE</th></tr></thead>
+            <tbody id="ai-upd-tbody"></tbody>
+          </table>
+          <div class="callout" id="ai-upd-tip">👉 Click below to simulate a rushed office-number update that only reaches 3 of the 4 rows.</div>
+          <div class="ai-action-row">
+            <button class="btn" id="ai-upd-btn">✏️ Update office (3 of 4 rows)</button>
+            <button class="btn secondary" id="ai-upd-reset">↺ Reset</button>
+          </div>
+          <div class="ai-result" id="ai-upd-result"></div>
+        </div>
+
+        <div class="ai-panel" data-panel="insertion">
+          <div class="callout purple"><strong>Scenario:</strong> The registrar wants to add a brand-new course, <code>CS8010: Quantum Algorithms</code>, that hasn't been offered yet and has no enrolled students. The flat file's schema is <code>Enrollment(student_id, course_id, course_name, credits)</code> with <code>student_id</code> required (<code>NOT NULL</code>) on every row.</div>
+          <table class="dbtable" id="ai-ins-table">
+            <thead><tr><th>STUDENT_ID</th><th>COURSE_ID</th><th>COURSE_NAME</th><th>CREDITS</th></tr></thead>
+            <tbody id="ai-ins-tbody"></tbody>
+          </table>
+          <div class="callout" id="ai-ins-tip">👉 Click below to try inserting the new course with no student attached.</div>
+          <div class="ai-action-row">
+            <button class="btn" id="ai-ins-btn">➕ Add CS8010 (no students)</button>
+            <button class="btn secondary" id="ai-ins-reset">↺ Reset</button>
+          </div>
+          <div class="ai-result" id="ai-ins-result"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="acid">
+      <div class="kicker">Foundations</div>
+      <h2>The ACID Guarantee</h2>
+      <p>To solve these problems, a DBMS provides a set of properties known as ACID. Think of ACID as a contract between you and the database. The database promises that no matter what happens, your data will stay reliable.</p>
+
+      <h3>Atomicity</h3>
+      <p>This is the "all or nothing" rule. If you are transferring money from your savings account to your checking account, two things must happen: the money leaves savings, and the money enters checking. If the power goes out after the first step but before the second, the money vanishes. A DBMS ensures that if any part of the transaction fails, the whole thing is undone. It is as if the transfer never started.</p>
+
+      <h3>Consistency</h3>
+      <p>The database has rules, called constraints. A rule might say "a bank balance cannot be negative" or "every student must have a valid ID." Consistency means the database will never allow an operation that breaks these rules. If a transaction tries to create an illegal state, the DBMS will reject it.</p>
+
+      <h3>Isolation</h3>
+      <p>In the real world, thousands of people use a database at the same time. Isolation ensures that even if two people are editing the same record at the exact same millisecond, they don't trip over each other. To each user, it feels like they are the only ones using the system. The database handles the traffic jam behind the scenes.</p>
+
+      <h3>Durability</h3>
+      <p>Once the database tells you a change is saved, it is permanent. Even if the server crashes or the building loses power five seconds later, the data will still be there when the system reboots. The change is "durable" because it has been written to non-volatile storage.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 10 680 312" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The four ACID properties — atomicity, consistency, isolation, durability — shown as the guarantees that keep data trustworthy through crashes and concurrency." font-family="IBM Plex Mono, monospace">
+          <text x="170" y="30" text-anchor="middle" font-size="17" font-weight="800" fill="#1E2A25">ATOMICITY</text>
+          <text x="20" y="55" font-size="9" fill="#4A564F">LOADING</text>
+          <rect x="95" y="46" width="140" height="14" rx="3" fill="none" stroke="#1E2A25" stroke-width="1.3"/>
+          <rect x="95" y="46" width="140" height="14" rx="3" fill="#2F5D8A"/>
+          <text x="272" y="57" font-size="9" fill="#1E2A25">100%</text>
+          <text x="238" y="40" font-size="8" fill="#4A564F">SUCCESS</text>
+          <text x="20" y="82" font-size="9" fill="#4A564F">LOADING</text>
+          <rect x="95" y="73" width="140" height="14" rx="3" fill="none" stroke="#1E2A25" stroke-width="1.3"/>
+          <rect x="95" y="73" width="30" height="14" rx="3" fill="#A1402A"/>
+          <text x="272" y="84" font-size="9" fill="#1E2A25">0%</text>
+          <text x="20" y="100" font-size="8" fill="#4A564F">RESETTING</text>
+          <text x="215" y="100" font-size="8" fill="#4A564F">ROLLBACK</text>
+          <path d="M234,55 Q251,66 234,78" fill="none" stroke="#1E2A25" stroke-width="1.3" marker-end="url(#acarrow)"/>
+          <path d="M96,78 Q80,66 96,55" fill="none" stroke="#1E2A25" stroke-width="1.3" marker-end="url(#acarrow)"/>
+
+          <text x="515" y="30" text-anchor="middle" font-size="17" font-weight="800" fill="#1E2A25">CONSISTENCY</text>
+          <rect x="422" y="52" width="46" height="46" rx="4" fill="none" stroke="#A1402A" stroke-width="1.4" stroke-dasharray="3,3"/>
+          <polygon points="0,-19 16,-9.5 16,9.5 0,19 -16,9.5 -16,-9.5" transform="translate(445,75) rotate(16)" fill="#F6E4DE" stroke="#A1402A" stroke-width="1.4"/>
+          <text x="445" y="81" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">✕</text>
+          <text x="445" y="112" text-anchor="middle" font-size="8" fill="#4A564F">INVALID</text>
+          <path d="M565,55 L605,55 L605,95 L565,95 L565,81 Q557,75 565,69 Z" fill="#2F5D8A" stroke="#1E2A25" stroke-width="1.4"/>
+          <text x="581" y="81" text-anchor="middle" font-size="12" font-weight="700" fill="#3D6B4A">✓</text>
+          <text x="585" y="112" text-anchor="middle" font-size="8" fill="#4A564F">VALID</text>
+          <path d="M467,75 L556,75" stroke="#1E2A25" stroke-width="1.3" marker-end="url(#acarrow)"/>
+
+          <text x="170" y="182" text-anchor="middle" font-size="17" font-weight="800" fill="#1E2A25">ISOLATION</text>
+          <text x="110" y="207" text-anchor="middle" font-size="8" fill="#4A564F">PROCESS A</text>
+          <text x="230" y="207" text-anchor="middle" font-size="8" fill="#4A564F">PROCESS B</text>
+          <circle cx="110" cy="253" r="36" fill="none" stroke="#2F5D8A" stroke-width="1.6"/>
+          <circle cx="230" cy="253" r="36" fill="none" stroke="#2F5D8A" stroke-width="1.6"/>
+          <circle cx="110" cy="245" r="8" fill="#1E2A25"/><rect x="100" y="255" width="20" height="24" rx="4" fill="#1E2A25"/>
+          <circle cx="230" cy="245" r="8" fill="#1E2A25"/><rect x="220" y="255" width="20" height="24" rx="4" fill="#1E2A25"/>
+          <text x="110" y="302" text-anchor="middle" font-size="8" fill="#4A564F">ISOLATED</text>
+          <text x="110" y="312" text-anchor="middle" font-size="8" fill="#4A564F">ENVIRONMENT</text>
+          <text x="230" y="302" text-anchor="middle" font-size="8" fill="#4A564F">SEPARATE</text>
+
+          <text x="520" y="182" text-anchor="middle" font-size="17" font-weight="800" fill="#1E2A25">DURABILITY</text>
+          <g transform="translate(470,235) rotate(-6)">
+            <rect x="0" y="0" width="100" height="65" rx="6" fill="#8FC1F2" stroke="#1E2A25" stroke-width="1.4"/>
+            <text x="50" y="38" text-anchor="middle" font-size="10" font-weight="700" fill="#1E2A25">CARVED</text>
+            <text x="50" y="50" text-anchor="middle" font-size="10" font-weight="700" fill="#1E2A25">IN STONE</text>
+          </g>
+          <path d="M474,285 L455,310" stroke="#1E2A25" stroke-width="2"/>
+          <path d="M574,257 L593,274" stroke="#1E2A25" stroke-width="2"/>
+          <text x="590" y="240" font-size="8" fill="#4A564F">DATA PERSISTS</text>
+
+          <defs><marker id="acarrow" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#1E2A25"/></marker></defs>
+        </svg>
+        <figcaption>The ACID properties ensure that data remains reliable even during crashes or high-traffic usage.</figcaption>
+      </figure>
+    </section>
+
+    <section id="schema-instance">
+      <div class="kicker">Foundations</div>
+      <h2>Schema vs. Instance</h2>
+      <p>When you work with a DBMS, you have to separate the "shape" of the data from the "content" of the data. This is the difference between a schema and an instance.</p>
+      <p>The <strong>Schema</strong> is the blueprint. It defines what the data will look like, what the columns are named, and what type of information goes into them. For example, a schema for a student might look like this:</p>
+      <div class="schema-line">Student = { ID: Integer, Name: String, GPA: Float }</div>
+      <p>The schema rarely changes. You design it once and leave it alone for a long time.</p>
+      <p>The <strong>Instance</strong> is the actual data sitting in the database at a specific moment in time. If you have 500 students enrolled today, those 500 rows are the current instance. If five students graduate and ten new students join tomorrow, you have a new instance, but the schema remains exactly the same.</p>
+      <p class="small">Think of it like a house. The architectural drawings are the schema. The people and furniture inside are the instance. You can move the furniture every day, but changing the blueprints requires a major renovation.</p>
+    </section>
+
+    <section id="schema-instance-builder">
+      <div class="kicker">Foundations</div>
+      <h2>Schema &amp; Instance Builder</h2>
+      <p>Define a table's schema (structure), then add instance rows (data). Adding a row runs a real type check against your schema — the same integrity constraint a DBMS enforces.</p>
+
+      <div class="widget">
+        <div class="widget-title">Schema &amp; Instance Builder</div>
+        <div class="widget-sub">Define a table's schema (structure), then add instance rows (data). Explore the difference between shape and content.</div>
+        <div class="callout blue">📐 <strong>Schema vs. Instance</strong><br>A <strong>schema</strong> declares what columns exist and their types — the blueprint. An <strong>instance</strong> is the actual rows of data stored at a moment in time. Databases keep these distinct so the structure can be enforced consistently.</div>
+
+        <div class="sib-tabs">
+          <button class="sib-tab-btn active" data-tab="1">1 · Define Schema</button>
+          <button class="sib-tab-btn" data-tab="2">2 · Add Instance Rows</button>
+          <button class="sib-tab-btn" data-tab="3">3 · View Table</button>
+        </div>
+
+        <div class="sib-panel active" data-panel="1">
+          <div class="widget-label">Columns (Schema)</div>
+          <div id="sib-col-list"></div>
+          <button class="sib-add-col-btn" id="sib-add-col">+ Add column</button>
+          <div class="callout blue">💡 <strong>Tip</strong><br>Give each column a meaningful name (e.g. "Product Name", "Price") and pick a type. The type is an integrity constraint — the DBMS rejects data that doesn't match.</div>
+          <div class="sib-step-nav"><button class="btn" id="sib-next-1">Next: Add rows →</button></div>
+        </div>
+
+        <div class="sib-panel" data-panel="2">
+          <div class="widget-label">Add a Row</div>
+          <div class="sib-row-inputs" id="sib-row-inputs"></div>
+          <div class="sib-error" id="sib-row-error"></div>
+          <button class="btn" id="sib-add-row">+ Add row</button>
+          <div class="widget-label">Current Instance</div>
+          <div class="sib-rowlist" id="sib-rowlist"></div>
+          <div class="sib-step-nav">
+            <button class="btn secondary" id="sib-back-2">← Back to schema</button>
+            <button class="btn" id="sib-next-2">Next: View table →</button>
+          </div>
+        </div>
+
+        <div class="sib-panel" data-panel="3">
+          <div class="widget-label">Schema + Instance, Together</div>
+          <div id="sib-final-table"></div>
+          <p class="small">This is your <strong>schema</strong> (column names and types) plus your <strong>instance</strong> (this moment's rows). If you change the schema now — add a required column, say — you have to decide what happens to these existing rows. That's exactly the problem the "When Schema Change Breaks the Instance" worked example below walks through.</p>
+          <div class="sib-step-nav">
+            <button class="btn secondary" id="sib-back-3">← Back to add more rows</button>
+            <button class="btn secondary" id="sib-restart">↺ Start over</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+    <section id="worked-bank-transfer">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Anatomy of a Failed Bank Transfer</h2>
+      <p>The ACID properties are easiest to internalize by watching them fail. Consider two customers, Alice and Bob, and a single shared account. Alice starts a transfer of $200 from Account A to Account B. At the same instant, Bob queries the total balance across both accounts.</p>
+      <p>Without a DBMS, the sequence might play out like this:</p>
+      <table class="compare">
+        <thead><tr><th>Time</th><th>Event</th></tr></thead>
+        <tbody>
+          <tr><td>T = 0ms</td><td>Alice's transaction reads Account A ($500).</td></tr>
+          <tr><td>T = 1ms</td><td>Alice's transaction subtracts $200 and writes $300 back.</td></tr>
+          <tr><td>T = 2ms</td><td>Bob's query reads Account A ($300) and Account B ($100). It reports a total of $400.</td></tr>
+          <tr><td>T = 3ms</td><td>Alice's transaction reads Account B ($100), adds $200, and writes $300.</td></tr>
+        </tbody>
+      </table>
+      <p>The true total was always $600. Bob observed $400 — a value that never legally existed. This is an isolation failure specifically, but notice how it interacts with atomicity: had the system crashed at T = 2ms, the $200 would have vanished entirely.</p>
+      <p>A DBMS solves this in two related ways. Alice's whole transfer is bundled into a transaction — atomicity says the two writes either both happen or neither does, so a crash mid-transfer is not fatal. And isolation says Bob's query either sees the state before Alice's transaction started OR the state after it committed, never the in-between. Every one of the four ACID letters is doing concrete work here.</p>
+    </section>
+
+    <section id="worked-schema-change">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: When Schema Change Breaks the Instance</h2>
+      <p>Suppose a small ecommerce startup defines its Customer schema like this:</p>
+      <div class="schema-line">Customer(customer_id INT, name VARCHAR, email VARCHAR)</div>
+      <p>Six months later, the marketing team wants to record how each customer heard about the company. An engineer adds a column:</p>
+      <div class="schema-line">ALTER TABLE Customer ADD COLUMN source VARCHAR NOT NULL;</div>
+      <div class="cell" data-cell="schema_change">
+        <div class="cell-head"><span class="cell-title">schema_change.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+      <p>The migration fails on every existing row. Why? Because those rows already exist in the instance — they have no value for the new <code>source</code> column — and the schema is now forbidding NULL there. The schema change contradicts the current instance.</p>
+      <p>There are two clean fixes: (a) allow NULL for existing rows, or (b) provide a <code>DEFAULT 'unknown'</code> so the DBMS can back-fill. Both work because they leave the existing instance in a valid state under the new schema.</p>
+      <p class="small">The lesson: schema and instance are separate but coupled. Change the schema and you have implicitly asked the DBMS "is every row in the current instance still valid?" A well-designed migration answers "yes" up-front.</p>
+    </section>
+
+    <section id="worked-concurrent-writes">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Watching a Flat File Break Under Load</h2>
+      <p>Picture a small school running enrollment out of one CSV file. Two staff open it simultaneously in different spreadsheets.</p>
+      <ul>
+        <li>Staff A adds a new student on row 401 and saves.</li>
+        <li>Staff B, unaware, adds a different student, also on row 401, and saves 30 seconds later.</li>
+      </ul>
+      <p>The second save silently overwrites the first. The first student is now missing from the file, with no error and no log.</p>
+      <p>Every problem in this scene has a DBMS-shaped solution:</p>
+      <ul>
+        <li><strong>Concurrent writes destroying each other</strong> → the DBMS uses locks or MVCC (Multi-Version Concurrency Control) to serialize conflicting writes.</li>
+        <li><strong>No audit trail of what changed</strong> → the DBMS keeps a transaction log; every commit is recorded.</li>
+        <li><strong>Referential integrity</strong> (e.g. "you can't enroll a student who doesn't exist") → foreign-key constraints reject the write at the database level, not in application code that someone might forget to run.</li>
+      </ul>
+      <p>A CSV is just data. A DBMS is data plus guarantees. This whole course is about learning to reason with those guarantees.</p>
+    </section>
+
+    <section id="anomaly-diagnostic-tester">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Anomaly Diagnostic Tester</h2>
+      <p>Ten short scenarios. Given a symptom, pick which ACID property has been violated — or which file-based anomaly is happening.</p>
+      <div id="adt-quiz-mount"></div>
+    </section>
+
+    <section id="responsibility-mapper">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Who Owns Which Responsibility?</h2>
+      <p>"Why not just use files?" has a precise answer: because three different layers are each good at different things. Sort these ten responsibilities by the layer that actually owns them — and notice how much your application silently depends on the two below it.</p>
+
+      <div class="widget">
+        <div class="widget-title">Who Owns Which Responsibility?</div>
+        <div class="widget-sub">the DBMS · your application · the operating system</div>
+        <div class="widget-label">Responsibilities to place</div>
+        <div class="lm-bank" id="rmbank"></div>
+        <div class="lm-zones">
+          <div class="lm-zone z-a" data-zone="dbms"><div class="lm-zone-head">The DBMS guarantees it</div><div id="rmzone-dbms"></div></div>
+          <div class="lm-zone z-b" data-zone="app"><div class="lm-zone-head">Your application decides it</div><div id="rmzone-app"></div></div>
+          <div class="lm-zone z-c" data-zone="os"><div class="lm-zone-head">The operating system provides it</div><div id="rmzone-os"></div></div>
+        </div>
+        <div class="lm-hint">Tip: click a responsibility, then click a layer. Click a placed item to send it back.</div>
+        <div class="qstep-controls">
+          <button class="lm-check-btn" id="rmcheck">Check mapping</button>
+          <button class="lm-answer-btn" id="rmanswer" disabled>Show correct mapping</button>
+          <button class="lm-restart-btn" id="rmrestart">↺ Restart</button>
+          <span class="lm-score" id="rmscore"></span>
+        </div>
+        <div id="rmfeedback"></div>
+        <div id="rmkey"></div>
+      </div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. Match each scenario to the ACID property being violated</h4>
+        <p>(a) A power outage during a transfer leaves $500 debited from Account A but never credited to Account B.<br>
+        (b) Two ATMs read the same account balance simultaneously and both withdraw the full amount, resulting in a negative balance the bank never intended.<br>
+        (c) A committed order confirmation vanishes after the server reboots the next morning.<br>
+        (d) A trigger on <code>Order</code> inserts a row into <code>Invoice</code>, but the invoice row is missing the required <code>customer_id</code> field.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <ul>
+              <li><strong>(a) Atomicity</strong> — the transfer is not all-or-nothing.</li>
+              <li><strong>(b) Isolation</strong> — concurrent transactions saw each other's uncommitted state.</li>
+              <li><strong>(c) Durability</strong> — committed data must survive crashes.</li>
+              <li><strong>(d) Consistency</strong> — an integrity constraint (<code>customer_id NOT NULL</code>) is violated.</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. The redundant office number</h4>
+        <p>A flat CSV file stores one row per (Student, Course, Instructor) combination. If Professor Chen changes offices, in how many rows must the office number be updated? What is this called, and what does normalization do about it?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>The office number must be updated in every row where Chen teaches — potentially dozens. This is the <strong>update anomaly</strong>. Normalization (Week 7) fixes it by moving <code>Instructor</code> data into its own table with <code>office</code> as a column, so a single update reaches every reference automatically.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Why a DBMS for a library system?</h4>
+        <p>You're designing a small library system. Users can borrow books. Argue in two sentences why a DBMS is appropriate here, referencing at least two of the four ACID properties.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>Example: "Concurrent borrows of the last copy must be serialized so two users don't both succeed (isolation), and once a return is recorded the transaction must survive a server restart even if the user's browser closed immediately (durability)." Other valid pairs: atomicity + consistency (a borrow that fails halfway should not leave the book flagged as checked-out; a return should not violate any inventory constraint).</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p class="interview-lede">The concepts in this reading show up in almost every senior-engineer database interview — usually as a warm-up round that filters out anyone who has memorized SQL syntax without understanding the model underneath.</p>
+
+        <p><strong>"Walk me through ACID."</strong> The strong answer doesn't just recite four letters. It says: "Atomicity is the transaction boundary — a group of operations that commit together or roll back together. Consistency is the invariant boundary — the database enforces constraints so no committed state is illegal. Isolation is the concurrency boundary — concurrent transactions produce a result equivalent to some serial execution. Durability is the crash boundary — once the DBMS acknowledges a commit, the data survives power loss. Together they turn a shared file into a shared source of truth."</p>
+
+        <p><strong>"When would you NOT use a relational database?"</strong> Interviewers love this because it filters people who treat SQL as a hammer. Legitimate reasons to reach for something else: schemas that legitimately don't fit tables (deeply nested documents, graph queries where every hop is a join), massive write throughput with weak consistency needs, extreme geographic distribution where eventual consistency is acceptable, or specialized workloads (time-series, search, vector similarity). The nuance: even those cases usually keep a relational database somewhere as the source of truth.</p>
+
+        <p><strong>"What is an anomaly?"</strong> In a file-based interview question ("here's a flat schema, what's wrong with it?"), the expected answer names the three anomalies — update, insertion, deletion — and points at the specific columns that trigger each. This is exactly the vocabulary that normalization (Week 7) uses to justify its rules.</p>
+
+        <p><strong>Rule of thumb.</strong></p>
+        <ul class="criteria-list">
+          <li><span class="c-num">•</span>Every interview conversation about "why is a database better than a file?" is really about ACID and about the three anomalies.</li>
+          <li><span class="c-num">•</span>Being able to name them precisely, and give one concrete example of each, is the difference between a junior answer and a senior one.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="modern-landscape">
+      <div class="kicker">2026 Status</div>
+      <h2>The Modern Database Landscape</h2>
+      <p>The move from simple files to a DBMS is the move from manual labor to automation. In a file-based system, the programmer has to write code to prevent redundancy, code to handle simultaneous updates, and code to make sure data isn't lost during a crash. This makes applications fragile and difficult to maintain.</p>
+      <p>By using a DBMS, you outsource those problems to a system that is mathematically proven to handle them. You define your schema to eliminate redundancy and prevent anomalies. You rely on ACID properties to handle crashes and heavy traffic. This separation of concerns is what allows modern software to handle massive amounts of data without collapsing under its own weight. The database becomes the stable foundation, allowing you to focus on building the features that actually matter to your users.</p>
+      <p>The relational database was invented in 1970 by E.F. Codd. Its resilience is striking: the same core model that powered mainframe applications in the 1980s runs your bank, your airline, and the AI model you talked to this morning. What has changed is where that model runs and what it stores alongside relational tables.</p>
+      <p>By 2026, the DBMS landscape looks something like this:</p>
+      <ul>
+        <li><strong>Managed cloud databases</strong> (Amazon Aurora, Google Cloud SQL, Azure Database, Neon, Supabase, Turso) are the default deployment target. You rarely install a database on a server anymore; you provision one from a console and connect via a URL.</li>
+        <li><strong>Analytical databases</strong> (Snowflake, BigQuery, Databricks, DuckDB) sit alongside transactional ones. The same SQL you learn in this course runs on both — the difference is the storage engine underneath and the workload each is tuned for. DuckDB in particular has become the default local analytical engine and now runs inside notebooks, CLIs, and even the browser (via WebAssembly).</li>
+        <li><strong>Vector search</strong> has been folded into mainstream relational databases via extensions and native types: pgvector on PostgreSQL, sqlite-vec on SQLite, MySQL 9's native VECTOR type, and equivalents in SQL Server and Oracle. Embeddings from language models are stored right next to relational columns, and <code>ORDER BY embedding &lt;-&gt; query_vec</code> is now a normal query pattern for retrieval-augmented AI systems.</li>
+        <li><strong>AI-assisted SQL</strong> is everywhere. Every mainstream IDE and cloud console will write a query for you from a natural-language prompt. That makes the theory in this course more important, not less — because you now have to read and debug SQL you did not write, and know when the AI is wrong.</li>
+      </ul>
+      <p>None of this changes what a database is. The ACID guarantees, the schema/instance split, the anomalies that arise without a DBMS — all still apply, whether you deploy on a laptop or across five continents. This course teaches the mental model that survives every layer of tooling built on top.</p>
+    </section>
+
+        <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+<a class="pgnav-prev" href="index.html">← All playgrounds</a>
+        <a class="pgnav-pos" href="index.html">Playground 1 of 15</a>
+        <a class="pgnav-next" href="2_dbms_architecture_playground.html">2. DBMS Architecture →</a>
+      </nav>
+    </footer>
+  </main>
+</div>
+
+<script>
+function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ============ Anomaly Interactive widget ============ */
+(function () {
+  // -- tabs --
+  const tabBtns = document.querySelectorAll('.ai-tab-btn');
+  const panels = document.querySelectorAll('.ai-panel');
+  tabBtns.forEach(b => b.addEventListener('click', () => {
+    tabBtns.forEach(x => x.classList.toggle('active', x === b));
+    panels.forEach(p => p.classList.toggle('active', p.dataset.panel === b.dataset.tab));
+  }));
+
+  // -- Deletion tab --
+  const delRowsOriginal = [
+    { sid: 'S001', name: 'Alice', addr: '12 Elm St', cid: 'CS101', cname: 'Intro to Computer Science', credits: 3 },
+    { sid: 'S002', name: 'Bob', addr: '7 Oak Ave', cid: 'CS201', cname: 'Data Structures', credits: 3 },
+    { sid: 'S003', name: 'Carol', addr: '99 Pine Rd', cid: 'CS201', cname: 'Data Structures', credits: 3 },
+    { sid: 'S003', name: 'Carol', addr: '99 Pine Rd', cid: 'CS202', cname: 'Algorithms', credits: 4 },
+  ];
+  let delDeleted = false;
+  function renderDelTable() {
+    const tbody = document.getElementById('ai-del-tbody');
+    tbody.innerHTML = delRowsOriginal.map(r => {
+      const isAlice = r.sid === 'S001';
+      const cls = (delDeleted && isAlice) ? 'ai-row-deleted' : '';
+      return `<tr class="${cls}"><td>${r.sid}</td><td>${r.name}</td><td>${r.addr}</td><td>${r.cid}</td><td>${r.cname}</td><td>${r.credits}</td></tr>`;
+    }).join('');
+    const result = document.getElementById('ai-del-result');
+    if (delDeleted) {
+      result.className = 'ai-result show';
+      result.innerHTML = `<div class="callout rust"><strong>⚠ Deletion anomaly triggered.</strong> Alice was the <em>only</em> student enrolled in CS101. Deleting her enrollment row didn't just remove her — it silently erased the fact that CS101 ("Intro to Computer Science", 3 credits) exists at all. Nobody asked to delete the course, but the flat-file structure couldn't separate "Alice's enrollment" from "CS101's existence."</div>`;
+    } else {
+      result.className = 'ai-result';
+      result.innerHTML = '';
+    }
+  }
+  document.getElementById('ai-del-btn').addEventListener('click', () => { delDeleted = true; renderDelTable(); });
+  document.getElementById('ai-del-reset').addEventListener('click', () => { delDeleted = false; renderDelTable(); });
+  renderDelTable();
+
+  // -- Update tab --
+  const updRowsOriginal = [
+    { cid: 'CS301', cname: 'Databases', instr: 'Chen', office: 'Room 101' },
+    { cid: 'CS302', cname: 'Operating Systems', instr: 'Chen', office: 'Room 101' },
+    { cid: 'CS303', cname: 'Networks', instr: 'Chen', office: 'Room 101' },
+    { cid: 'CS304', cname: 'Compilers', instr: 'Chen', office: 'Room 101' },
+  ];
+  let updUpdated = false;
+  function renderUpdTable() {
+    const tbody = document.getElementById('ai-upd-tbody');
+    tbody.innerHTML = updRowsOriginal.map((r, i) => {
+      const missed = updUpdated && i === 3; // simulate the 4th row getting missed
+      const updated = updUpdated && i !== 3;
+      const office = updated ? 'Room 250' : r.office;
+      const cls = missed ? 'ai-row-flag' : '';
+      return `<tr class="${cls}"><td>${r.cid}</td><td>${r.cname}</td><td>${r.instr}</td><td>${office}</td></tr>`;
+    }).join('');
+    const result = document.getElementById('ai-upd-result');
+    if (updUpdated) {
+      result.className = 'ai-result show';
+      result.innerHTML = `<div class="callout rust"><strong>⚠ Update anomaly triggered.</strong> Three of Chen's four rows now say "Room 250" — the other still says "Room 101". There is no longer a single answer to "what is Professor Chen's office?" The redundant storage (the same fact copied into every section's row) is what made a partial update possible in the first place.</div>`;
+    } else {
+      result.className = 'ai-result';
+      result.innerHTML = '';
+    }
+  }
+  document.getElementById('ai-upd-btn').addEventListener('click', () => { updUpdated = true; renderUpdTable(); });
+  document.getElementById('ai-upd-reset').addEventListener('click', () => { updUpdated = false; renderUpdTable(); });
+  renderUpdTable();
+
+  // -- Insertion tab --
+  const insRowsOriginal = [
+    { sid: 'S001', cid: 'CS101', cname: 'Intro to Computer Science', credits: 3 },
+    { sid: 'S002', cid: 'CS201', cname: 'Data Structures', credits: 3 },
+    { sid: 'S003', cid: 'CS202', cname: 'Algorithms', credits: 4 },
+  ];
+  let insAttempted = false;
+  function renderInsTable() {
+    const tbody = document.getElementById('ai-ins-tbody');
+    tbody.innerHTML = insRowsOriginal.map(r => `<tr><td>${r.sid}</td><td>${r.cid}</td><td>${r.cname}</td><td>${r.credits}</td></tr>`).join('');
+    const result = document.getElementById('ai-ins-result');
+    if (insAttempted) {
+      result.className = 'ai-result show';
+      result.innerHTML = `<div class="callout rust"><strong>❌ Insert rejected.</strong> <code>student_id</code> is required (NOT NULL) on every row of this flat file, and no student is enrolled in CS8010 yet. The course cannot be recorded at all — you'd need to invent a placeholder student just to hold the row. This is the insertion anomaly: an unrelated missing fact blocks a fact you actually have.</div>`;
+    } else {
+      result.className = 'ai-result';
+      result.innerHTML = '';
+    }
+  }
+  document.getElementById('ai-ins-btn').addEventListener('click', () => { insAttempted = true; renderInsTable(); });
+  document.getElementById('ai-ins-reset').addEventListener('click', () => { insAttempted = false; renderInsTable(); });
+  renderInsTable();
+})();
+
+/* ============ Schema & Instance Builder widget ============ */
+(function () {
+  let columns = [
+    { name: 'Product Name', type: 'Text' },
+    { name: 'Price', type: 'Number' },
+  ];
+  let rows = [];
+
+  const tabBtns = document.querySelectorAll('.sib-tab-btn');
+  const panels = document.querySelectorAll('.sib-panel');
+  function showStep(n) {
+    tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === String(n)));
+    panels.forEach(p => p.classList.toggle('active', p.dataset.panel === String(n)));
+    if (String(n) === '2') renderRowInputs();
+    if (String(n) === '3') renderFinalTable();
+  }
+  tabBtns.forEach(b => b.addEventListener('click', () => showStep(b.dataset.tab)));
+
+  function renderColList() {
+    const el = document.getElementById('sib-col-list');
+    el.innerHTML = columns.map((c, i) => `
+      <div class="sib-col-row">
+        <input type="text" value="${escapeHtml(c.name)}" data-idx="${i}" class="sib-col-name">
+        <select data-idx="${i}" class="sib-col-type">
+          <option value="Text" ${c.type === 'Text' ? 'selected' : ''}>Text</option>
+          <option value="Number" ${c.type === 'Number' ? 'selected' : ''}>Number</option>
+          <option value="Date" ${c.type === 'Date' ? 'selected' : ''}>Date</option>
+          <option value="Boolean" ${c.type === 'Boolean' ? 'selected' : ''}>Boolean</option>
+        </select>
+        <button class="sib-col-remove" data-idx="${i}">✕</button>
+      </div>`).join('');
+    el.querySelectorAll('.sib-col-name').forEach(inp => inp.addEventListener('input', () => { columns[+inp.dataset.idx].name = inp.value; }));
+    el.querySelectorAll('.sib-col-type').forEach(sel => sel.addEventListener('change', () => { columns[+sel.dataset.idx].type = sel.value; }));
+    el.querySelectorAll('.sib-col-remove').forEach(btn => btn.addEventListener('click', () => {
+      columns.splice(+btn.dataset.idx, 1);
+      rows = []; // schema changed, instance no longer matches -- exactly the schema/instance coupling lesson
+      renderColList();
+    }));
+  }
+  document.getElementById('sib-add-col').addEventListener('click', () => {
+    columns.push({ name: 'New Column', type: 'Text' });
+    renderColList();
+  });
+
+  function validateValue(val, type) {
+    if (val.trim() === '') return 'This field cannot be empty.';
+    if (type === 'Number' && isNaN(Number(val))) return `"${val}" is not a valid Number.`;
+    if (type === 'Boolean' && !['true', 'false'].includes(val.trim().toLowerCase())) return `"${val}" is not a valid Boolean (use true/false).`;
+    return null;
+  }
+
+  function renderRowInputs() {
+    const el = document.getElementById('sib-row-inputs');
+    el.innerHTML = columns.map((c, i) => `<input type="text" placeholder="${escapeHtml(c.name)} (${c.type})" data-idx="${i}">`).join('');
+    document.getElementById('sib-row-error').classList.remove('show');
+    renderRowList();
+  }
+  function renderRowList() {
+    const el = document.getElementById('sib-rowlist');
+    if (rows.length === 0) { el.innerHTML = '<p class="small">No rows yet.</p>'; return; }
+    el.innerHTML = rows.map((r, i) => `<div class="sib-rowlist-item"><span>${r.map(v => escapeHtml(v)).join(' | ')}</span><button class="sib-col-remove" data-idx="${i}">✕</button></div>`).join('');
+    el.querySelectorAll('.sib-col-remove').forEach(btn => btn.addEventListener('click', () => { rows.splice(+btn.dataset.idx, 1); renderRowList(); }));
+  }
+  document.getElementById('sib-add-row').addEventListener('click', () => {
+    const inputs = [...document.querySelectorAll('#sib-row-inputs input')];
+    const values = inputs.map(inp => inp.value);
+    for (let i = 0; i < columns.length; i++) {
+      const err = validateValue(values[i] || '', columns[i].type);
+      if (err) {
+        const errEl = document.getElementById('sib-row-error');
+        errEl.textContent = `✕ Column "${columns[i].name}": ${err}`;
+        errEl.classList.add('show');
+        return;
+      }
+    }
+    document.getElementById('sib-row-error').classList.remove('show');
+    rows.push(values);
+    inputs.forEach(inp => inp.value = '');
+    renderRowList();
+  });
+
+  function renderFinalTable() {
+    const el = document.getElementById('sib-final-table');
+    if (columns.length === 0) { el.innerHTML = '<p class="small">No columns defined.</p>'; return; }
+    let html = '<table class="dbtable"><thead><tr>' + columns.map(c => `<th>${escapeHtml(c.name)} <span style="opacity:.6; font-weight:400;">(${c.type})</span></th>`).join('') + '</tr></thead><tbody>';
+    if (rows.length === 0) {
+      html += `<tr><td colspan="${columns.length}" style="text-align:center; opacity:.7;">(empty instance — schema defined, no rows yet)</td></tr>`;
+    } else {
+      rows.forEach(r => { html += '<tr>' + r.map(v => `<td>${escapeHtml(v)}</td>`).join('') + '</tr>'; });
+    }
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  document.getElementById('sib-next-1').addEventListener('click', () => showStep(2));
+  document.getElementById('sib-back-2').addEventListener('click', () => showStep(1));
+  document.getElementById('sib-next-2').addEventListener('click', () => showStep(3));
+  document.getElementById('sib-back-3').addEventListener('click', () => showStep(2));
+  document.getElementById('sib-restart').addEventListener('click', () => {
+    columns = [{ name: 'Product Name', type: 'Text' }, { name: 'Price', type: 'Number' }];
+    rows = [];
+    renderColList();
+    showStep(1);
+  });
+
+  renderColList();
+})();
+
+/* ============ Anomaly Diagnostic Tester quiz (adt prefix, mirrors act-/nfd- engine) ============ */
+const ADT_QUESTIONS = [
+  {
+    scenario: `A university stores this flat file: <code>Enrollment(student_name, student_email, course_id, course_title, grade)</code>. Alice takes 6 courses. She emails the registrar to update her contact email. The registrar updates 5 of the 6 rows and gets interrupted. What just happened?`,
+    options: [
+      { title: 'Insertion anomaly', hint: 'Cannot add data', correct: false },
+      { title: 'Update anomaly', hint: 'Partial updates cause inconsistency', correct: true },
+      { title: 'Deletion anomaly', hint: 'Deleting loses unrelated data', correct: false },
+      { title: 'No anomaly', hint: 'This is fine', correct: false },
+    ],
+    feedback: "✓ Correct. Alice's email is redundantly copied into all 6 of her enrollment rows. Updating only 5 leaves the 6th with stale data — the classic update anomaly caused by storing the same fact multiple times.",
+  },
+  {
+    scenario: `The registrar wants to add a brand-new course, <code>CS8010: Quantum Algorithms</code>, that hasn't been offered yet and has no enrolled students. The schema is <code>Enrollment(student_id, course_id, course_title, grade)</code> with primary key <code>(student_id, course_id)</code>. What happens?`,
+    options: [
+      { title: 'Insertion anomaly', hint: 'Cannot record the course', correct: true },
+      { title: 'Update anomaly', hint: 'Partial updates cause inconsistency', correct: false },
+      { title: 'Deletion anomaly', hint: 'Deleting loses unrelated data', correct: false },
+      { title: 'No anomaly', hint: 'This is fine', correct: false },
+    ],
+    feedback: "✓ Correct. student_id is part of the primary key, so it can't be NULL — but no student exists for CS8010 yet. The course's existence can't be recorded without an unrelated fact (a student) that doesn't exist yet. That's the insertion anomaly.",
+  },
+  {
+    scenario: `A hospital stores <code>Treatment(patient_id, patient_name, drug_name, dosage_guidelines)</code>. Only one patient — Alice — is currently on the drug <code>Rifampin</code>. Alice recovers and her row is deleted for privacy. What is lost?`,
+    options: [
+      { title: 'Insertion anomaly', hint: 'Cannot add data', correct: false },
+      { title: 'Update anomaly', hint: 'Partial updates cause inconsistency', correct: false },
+      { title: 'Deletion anomaly', hint: 'Deleting loses unrelated data', correct: true },
+      { title: 'No anomaly', hint: 'This is fine', correct: false },
+    ],
+    feedback: "✓ Correct. Deleting Alice's row also erases the dosage_guidelines for Rifampin — a fact about the drug, not about Alice — because nothing else in the flat file stores that fact independently. Deleting one thing you wanted to remove destroyed something else you wanted to keep.",
+  },
+  {
+    scenario: `Two concurrent transfers both read the same account balance of $500 before either writes. One writes $400 (subtract $100), the other writes $550 (add $50). The correct final balance should be $450. Which ACID property was violated?`,
+    options: [
+      { title: 'Atomicity (A)', hint: 'All-or-nothing', correct: false },
+      { title: 'Consistency (C)', hint: 'Rules must hold', correct: false },
+      { title: 'Isolation (I)', hint: 'Concurrent transactions', correct: true },
+      { title: 'Durability (D)', hint: 'Survives crashes', correct: false },
+    ],
+    feedback: '✓ Correct. Both transactions read the same starting value and overwrote each other\'s work — a classic lost-update caused by two transactions not being properly isolated from each other\'s in-flight state.',
+  },
+  {
+    scenario: `A DBMS accepts an <code>UPDATE</code> that sets a student's GPA to <code>5.7</code> on a 4.0 scale, despite a <code>CHECK (gpa &lt;= 4.0)</code> constraint being declared. Which ACID property failed?`,
+    options: [
+      { title: 'Atomicity (A)', hint: 'All-or-nothing', correct: false },
+      { title: 'Consistency (C)', hint: 'Rules must hold', correct: true },
+      { title: 'Isolation (I)', hint: 'Concurrent transactions', correct: false },
+      { title: 'Durability (D)', hint: 'Survives crashes', correct: false },
+    ],
+    feedback: '✓ Correct. A declared constraint was violated and the DBMS let it through anyway — exactly the scenario consistency exists to prevent. A correctly functioning DBMS would reject this UPDATE outright.',
+  },
+  {
+    scenario: `The database returned <code>COMMIT SUCCESS</code> at 3:15 PM. At 3:15:00.200 PM the server crashed. After restart, the committed row is missing. Which ACID property failed?`,
+    options: [
+      { title: 'Atomicity (A)', hint: 'All-or-nothing', correct: false },
+      { title: 'Consistency (C)', hint: 'Rules must hold', correct: false },
+      { title: 'Isolation (I)', hint: 'Concurrent transactions', correct: false },
+      { title: 'Durability (D)', hint: 'Survives crashes', correct: true },
+    ],
+    feedback: '✓ Correct. Once a DBMS reports a commit as successful, that data must survive any subsequent crash. Losing a row after an acknowledged commit is a durability failure — the write was never actually made permanent.',
+  },
+  {
+    scenario: `A transfer is implemented as two statements: subtract $100 from Alice, then add $100 to Bob. The engine runs the debit, then the power fails. After restart, Alice is $100 poorer and Bob is unchanged. Which ACID property was violated?`,
+    options: [
+      { title: 'Atomicity (A)', hint: 'All-or-nothing', correct: true },
+      { title: 'Consistency (C)', hint: 'Rules must hold', correct: false },
+      { title: 'Isolation (I)', hint: 'Concurrent transactions', correct: false },
+      { title: 'Durability (D)', hint: 'Survives crashes', correct: false },
+    ],
+    feedback: '✓ Correct. The transfer is one logical unit: either both statements take effect or neither does. Applying the debit without the credit is the textbook atomicity failure — the transaction must roll back as a whole, restoring Alice\'s balance.',
+  },
+  {
+    scenario: `An application stores a customer's address in <code>Orders</code>, <code>Invoices</code>, and <code>Shipping</code>. The customer moves and a developer updates two of the three tables. What is the underlying problem?`,
+    options: [
+      { title: 'The same fact is stored in more than one place', hint: 'Redundancy', correct: true },
+      { title: 'The database is missing an index', hint: 'A performance issue', correct: false },
+      { title: 'The tables need more columns', hint: 'A design change', correct: false },
+      { title: 'The query uses the wrong JOIN', hint: 'A query bug', correct: false },
+    ],
+    feedback: "✓ Correct. This is redundancy: one fact, three copies. No amount of careful coding fixes it reliably — the fix is structural: store the address once and let the other tables reference it.",
+  },
+  {
+    scenario: `A DBA runs <code>ALTER TABLE Student ADD COLUMN pronouns TEXT;</code>. No rows are inserted or changed. What actually changed?`,
+    options: [
+      { title: 'The schema, not the instance', hint: 'Structure changed; rows did not', correct: true },
+      { title: 'The instance, not the schema', hint: 'Every row changed', correct: false },
+      { title: 'Both the schema and every row', hint: 'Structure and data', correct: false },
+      { title: 'Neither — ALTER waits until you insert', hint: 'A no-op for now', correct: false },
+    ],
+    feedback: '✓ Correct. <code>ALTER</code> changes the <em>schema</em> — the description of what a Student row may contain. The <em>instance</em> (the stored rows) is untouched until data is written. Keeping these two apart is the first idea of the relational model.',
+  },
+  {
+    scenario: `An application enforces every business rule in code: unique emails, non-negative balances, valid foreign keys. What is the risk of enforcing these rules only in the application?`,
+    options: [
+      { title: 'Another program or a direct query can bypass them entirely', hint: 'Rules outside the DBMS are advisory', correct: true },
+      { title: 'The checks run too slowly', hint: 'A performance concern', correct: false },
+      { title: 'The database cannot store the data', hint: 'A storage limit', correct: false },
+      { title: 'Indexes stop working', hint: 'A physical concern', correct: false },
+    ],
+    feedback: '✓ Correct. Application-only rules are advisory: a bug, a migration script, or a second service can write around them. A DBMS enforces an invariant at the one layer every writer must pass through — which is exactly why the constraint belongs in the schema.',
+  },
+];
+
+let adtQuizState = { qi: 0, selected: null, checked: false, results: [] };
+
+function adtDotsHtml() {
+  let html = '';
+  for (let i = 0; i < ADT_QUESTIONS.length; i++) {
+    let cls = 'dot';
+    if (i === adtQuizState.qi) cls += ' current';
+    else if (adtQuizState.results[i] === true) cls += ' correct';
+    else if (adtQuizState.results[i] === false) cls += ' incorrect';
+    html += `<span class="${cls}"></span>`;
+  }
+  return html;
+}
+function adtScoreVal() { return adtQuizState.results.filter(r => r === true).length; }
+function adtQuestionHtml() {
+  const q = ADT_QUESTIONS[adtQuizState.qi];
+  const pct = (adtQuizState.qi / ADT_QUESTIONS.length) * 100;
+  const optsHtml = q.options.map((o, i) => {
+    let cls = 'adt-option-card';
+    if (adtQuizState.checked) {
+      cls += ' disabled';
+      if (o.correct) cls += ' correct';
+      else if (i === adtQuizState.selected) cls += ' incorrect';
+    } else if (i === adtQuizState.selected) cls += ' selected';
+    return `<div class="${cls}" data-idx="${i}">
+      <div class="adt-option-title">${escapeHtml(o.title)}</div>
+      ${o.hint ? `<div class="adt-option-hint">${escapeHtml(o.hint)}</div>` : ''}
+    </div>`;
+  }).join('');
+  return `
+    <div class="adt-quiz-head">
+      <div><span class="adt-dots-label">Scenario</span><span class="adt-dots">${adtDotsHtml()}</span></div>
+      <div class="adt-score">Score: <b>${adtScoreVal()} / ${ADT_QUESTIONS.length}</b></div>
+    </div>
+    <div class="adt-progressbar"><div class="adt-progressbar-fill" style="width:${pct}%"></div></div>
+    <div class="adt-scenario-card">
+      <div class="adt-scenario-label">Scenario</div>
+      <div class="adt-scenario-text">${q.scenario}</div>
+      <div class="adt-pick-label">Pick the best answer</div>
+      <div class="adt-options-grid" id="adt-options-grid">${optsHtml}</div>
+      <button class="adt-check-btn" id="adt-check-btn" ${adtQuizState.selected === null ? 'disabled' : ''}>Check answer</button>
+      ${adtQuizState.checked ? `<div class="adt-feedback ${q.options[adtQuizState.selected] && q.options[adtQuizState.selected].correct ? 'correct' : 'incorrect'}">${q.feedback}</div><button class="btn adt-next-btn" id="adt-next-btn">${adtQuizState.qi === ADT_QUESTIONS.length - 1 ? 'See score →' : 'Next →'}</button>` : ''}
+    </div>
+  `;
+}
+function adtDoneHtml() {
+  const score = adtScoreVal();
+  return `<div class="adt-quiz-done">
+    <div class="big-score">${score} / ${ADT_QUESTIONS.length}</div>
+    <p>${score === ADT_QUESTIONS.length ? 'Perfect score.' : 'Review the ones you missed above, then try again.'}</p>
+    <button class="btn secondary adt-restart-btn" id="adt-restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+function adtRenderQuiz() {
+  const mount = document.getElementById('adt-quiz-mount');
+  if (adtQuizState.qi >= ADT_QUESTIONS.length) {
+    mount.innerHTML = `<div class="adt-quiz">${adtDoneHtml()}</div>`;
+    document.getElementById('adt-restart-btn').addEventListener('click', () => {
+      adtQuizState = { qi: 0, selected: null, checked: false, results: [] };
+      adtRenderQuiz();
+    });
+    return;
+  }
+  mount.innerHTML = `<div class="adt-quiz">${adtQuestionHtml()}</div>`;
+  document.querySelectorAll('.adt-option-card').forEach(card => {
+    card.addEventListener('click', () => {
+      if (adtQuizState.checked) return;
+      adtQuizState.selected = +card.dataset.idx;
+      adtRenderQuiz();
+    });
+  });
+  const checkBtn = document.getElementById('adt-check-btn');
+  if (checkBtn) checkBtn.addEventListener('click', () => {
+    if (adtQuizState.selected === null) return;
+    adtQuizState.checked = true;
+    adtQuizState.results[adtQuizState.qi] = !!ADT_QUESTIONS[adtQuizState.qi].options[adtQuizState.selected].correct;
+    adtRenderQuiz();
+  });
+  const nextBtn = document.getElementById('adt-next-btn');
+  if (nextBtn) nextBtn.addEventListener('click', () => {
+    adtQuizState.qi++;
+    adtQuizState.selected = null;
+    adtQuizState.checked = false;
+    adtRenderQuiz();
+  });
+}
+document.addEventListener('DOMContentLoaded', adtRenderQuiz);
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ===== Canonical runnable-cell engine (shared by every playground) ===== */
+const CELLS = { schema_change: {
+    setup: `CREATE TABLE Customer (customer_id INT PRIMARY KEY, name TEXT, email TEXT);
+INSERT INTO Customer VALUES (1, 'Aiko Tanaka', 'aiko@uni.edu');`,
+    starter: `-- Existing rows already exist, so the schema change below contradicts the instance:
+ALTER TABLE Customer ADD COLUMN source TEXT NOT NULL;
+
+-- The two clean fixes. Comment out the failing line, uncomment one fix, then Run:
+-- ALTER TABLE Customer ADD COLUMN source TEXT;                     -- (a) allow NULL
+-- ALTER TABLE Customer ADD COLUMN source TEXT DEFAULT 'unknown';   -- (b) back-fill` },
+  flat_vs_relational: {
+    setup: ``,
+    starter: `-- One fact, stored three times. A rushed update reaches only two of the rows.
+CREATE TABLE FlatCourses (course_id TEXT, course_name TEXT, instructor TEXT, office TEXT);
+
+INSERT INTO FlatCourses VALUES
+  ('CS101','Databases','Chen','Room 410'),
+  ('CS102','Algorithms','Chen','Room 410'),
+  ('CS103','Networks','Chen','Room 410');
+
+-- Chen moves to Room 512; the update only reaches CS101 and CS102.
+UPDATE FlatCourses SET office = 'Room 512' WHERE course_id IN ('CS101','CS102');
+
+SELECT * FROM FlatCourses;
+-- Chen now "has" two offices. The same fact exists three times, and they disagree.
+
+-- Now put the office in exactly one row, and point at it.
+CREATE TABLE Instructors (instructor TEXT PRIMARY KEY, office TEXT);
+CREATE TABLE Courses (
+  course_id   TEXT PRIMARY KEY,
+  course_name TEXT,
+  instructor  TEXT REFERENCES Instructors(instructor)
+);
+
+INSERT INTO Instructors VALUES ('Chen','Room 410');
+INSERT INTO Courses VALUES
+  ('CS101','Databases','Chen'),
+  ('CS102','Algorithms','Chen'),
+  ('CS103','Networks','Chen');
+
+UPDATE Instructors SET office = 'Room 512' WHERE instructor = 'Chen';
+
+SELECT c.course_id, c.course_name, c.instructor, i.office
+FROM Courses c JOIN Instructors i ON i.instructor = c.instructor;
+-- One update, and all three rows agree. That's the whole argument for a DBMS.`
+  }
+};
+let SQL = null;
+async function pgModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+function pgEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pgTable(cols, rows){
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of cols) html += `<th>${pgEsc(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const r of rows){ html += '<tr>'; for (const v of r) html += `<td>${v === null ? '<em>NULL</em>' : pgEsc(v)}</td>`; html += '</tr>'; }
+  return html + '</tbody></table>';
+}
+function pgHint(m){
+  m = String(m).toLowerCase();
+  if (m.includes('cannot add a not null column')) return 'SQLite refuses to add a NOT NULL column with no default when rows already exist — the schema change contradicts the current instance.';
+  if (m.includes('not null constraint failed')) return 'A required column was left empty: the row is invalid under the new schema.';
+  if (m.includes('duplicate column name')) return 'That column already exists — Reset first, or edit to add a different one.';
+  return null;
+}
+async function pgRun(setup, main, out){
+  out.innerHTML = ''; out.classList.remove('err'); out.classList.add('show');
+  try{
+    const M = await pgModule();
+    const db = new M.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setup && setup.trim()) db.run(setup);
+    let html = '', had = false;
+    for (const stmt of db.iterateStatements(main)){
+      const cols = stmt.getColumnNames(); const rows = [];
+      while (stmt.step()) rows.push(stmt.get());
+      if (cols.length){ html += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length === 1 ? '' : 's'}</div>` + pgTable(cols, rows); had = true; }
+    }
+    if (!had) html = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    out.innerHTML = html; db.close();
+  } catch(e){
+    const h = pgHint(e.message);
+    out.innerHTML = `<div style="color:#F0A38A;">✖ ${pgEsc(e.message)}${h ? `<br><span style="opacity:.85">${pgEsc(h)}</span>` : ''}</div>`;
+    out.classList.add('err');
+  }
+}
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+function pgWire(cellEl){
+  const spec = CELLS[cellEl.getAttribute('data-cell')]; if (!spec) return;
+  const ta = cellEl.querySelector('textarea');
+  const out = cellEl.querySelector('.cell-output');
+  const run = cellEl.querySelector('.run-btn');
+  const reset = cellEl.querySelector('.reset-btn');
+  ta.value = spec.starter; pgGrow(ta);
+  ta.addEventListener('input', () => pgGrow(ta));
+  ta.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){ e.preventDefault(); pgRun(spec.setup, ta.value, out); } });
+  run.addEventListener('click', () => pgRun(spec.setup, ta.value, out));
+  reset.addEventListener('click', () => { ta.value = spec.starter; pgGrow(ta); out.classList.remove('show', 'err'); out.innerHTML = ''; });
+}
+function pgInit(){ document.querySelectorAll('.cell[data-cell]').forEach(pgWire); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pgInit); else pgInit();
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: Who Owns Which Responsibility? ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const ZONES = ['dbms', 'app', 'os'];
+  const ITEMS = [
+    { id: 'd1', text: 'Keep a foreign key pointing at a real row', zone: 'dbms' },
+    { id: 'd2', text: 'Stop two transfers from double-spending', zone: 'dbms' },
+    { id: 'd3', text: 'Recover a consistent state after a power cut', zone: 'dbms' },
+    { id: 'd4', text: 'Choose which index a query should use', zone: 'dbms' },
+    { id: 'a1', text: 'Decide whether this customer gets a discount', zone: 'app' },
+    { id: 'a2', text: 'Show an “email is invalid” message in the form', zone: 'app' },
+    { id: 'a3', text: 'Send a confirmation email after signup', zone: 'app' },
+    { id: 'o1', text: 'Allocate disk blocks as a file grows', zone: 'os' },
+    { id: 'o2', text: 'Schedule which process gets the CPU next', zone: 'os' },
+    { id: 'o3', text: 'Move a page to swap when RAM runs low', zone: 'os' },
+  ];
+  let placed = {}, selected = null, checked = false;
+  const bank = byId('rmbank');
+  if (!bank) return;
+  function keyHtml(){
+    return '<div class="lm-key"><div class="lm-key-head">Correct mapping</div>' +
+      ITEMS.map(it => {
+        const ok = placed[it.id] === it.zone;
+        const h = document.querySelector('.lm-zone[data-zone="' + it.zone + '"] .lm-zone-head');
+        const name = h ? h.textContent.split('·')[0].trim() : it.zone;
+        return '<div class="lm-key-row ' + (ok ? 'ok' : 'bad') + '"><span class="lm-key-item">' + (ok ? '✓' : '✗') + ' ' + esc(it.text) + '</span><span class="lm-key-zone">' + esc(name) + '</span></div>';
+      }).join('') + '</div>';
+  }
+  function render(){
+    const rest = ITEMS.filter(it => !placed[it.id]);
+    bank.innerHTML = rest.length ? rest.map(it =>
+      `<div class="lm-chip${selected === it.id ? ' selected' : ''}" data-id="${it.id}">${esc(it.text)}</div>`).join('')
+      : `<span class="lm-hint" style="margin:0;">${checked ? 'All responsibilities placed and checked.' : 'All responsibilities placed — press “Check mapping”.'}</span>`;
+    bank.querySelectorAll('.lm-chip').forEach(chip => chip.addEventListener('click', () => {
+      if (checked) return;
+      selected = selected === chip.dataset.id ? null : chip.dataset.id;
+      render();
+    }));
+    ZONES.forEach(z => {
+      byId('rmzone-' + z).innerHTML = ITEMS.filter(it => placed[it.id] === z).map(it => {
+        let cls = 'lm-item';
+        if (checked) cls += it.zone === z ? ' correct' : ' incorrect';
+        return `<div class="${cls}" data-id="${it.id}">${esc(it.text)}</div>`;
+      }).join('');
+      byId('rmzone-' + z).querySelectorAll('.lm-item').forEach(el => el.addEventListener('click', () => {
+        if (checked) return;
+        delete placed[el.dataset.id]; selected = null; render();
+      }));
+    });
+    document.querySelectorAll('.lm-zone').forEach(z => z.classList.toggle('armed', !!selected));
+    byId('rmcheck').disabled = Object.keys(placed).length < ITEMS.length;
+    byId('rmanswer').disabled = !checked;
+    if (!checked) byId('rmscore').textContent = `${Object.keys(placed).length} of ${ITEMS.length} placed`;
+  }
+  document.querySelectorAll('.lm-zone').forEach(z => z.addEventListener('click', () => {
+    if (checked || !selected) return;
+    placed[selected] = z.dataset.zone; selected = null; render();
+  }));
+  byId('rmcheck').addEventListener('click', () => {
+    checked = true;
+    const wrong = ITEMS.filter(it => placed[it.id] !== it.zone);
+    const score = ITEMS.length - wrong.length;
+    byId('rmfeedback').innerHTML = wrong.length === 0
+      ? `<div class="lm-feedback correct">✓ ${score} / ${ITEMS.length}. That is the whole argument for a DBMS in one board: the operating system owns <em>resources</em>, the DBMS owns <em>correctness of stored data</em>, and your application owns <em>policy</em>. Only the middle layer can promise that a fact is still true after a crash or a race.</div>`
+      : `<div class="lm-feedback incorrect">✗ ${score} / ${ITEMS.length}. The red ones are misplaced — click “Restart”. Ask: is this about <em>correctness of stored data</em> (DBMS), <em>a decision only your product knows</em> (application), or <em>a machine resource</em> (OS)?</div>`;
+    render();
+    byId('rmscore').textContent = `${score} / ${ITEMS.length} correct`;
+  });
+  byId('rmanswer').addEventListener('click', () => { byId('rmkey').innerHTML = keyHtml(); });
+  byId('rmrestart').addEventListener('click', () => {
+    placed = {}; selected = null; checked = false;
+    byId('rmfeedback').innerHTML = ''; byId('rmkey').innerHTML = ''; render();
+  });
+  render();
+})();
+</script>
+
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

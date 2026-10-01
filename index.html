@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · Database Playgrounds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--paper); color:var(--ink); font-family:"Source Serif 4", Georgia, serif; font-size:17px; line-height:1.6;}
+a{color:var(--blue);}
+h1,h2,h3{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+code,.mono{font-family:"IBM Plex Mono", monospace;}
+.layout{display:flex; min-height:100vh;}
+.sidebar{width:250px; flex-shrink:0; background:var(--paper-raised); border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;}
+.sidebar .course{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft); border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;}
+.sidebar nav a{display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft); text-decoration:none; margin-bottom:2px;}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:920px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:36px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:700px;}
+.card-grid{display:grid; grid-template-columns:1fr; gap:12px; margin-top:8px;}
+.pg-card{display:flex; align-items:center; gap:16px; text-decoration:none; color:var(--ink); background:var(--paper-raised); border:1px solid var(--rule); border-radius:10px; padding:14px 18px; transition:border-color .15s ease, transform .1s ease;}
+.pg-card:hover{border-color:var(--blue); transform:translateX(2px);}
+.pg-num{font-family:"IBM Plex Mono", monospace; font-size:20px; font-weight:700; color:var(--blue); min-width:38px;}
+.pg-body{flex:1; min-width:0;}
+.pg-title{font-weight:700; font-size:1.04em; margin-bottom:2px;}
+.pg-desc{font-size:.9em; color:var(--ink-soft);}
+.tag{font-family:"IBM Plex Mono", monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; border:1px solid; border-radius:20px; padding:3px 10px; white-space:nowrap; align-self:flex-start;}
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+    <nav>
+      <div class="grp">Foundations</div>
+      <a href="1_why_databases_playground.html">01 · Why Databases? From Files to DBMS</a>
+      <a href="2_dbms_architecture_playground.html">02 · DBMS Architecture and Data Independence</a>
+      <div class="grp">SQL</div>
+      <a href="3_sql_quickstart_playground.html">03 · SQL Quickstart</a>
+      <a href="8_constraint_violation_predictor_playground.html">08 · DDL Constraints</a>
+      <a href="9_null_trap_detector_playground.html">09 · Single-Table SELECT</a>
+      <a href="10_join_pattern_selector_playground.html">10 · Joins and Subqueries</a>
+      <a href="11_aggregation_playground.html">11 · Aggregation, GROUP BY, and HAVING</a>
+      <a href="12_cte_recursive_playground.html">12 · CTEs and Recursive Queries</a>
+      <a href="13_window_functions_and_views_playground.html">13 · Window Functions and Views</a>
+      <div class="grp">Design</div>
+      <a href="4_er_modeling_playground.html">04 · ER Modeling</a>
+      <a href="5_eer_inheritance_aggregation_playground.html">05 · EER: Inheritance &amp; Aggregation</a>
+      <a href="6_relational_mapping_playground.html">06 · Relational Mapping</a>
+      <div class="grp">Theory</div>
+      <a href="7_relational_algebra_playground.html">07 · Relational Algebra</a>
+      <a href="14_fd_keys_playground.html">14 · Functional Dependencies and Keys</a>
+      <a href="15_normal_forms_playground.html">15 · Normal Forms and Decomposition</a>
+    </nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>Database Playgrounds</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">Fifteen interactive playgrounds that build from foundations to formal theory. Each one pairs a short reading with worked examples, a self-check quiz, and practice problems &mdash; and every SQL example runs for real in your browser, so you can edit it and see what happens.</p>
+    </header>
+
+    <section>
+      <div class="kicker">Start Here</div>
+      <h2>The Sequence</h2>
+      <p class="small">Work through them in order, or jump to the topic you need. Every page links to the next one at the bottom.</p>
+      <div class="card-grid">
+      <a class="pg-card" href="1_why_databases_playground.html">
+        <div class="pg-num">01</div>
+        <div class="pg-body">
+          <div class="pg-title">Why Databases? From Files to DBMS</div>
+          <div class="pg-desc">Redundancy, the three anomalies, ACID, and the schema/instance split.</div>
+        </div>
+        <div class="tag" style="border-color:var(--blue); color:var(--blue)">Foundations</div>
+      </a>
+      <a class="pg-card" href="2_dbms_architecture_playground.html">
+        <div class="pg-num">02</div>
+        <div class="pg-body">
+          <div class="pg-title">DBMS Architecture and Data Independence</div>
+          <div class="pg-desc">The three-schema model, logical vs. physical independence, and the engine room.</div>
+        </div>
+        <div class="tag" style="border-color:var(--blue); color:var(--blue)">Foundations</div>
+      </a>
+      <a class="pg-card" href="3_sql_quickstart_playground.html">
+        <div class="pg-num">03</div>
+        <div class="pg-body">
+          <div class="pg-title">SQL Quickstart</div>
+          <div class="pg-desc">DDL, DML, joins, and aggregation — one runnable end-to-end tour.</div>
+        </div>
+        <div class="tag" style="border-color:var(--green); color:var(--green)">SQL</div>
+      </a>
+      <a class="pg-card" href="4_er_modeling_playground.html">
+        <div class="pg-num">04</div>
+        <div class="pg-body">
+          <div class="pg-title">ER Modeling</div>
+          <div class="pg-desc">Entities, attributes, relationships, cardinality, and Chen vs. crow's-foot.</div>
+        </div>
+        <div class="tag" style="border-color:var(--amber); color:var(--amber)">Design</div>
+      </a>
+      <a class="pg-card" href="5_eer_inheritance_aggregation_playground.html">
+        <div class="pg-num">05</div>
+        <div class="pg-body">
+          <div class="pg-title">EER: Inheritance &amp; Aggregation</div>
+          <div class="pg-desc">Specialization, disjoint vs. overlapping, completeness, mapping strategies.</div>
+        </div>
+        <div class="tag" style="border-color:var(--amber); color:var(--amber)">Design</div>
+      </a>
+      <a class="pg-card" href="6_relational_mapping_playground.html">
+        <div class="pg-num">06</div>
+        <div class="pg-body">
+          <div class="pg-title">Relational Mapping</div>
+          <div class="pg-desc">The seven-step ER-to-relational algorithm, executed live.</div>
+        </div>
+        <div class="tag" style="border-color:var(--amber); color:var(--amber)">Design</div>
+      </a>
+      <a class="pg-card" href="7_relational_algebra_playground.html">
+        <div class="pg-num">07</div>
+        <div class="pg-body">
+          <div class="pg-title">Relational Algebra</div>
+          <div class="pg-desc">Selection, projection, joins, set operations, division, and rename.</div>
+        </div>
+        <div class="tag" style="border-color:var(--rust); color:var(--rust)">Theory</div>
+      </a>
+      <a class="pg-card" href="8_constraint_violation_predictor_playground.html">
+        <div class="pg-num">08</div>
+        <div class="pg-body">
+          <div class="pg-title">DDL Constraints</div>
+          <div class="pg-desc">Keys, NOT NULL/UNIQUE, CHECK, foreign keys, and referential actions.</div>
+        </div>
+        <div class="tag" style="border-color:var(--green); color:var(--green)">SQL</div>
+      </a>
+      <a class="pg-card" href="9_null_trap_detector_playground.html">
+        <div class="pg-num">09</div>
+        <div class="pg-body">
+          <div class="pg-title">Single-Table SELECT</div>
+          <div class="pg-desc">Execution order, three-valued logic, LIKE/BETWEEN/IN, sorting and paging.</div>
+        </div>
+        <div class="tag" style="border-color:var(--green); color:var(--green)">SQL</div>
+      </a>
+      <a class="pg-card" href="10_join_pattern_selector_playground.html">
+        <div class="pg-num">10</div>
+        <div class="pg-body">
+          <div class="pg-title">Joins and Subqueries</div>
+          <div class="pg-desc">Join patterns, semi/anti-joins, and the NOT IN / NULL trap.</div>
+        </div>
+        <div class="tag" style="border-color:var(--green); color:var(--green)">SQL</div>
+      </a>
+      <a class="pg-card" href="11_aggregation_playground.html">
+        <div class="pg-num">11</div>
+        <div class="pg-body">
+          <div class="pg-title">Aggregation, GROUP BY, and HAVING</div>
+          <div class="pg-desc">COUNT/SUM/AVG, bucket logic, WHERE vs. HAVING, and cohort retention.</div>
+        </div>
+        <div class="tag" style="border-color:var(--green); color:var(--green)">SQL</div>
+      </a>
+      <a class="pg-card" href="12_cte_recursive_playground.html">
+        <div class="pg-num">12</div>
+        <div class="pg-body">
+          <div class="pg-title">CTEs and Recursive Queries</div>
+          <div class="pg-desc">WITH, chained CTEs, and recursive traversal of hierarchies and graphs.</div>
+        </div>
+        <div class="tag" style="border-color:var(--green); color:var(--green)">SQL</div>
+      </a>
+      <a class="pg-card" href="13_window_functions_and_views_playground.html">
+        <div class="pg-num">13</div>
+        <div class="pg-body">
+          <div class="pg-title">Window Functions and Views</div>
+          <div class="pg-desc">OVER, running totals, ranking, frames, LAG/LEAD, and views as interfaces.</div>
+        </div>
+        <div class="tag" style="border-color:var(--green); color:var(--green)">SQL</div>
+      </a>
+      <a class="pg-card" href="14_fd_keys_playground.html">
+        <div class="pg-num">14</div>
+        <div class="pg-body">
+          <div class="pg-title">Functional Dependencies and Keys</div>
+          <div class="pg-desc">Armstrong's axioms, attribute closure, candidate keys, minimal cover.</div>
+        </div>
+        <div class="tag" style="border-color:var(--rust); color:var(--rust)">Theory</div>
+      </a>
+      <a class="pg-card" href="15_normal_forms_playground.html">
+        <div class="pg-num">15</div>
+        <div class="pg-body">
+          <div class="pg-title">Normal Forms and Decomposition</div>
+          <div class="pg-desc">1NF–BCNF, decomposition, losslessness, and dependency preservation.</div>
+        </div>
+        <div class="tag" style="border-color:var(--rust); color:var(--rust)">Theory</div>
+      </a>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <span class="pgnav-pos">Overview</span>
+        <a class="pgnav-next" href="1_why_databases_playground.html">Start: 1. Why Databases? →</a>
+      </nav>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

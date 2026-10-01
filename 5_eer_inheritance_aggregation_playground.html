@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · EER: Inheritance &amp; Aggregation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #EEF0EA; --paper-raised: #F6F7F2; --ink: #1E2A25; --ink-soft: #4A564F;
+    --rule: #C9CFC2; --rule-strong: #A8B0A0; --blue: #2F5D8A; --blue-soft: #E4EBF2;
+    --amber: #A9781F; --amber-soft: #F4EBD6; --rust: #A1402A; --rust-soft: #F6E4DE;
+    --green: #3D6B4A; --green-soft: #E2EDE3; --purple: #6B4C8A; --purple-soft: #EBE4F2;
+    --code-bg: #16211C; --code-bg-raised: #1E2C24; --code-text: #E7ECE3; --code-rule: #33443A;
+    --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body{ margin:0; background: var(--paper); color: var(--ink); font-family: var(--serif); line-height: 1.6;  font-size:17px;}
+  a { color: var(--blue); }
+  .layout{ display:flex; min-height:100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{ width:250px; flex-shrink:0; background:var(--paper-raised); border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .sidebar .course{ font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft); border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5; }
+  .sidebar nav a{ display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft); text-decoration:none; margin-bottom:2px; }
+  .sidebar nav a:hover{ background:var(--blue-soft); color:var(--blue); }
+  .sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+  .sidebar nav .grp{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px; }
+  .sidebar .status{ margin-top:20px; padding-top:14px; border-top:1px solid var(--rule); font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); }
+  .sidebar .dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--rust); margin-right:6px; position:relative; top:-1px; }
+  .sidebar .dot.ready{ background:var(--green); }
+
+  /* ---------- Main column ---------- */
+  main{ flex:1; min-width:0; max-width:920px; margin:0 auto; padding:40px 32px 100px; }
+  header.hero{ margin-bottom:40px; }
+  header.hero .eyebrow{ font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; }
+  header.hero h1{ font-size:2.3em; margin:0 0 8px; }
+  header.hero .byline{ font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px; }
+  header.hero p.lede{ font-size:1.1em; color:var(--ink-soft); max-width:700px; }
+section{ margin:52px 0; scroll-margin-top:20px; }
+section h2{ font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px; }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+section p{ margin:0 0 14px; }
+  section ul, section ol.plain{ font-size: 15.5px; padding-left: 22px; margin: 0 0 16px 0; }
+  section li{ margin-bottom: 6px; }
+  code.inline{ font-family: var(--mono); font-size: 0.87em; background: var(--paper-raised); border: 1px solid var(--rule); padding: 1px 5px; border-radius: 3px; }
+
+  .callout{ background: var(--amber-soft); border-left: 3px solid var(--amber); padding: 14px 16px; font-size: 14.5px; margin: 0 0 20px 0; }
+  .callout strong{ color: var(--amber); }
+  .callout.blue{ background: var(--blue-soft); border-left-color: var(--blue); }
+  .callout.blue strong{ color: var(--blue); }
+  .callout.rust{ background: var(--rust-soft); border-left-color: var(--rust); }
+  .callout.rust strong{ color: var(--rust); }
+
+  .schema-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 10px; margin: 0 0 20px 0; }
+  .schema-card{ border: 1px solid var(--rule); background: var(--paper-raised); border-radius: 5px; padding: 10px 12px; font-family: var(--mono); font-size: 11.5px; }
+  .schema-card .tname{ font-weight:600; color: var(--blue); margin-bottom: 6px; }
+
+  /* ---------- ER/EER Diagram frame ---------- */
+  /* ---------- Canonical figure container (shared by every playground) ---------- */
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+  .diagram .diagram-grid{ display:grid; gap:18px; align-items:start; text-align:center; }
+
+  /* ---------- Data tables ---------- */
+  .datatable{ width:100%; border-collapse: collapse; margin: 0 0 20px 0; font-size: 13.5px; }
+  .datatable th, .datatable td{ border: 1px solid var(--rule); padding: 8px 10px; text-align:left; vertical-align: top; }
+  .datatable th{ background: var(--blue-soft); color: var(--blue); font-family: var(--mono); font-size: 11.5px; font-weight:600; }
+  .datatable td code.inline{ white-space: nowrap; }
+  .datatable tr:nth-child(even) td{ background: var(--paper); }
+
+  /* ---------- SQL cell (live, from the SQL Quickstart) ---------- */
+  .cell{ background: var(--code-bg); border: 1px solid var(--code-rule); border-radius: 8px; margin: 14px 0; overflow: hidden; }
+  .cell .cell-head{ display:flex; align-items:center; justify-content:space-between; padding: 8px 14px; background: var(--code-bg-raised); border-bottom: 1px solid var(--code-rule); font-family:"IBM Plex Mono",monospace; font-size: 11.5px; color: var(--code-text); }
+  .cell .cell-body{ position:relative; }
+  .cell textarea{ width:100%; min-height:0; resize:none; overflow:hidden; display:block; background: var(--code-bg); color: var(--code-text); font-family:"IBM Plex Mono",monospace; font-size: 13.5px; line-height: 1.55; border:none; padding: 14px; outline:none; tab-size: 2; }
+  .cell textarea:focus{ outline: 2px solid var(--blue); outline-offset: -2px; }
+  .cell .cell-actions{ display:flex; align-items:center; gap: 8px; padding: 8px 14px; background: var(--code-bg-raised); border-top: 1px solid var(--code-rule); }
+  button{ font-family: var(--mono); font-size: 12px; cursor: pointer; border-radius: 4px; padding: 7px 13px; border: 1px solid transparent; }
+  .cell .btn{ background: var(--blue); color:#fff; border:none; padding: 6px 14px; border-radius: 6px; font-size: 12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace; }
+  .cell .btn:hover{ opacity:.9; }
+  .cell .btn:disabled{ opacity:.45; cursor: not-allowed; }
+  .cell .btn.secondary{ background: transparent; color: var(--code-text); border: 1px solid var(--code-rule); }
+  .cell .btn.secondary:hover{ opacity:.9; }
+  .cell .cell-actions .hint{ margin-left:auto; font-family:"IBM Plex Mono",monospace; font-size: 11px; color: var(--code-text); opacity:.55; }
+  .cell .output{ font-family:"IBM Plex Mono",monospace; font-size: 13px; color: var(--code-text); background: var(--code-bg); border-top: 1px solid var(--code-rule); padding: 12px 14px; white-space: pre-wrap; }
+  .cell .cell .output:empty{ display:none; }
+  .cell .output:empty{ display:none; }
+  .output .msg{ padding:12px 14px; color:var(--code-text); opacity:.85; }
+  .output .msg.error{ color:#F0A38A; }
+  .output .msg.ok{ color:#9BD0A6; }
+  .output table{ border-collapse: collapse; width: 100%; }
+  .output table + table{ border-top: 1px solid var(--code-rule); }
+  .output th, .output td{ border:1px solid var(--code-rule); padding:6px 10px; text-align:left; white-space:nowrap; color:var(--code-text); }
+  .output th{ background:var(--code-bg-raised); color:var(--code-text); font-weight:600; position:static; }
+  .output tr:nth-child(even) td{ background:rgba(255,255,255,.035); }
+  .output .rowcount{ font-size:11px; color:var(--code-text); opacity:.6; padding:6px 10px; border-top:1px solid var(--code-rule); }
+  .msg.hint{ display:block; margin-top: 6px; padding-top: 8px; border-top: 1px dashed rgba(161,64,42,0.3); color: var(--ink-soft); font-style: italic; }
+
+  /* ---------- Disjoint/Overlapping simulator ---------- */
+  .dos{ border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--paper-raised); padding: 22px 24px; margin: 4px 0 20px 0; }
+  .dos-picker{ display:flex; gap:8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .dos-picker button{ font-family: var(--mono); font-size: 12.5px; font-weight:600; padding: 8px 16px; border-radius: 5px; border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor:pointer; }
+  .dos-picker button.active{ background: var(--blue); color:white; border-color:var(--blue); }
+  .dos-picker button:hover:not(.active){ border-color: var(--blue); }
+  .dos-ddl{ font-family: var(--mono); font-size: 12px; line-height: 1.6; background: var(--code-bg); color: var(--code-text); padding: 12px 14px; border-radius: 5px; margin-bottom: 14px; white-space: pre-wrap; overflow-x: auto; }
+  .dos-explain{ font-size: 14px; color: var(--ink-soft); margin: 0 0 16px 0; }
+  .dos-explain strong{ color: var(--ink); }
+  .dos-actions{ display:flex; gap:8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .dos-actions button{ font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 5px; border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor: pointer; }
+  .dos-actions button:hover:not(:disabled){ border-color: var(--blue); }
+  .dos-actions button:disabled{ opacity:0.45; cursor:not-allowed; }
+  .dos-message:empty{ display:none; }
+  .dos-result{ font-family: var(--mono); font-size: 13px; line-height: 1.5; padding: 11px 14px; border-radius: 5px; margin-bottom: 14px; }
+  .dos-result.ok{ background: var(--green-soft); color: var(--green); }
+  .dos-result.blocked{ background: var(--rust-soft); color: var(--rust); }
+  .dos-tables{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .dos-table-wrap{ border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--paper); }
+  .dos-table-label{ font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--ink-soft); background: linear-gradient(180deg, #E1E6DA, var(--paper)); padding: 8px 12px; border-bottom: 1px solid var(--rule); }
+  .dos-tables table{ width: 100%; border-collapse: collapse; }
+  .dos-tables th, .dos-tables td{ font-family: var(--mono); font-size: 11.5px; padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--rule); }
+  .dos-tables th{ color: var(--blue); font-weight: 600; }
+  .dos-reset-btn{ font-family: var(--mono); font-size: 12px; padding: 7px 13px; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor: pointer; }
+  .dos-reset-btn:hover{ border-color: var(--blue); color: var(--blue); }
+
+  /* ---------- Interview note ---------- */
+  .interview-box{ background: var(--purple-soft); border: 1px solid var(--purple); color: var(--ink); border-radius: 10px; padding: 22px 24px; margin: 0 0 20px 0; }
+  .interview-box h3{ margin: 0 0 8px 0; font-size: 15px; color: var(--purple); }
+  .interview-box p{ color: var(--ink-soft); font-size: 14px; margin: 0 0 10px 0; }
+  .interview-box p:last-child{ margin-bottom: 0; }
+  .interview-box code.inline{ background: var(--paper-raised); border-color: var(--rule); color: var(--ink); }
+  .interview-box ul{ color: var(--ink-soft); font-size: 14px; margin: 0 0 10px 0; padding-left: 20px; }
+
+  /* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+  .widget{ border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0; }
+  .widget-title{ font-weight:700; font-size:1.15em; margin-bottom:4px; }
+  .widget-sub{ font-size:.9em; color:var(--ink-soft); margin-bottom:18px; }
+  .widget-label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:var(--mono); }
+  .qstep-rail{ display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap; }
+  .qstep-node{ flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:var(--mono); font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3; }
+  .qstep-node:hover{ border-color:var(--blue); }
+  .qstep-node.done{ border-color:var(--green); background:var(--green-soft); color:var(--green); }
+  .qstep-node.active{ border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700; }
+  .qstep-node .qstep-idx{ display:block; font-size:9.5px; opacity:.7; margin-bottom:3px; }
+  .qstep-body{ border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px; }
+  .qstep-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .qstep-name{ font-weight:700; font-size:1.05em; }
+  .qstep-layer{ font-family:var(--mono); font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff; }
+  .qstep-action{ font-size:.95em; margin-bottom:12px; }
+  .qstep-art{ background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:var(--mono); font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto; }
+  .qstep-art .art-label{ display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+  .qstep-controls{ display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap; }
+  .qstep-count{ font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-left:auto; }
+  .qstep-next-btn{ background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:var(--mono); font-size:12.5px; font-weight:600; cursor:pointer; }
+  .qstep-next-btn:hover{ opacity:.9; }
+  .qstep-next-btn:disabled{ background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7; }
+  .qstep-restart-btn{ background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:var(--mono); font-size:12.5px; cursor:pointer; }
+  .qstep-restart-btn:hover{ border-color:var(--blue); color:var(--blue); }
+  .lm-bank{ display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px; }
+  .lm-chip{ border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:var(--mono); font-size:12px; font-weight:600; cursor:pointer; color:var(--ink); }
+  .lm-chip:hover{ border-color:var(--blue); }
+  .lm-chip.selected{ border-color:var(--blue); background:var(--blue-soft); color:var(--blue); }
+  .lm-zones{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .lm-zone{ border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:112px; background:var(--paper); }
+  .lm-zone.armed{ border-style:solid; border-color:var(--blue); background:var(--blue-soft); }
+  .lm-zone-head{ font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px; }
+  .lm-zone.external .lm-zone-head{ color:var(--blue); }
+  .lm-zone.conceptual .lm-zone-head{ color:var(--amber); }
+  .lm-zone.internal .lm-zone-head{ color:var(--purple); }
+  .lm-item{ background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:var(--mono); font-size:11.5px; cursor:pointer; }
+  .lm-item.correct{ border-color:var(--green); background:var(--green-soft); }
+  .lm-item.incorrect{ border-color:var(--rust); background:var(--rust-soft); }
+  .lm-hint{ font-size:.85em; color:var(--ink-soft); margin-top:14px; }
+  .lm-feedback{ margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em; }
+  .lm-feedback.correct{ background:var(--green-soft); color:var(--green); }
+  .lm-feedback.incorrect{ background:var(--rust-soft); color:var(--rust); }
+  .lm-check-btn{ background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:var(--mono); font-size:12.5px; font-weight:600; cursor:pointer; }
+  .lm-check-btn:disabled{ background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7; }
+  .lm-restart-btn{ background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:var(--mono); font-size:12.5px; cursor:pointer; }
+  .lm-restart-btn:hover{ border-color:var(--blue); color:var(--blue); }
+  @media (max-width:680px){ .lm-zones{ grid-template-columns:1fr; } }
+
+  /* ---------- Practice problems ---------- */
+  .problem{ border: 1px solid var(--rule); border-left: 3px solid var(--ink); background: var(--paper-raised); border-radius: 0 6px 6px 0; padding: 18px 20px; margin-bottom: 20px; }
+  .problem .pnum{ font-family: var(--mono); font-size: 11px; color: var(--ink-soft); margin-bottom: 6px; }
+  .problem p{ margin: 0 0 14px 0; }
+  details.answer{ margin-top: 4px; border-top: 1px dashed var(--rule); padding-top: 10px; }
+  details.answer summary{ cursor: pointer; list-style:none; font-family: var(--mono); font-size: 12px; color: var(--blue); font-weight: 600; user-select: none; }
+  details.answer summary::-webkit-details-marker{ display:none; }
+  details.answer summary:before{ content:'▸ '; }
+  details.answer[open] summary:before{ content:'▾ '; }
+  details.answer summary:hover{ text-decoration: underline; }
+  details.answer .answer-body{ margin-top: 12px; font-size: 14.5px; }
+  details.answer .answer-body ul{ padding-left: 20px; }
+
+  /* ---------- Choice quiz (score-tracked, one at a time) ---------- */
+  .cq{ border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--paper-raised); padding: 22px 24px; margin: 4px 0 20px 0; }
+  .cq-header{ display:flex; align-items:baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+  .cq-title{ font-size: 17px; font-weight: 600; }
+  .cq-score{ font-family: var(--mono); font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+  .cq-score strong{ color: var(--blue); font-size: 14px; }
+  .cq-subtitle{ font-size: 13.5px; color: var(--ink-soft); margin: 4px 0 18px 0; }
+  .cq-eyebrow{ font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em; color: var(--blue); margin-bottom: 10px; }
+  .cq-scenario{ font-size: 15px; margin: 0 0 16px 0; }
+  .cq-pick-label{ font-family: var(--mono); font-size: 11px; color: var(--ink-soft); margin: 0 0 10px 0; }
+  .cq-options{ display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+  .cq-option{ text-align:left; padding: 10px 12px; border-radius:6px; border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor: pointer; display:flex; flex-direction:column; gap:2px; }
+  .cq-option:hover:not(:disabled){ border-color: var(--blue); }
+  .cq-option:disabled{ cursor:default; }
+  .cq-option .cq-opt-main{ font-family: var(--mono); font-size: 12.5px; font-weight:600; }
+  .cq-option .cq-opt-sub{ font-size: 11.5px; color: var(--ink-soft); }
+  .cq-option.correct{ background: var(--green-soft); border-color: var(--green); }
+  .cq-option.correct .cq-opt-main{ color: var(--green); }
+  .cq-option.incorrect{ background: var(--rust-soft); border-color: var(--rust); }
+  .cq-option.incorrect .cq-opt-main{ color: var(--rust); }
+  .cq-feedback{ margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--rule); }
+  .cq-feedback:empty{ display:none; }
+  .cq-verdict{ font-family: var(--mono); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .cq-verdict.right{ color: var(--green); }
+  .cq-verdict.wrong{ color: var(--rust); }
+  .cq-explain{ font-size: 14px; margin: 0; }
+  .cq-next-btn{ font-family: var(--mono); font-size: 12.5px; font-weight: 600; padding: 9px 16px; border-radius: 5px; border: none; background: var(--blue); color: white; cursor: pointer; margin-top: 14px; }
+  .cq-next-btn:hover{ background: #274d75; }
+  .cq-final{ text-align: center; padding: 30px 10px; }
+  .cq-final-score{ font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+  .cq-retry-btn{ font-family: var(--mono); font-size: 13px; padding: 9px 18px; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor: pointer; }
+  .cq-retry-btn:hover{ border-color: var(--blue); color: var(--blue); }
+footer{ border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace; }
+
+  @media (max-width: 820px){
+    .layout{ flex-direction:column; }
+    .sidebar{ position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule); }
+    main{ padding: 32px 22px 100px 22px; }
+    header.hero h1{ font-size: 30px; }
+    .cq-options{ grid-template-columns: 1fr; }
+    .dos-tables{ grid-template-columns: 1fr; }
+  }
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b,.callout strong{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+
+/* ===== Inheritance Mode Explorer ===== */
+.iem-grid{display:grid; grid-template-columns:140px 1fr 1fr; gap:8px; margin:10px 0 6px;}
+.iem-axis{display:flex; align-items:center; font-family:var(--mono); font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;}
+.iem-cell{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; color:var(--ink); padding:14px 12px; text-align:center; cursor:pointer; font-family:var(--mono); font-size:12px; font-weight:700;}
+.iem-cell:hover{border-color:var(--blue);}
+.iem-cell.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.iem-cell .iem-sub{display:block; font-weight:400; font-size:10.5px; color:var(--ink-soft); margin-top:4px;}
+.iem-legend{display:flex; gap:18px; flex-wrap:wrap; font-size:.82em; color:var(--ink-soft); margin:12px 0 8px;}
+.iem-legend .iem-sw{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px;}
+.iem-legend .iem-sw.ok{background:var(--green);}
+.iem-legend .iem-sw.bad{background:var(--rust);}
+.iem-rows{display:flex; flex-direction:column; gap:8px;}
+.iem-row{display:grid; grid-template-columns:1.1fr 1.4fr auto; gap:12px; align-items:center; border:1px solid var(--rule); border-radius:8px; padding:11px 14px; background:#fff; color:var(--ink);}
+.iem-row.ok{border-color:var(--green); background:var(--green-soft);}
+.iem-row.bad{border-color:var(--rust); background:var(--rust-soft);}
+.iem-name{font-family:var(--mono); font-size:12.5px; font-weight:700;}
+.iem-mem{font-size:.86em; color:var(--ink-soft);}
+.iem-verdict{font-family:var(--mono); font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap;}
+.iem-row.ok .iem-verdict{color:var(--green);}
+.iem-row.bad .iem-verdict{color:var(--rust);}
+.iem-note{margin-top:14px; padding:13px 16px; border-radius:8px; background:var(--blue-soft); color:var(--ink); font-size:.93em;}
+.iem-note strong{color:var(--blue);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+    <nav id="playgroundNav"></nav>
+    <div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">loading SQLite engine…</span></div>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>EER: Inheritance &amp; Aggregation</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">Every diagram is real inline SVG. Every SQL cell runs against a real SQLite database in your browser. The disjoint/overlapping simulator actually tries to insert the row and lets the database decide.</p>
+    </header>
+
+    <div id="sections"></div>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="4_er_modeling_playground.html">← 4. ER Modeling</a>
+        <a class="pgnav-pos" href="index.html">Playground 5 of 15</a>
+        <a class="pgnav-next" href="6_relational_mapping_playground.html">6. Relational Mapping →</a>
+      </nav>
+    </footer>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* =========================================================================
+   SVG DIAGRAM TOOLKIT — same Chen-notation vocabulary as the ER Modeling
+   companion, plus two EER-specific additions: a specialization circle
+   (d/o) and an aggregation box (dashed rectangle promoting a relationship
+   to a single unit for further connections).
+   ========================================================================= */
+
+const PAL = {
+  ink:'#1E2A25', inkSoft:'#4A564F', rule:'#C9CFC2', ruleStrong:'#A8B0A0',
+  blue:'#2F5D8A', blueSoft:'#E4EBF2', amber:'#A9781F', amberSoft:'#F4EBD6',
+  rust:'#A1402A', rustSoft:'#F6E4DE', green:'#3D6B4A', greenSoft:'#E2EDE3',
+  purple:'#6B4C8A', purpleSoft:'#EBE4F2', paper:'#EEF0EA', paperRaised:'#F6F7F2'
+};
+
+function escXml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function svgText(x, y, label, opts){
+  opts = opts || {};
+  const size = opts.size || 12;
+  const weight = opts.weight || 400;
+  const fill = opts.fill || PAL.ink;
+  const anchor = opts.anchor || 'middle';
+  const style = (opts.italic ? 'font-style:italic;' : '') + (opts.underline ? 'text-decoration:underline;' : '');
+  return `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="${size}" font-weight="${weight}" fill="${fill}" font-family="'IBM Plex Mono',monospace" style="${style}">${escXml(label)}</text>`;
+}
+
+function entityBox(x, y, w, h, label, opts){
+  opts = opts || {};
+  let s = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${PAL.paperRaised}" stroke="${PAL.ink}" stroke-width="2"/>`;
+  if (opts.weak){
+    s += `<rect x="${x+5}" y="${y+5}" width="${w-10}" height="${h-10}" fill="none" stroke="${PAL.ink}" stroke-width="1.2"/>`;
+  }
+  s += svgText(x + w/2, y + h/2 + 4, label, { size: 13, weight: 600 });
+  return s;
+}
+
+function attrOval(cx, cy, rx, ry, label, opts){
+  opts = opts || {};
+  let s = `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${PAL.paper}" stroke="${PAL.ink}" stroke-width="1.5" ${opts.derived ? 'stroke-dasharray="4,3"' : ''}/>`;
+  if (opts.multivalued){
+    s += `<ellipse cx="${cx}" cy="${cy}" rx="${rx-4}" ry="${ry-4}" fill="none" stroke="${PAL.ink}" stroke-width="1"/>`;
+  }
+  s += svgText(cx, cy + 4, label, { size: 10.5, underline: !!opts.key });
+  return s;
+}
+
+function relDiamond(cx, cy, w, h, label, opts){
+  opts = opts || {};
+  const pts = `${cx},${cy-h/2} ${cx+w/2},${cy} ${cx},${cy+h/2} ${cx-w/2},${cy}`;
+  let s = `<polygon points="${pts}" fill="${PAL.amberSoft}" stroke="${PAL.ink}" stroke-width="2"/>`;
+  if (opts.weak){
+    const w2 = w-10, h2 = h-10;
+    const pts2 = `${cx},${cy-h2/2} ${cx+w2/2},${cy} ${cx},${cy+h2/2} ${cx-w2/2},${cy}`;
+    s += `<polygon points="${pts2}" fill="none" stroke="${PAL.ink}" stroke-width="1.2"/>`;
+  }
+  s += svgText(cx, cy + 4, label, { size: 11, weight: 600 });
+  return s;
+}
+
+function connLine(x1, y1, x2, y2, opts){
+  opts = opts || {};
+  if (!opts.double){
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${PAL.ink}" stroke-width="1.5"/>`;
+  }
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const ox = -dy/len*2.4, oy = dx/len*2.4;
+  return `<line x1="${x1+ox}" y1="${y1+oy}" x2="${x2+ox}" y2="${y2+oy}" stroke="${PAL.ink}" stroke-width="1.3"/>` +
+         `<line x1="${x1-ox}" y1="${y1-oy}" x2="${x2-ox}" y2="${y2-oy}" stroke="${PAL.ink}" stroke-width="1.3"/>`;
+}
+
+function cardLabel(x, y, label){
+  return `<rect x="${x-9}" y="${y-9}" width="18" height="15" fill="${PAL.paper}"/>` + svgText(x, y+3, label, { size: 11, weight: 600, fill: PAL.blue });
+}
+
+function erdFrame(viewW, viewH, inner, caption){
+  return `<figure class="diagram"><svg viewBox="0 0 ${viewW} ${viewH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${escXml(caption)}" font-family="IBM Plex Mono, monospace">${inner}</svg><figcaption>${escXml(caption)}</figcaption></figure>`;
+}
+
+/* ---- EER additions ---- */
+
+/* The specialization circle: a small circle with 'd' or 'o' inside it,
+   marking a specialization/generalization as disjoint or overlapping. */
+function specCircle(cx, cy, r, letter){
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${PAL.paperRaised}" stroke="${PAL.ink}" stroke-width="2"/>` +
+         svgText(cx, cy + 5, letter, { size: 14, weight: 700, fill: PAL.blue });
+}
+
+/* A dashed rectangle enclosing an existing sub-diagram, promoting a
+   relationship (plus its participating entities) into a single unit that
+   can itself be the target of a new relationship line -- aggregation. */
+function aggBox(x, y, w, h, label){
+  const rw = label.length * 7.5 + 16;
+  const cx = x + w / 2;
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${PAL.purple}" stroke-width="2" stroke-dasharray="7,5" rx="8"/>` +
+         `<rect x="${cx - rw/2}" y="${y-11}" width="${rw}" height="20" fill="${PAL.purpleSoft}" stroke="${PAL.purple}" stroke-width="1.3" rx="4"/>` +
+         svgText(cx, y+3, label, { size: 10.5, weight: 600, fill: PAL.purple, anchor: 'middle' });
+}
+
+/* ===================== Diagram 1: basic hierarchy (Person -> Student, Professor) ===================== */
+function diagBasicSpecialization(){
+  const lines =
+    connLine(140,50, 350,157) + connLine(350,40, 350,130) + connLine(560,50, 350,157) +
+    connLine(320,185, 220,290) + connLine(380,185, 500,290) +
+    connLine(200,340, 110,400) + connLine(545,340, 610,400);
+  const nodes =
+    attrOval(140,50,55,28,'name') +
+    attrOval(350,40,60,28,'ssn',{key:true}) +
+    attrOval(560,50,55,28,'email') +
+    entityBox(280,130,140,55,'Person') +
+    entityBox(130,290,140,50,'Student') +
+    entityBox(470,290,150,50,'Professor') +
+    attrOval(110,400,50,26,'gpa') +
+    attrOval(610,400,65,26,'office_hrs');
+  return erdFrame(720,450, lines+nodes,
+    'Student and Professor inherit name, ssn, and email from Person automatically -- only the attributes unique to each subclass get drawn separately.');
+}
+
+/* ===================== Shared: one specialization diagram (d/o, total/partial) ===================== */
+function diagSpecExampleSvg(superLabel, subA, subB, disjoint, total){
+  const letter = disjoint ? 'd' : 'o';
+  const lines =
+    connLine(115,65, 115,78, {double: total}) +
+    connLine(115,122, 60,175) +
+    connLine(115,122, 170,175);
+  const nodes =
+    entityBox(45,15,140,50, superLabel) +
+    specCircle(115,100,22,letter) +
+    entityBox(15,175,90,45, subA) +
+    entityBox(125,175,90,45, subB) +
+    svgText(115, 240, (disjoint?'Disjoint (d)':'Overlapping (o)') + ' \u00b7 ' + (total?'Total':'Partial'), {size:10.5, weight:600});
+  return `<svg viewBox="0 0 230 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A specialization example: a superclass Person with the subclass symbols and the constraint circle that marks disjoint or overlapping and total or partial." font-family="IBM Plex Mono, monospace">${lines}${nodes}</svg>`;
+}
+
+/* ===================== Diagram 2: disjoint vs overlapping (Person's own examples) ===================== */
+function diagDisjointOverlapCompare(){
+  return `<figure class="diagram"><div class="diagram-grid" style="grid-template-columns:1fr 1fr;">
+    <div>${diagSpecExampleSvg('Person','Undergrad','Graduate',true,false)}<figcaption>Disjoint — a student is Undergrad or Graduate, never both at once.</figcaption></div>
+    <div>${diagSpecExampleSvg('Person','Staff','Faculty',false,false)}<figcaption>Overlapping — one person can be Staff AND Faculty simultaneously.</figcaption></div>
+  </div></figure>`;
+}
+
+/* ===================== Diagram 3: the four completeness x disjointness modes ===================== */
+function diagFourModes(){
+  const cells = [
+    [true,  true,  'DMV registry'],
+    [true,  false, 'Fleet: unclassified equipment'],
+    [false, true,  'Hybrid classification'],
+    [false, false, 'Museum inventory'],
+  ];
+  const cellsHtml = cells.map(([d,t,ex]) =>
+    `<div>${diagSpecExampleSvg('Vehicle','Car','Truck',d,t)}<figcaption>${escXml(ex)}</figcaption></div>`
+  ).join('');
+  return `<figure class="diagram"><div class="diagram-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">${cellsHtml}</div></figure>`;
+}
+
+/* ===================== Diagram 4: aggregation (Student-Enrolls-Course, Tutor assists) ===================== */
+function diagAggregation(){
+  const lines =
+    connLine(135,62, 165,62) + connLine(255,62, 285,62) +
+    connLine(210,130, 210,145) + connLine(210,198, 220,230);
+  const box = aggBox(5,20,410,110,'Enrollment (aggregated unit)');
+  const nodes =
+    entityBox(25,40,110,45,'Student') +
+    entityBox(285,40,110,45,'Course') +
+    relDiamond(210,62,90,55,'enrolls') +
+    relDiamond(210,170,90,55,'assists') +
+    entityBox(165,230,110,45,'Tutor');
+  return erdFrame(420,300, lines+box+nodes,
+    'The dashed box promotes Student-Enrolls-Course to a single unit. Assists connects Tutor to that unit, not to Student or Course individually.');
+}
+</script>
+
+<script>
+/* =========================================================================
+   CELLS — live SQL cells, in the same style as the SQL Quickstart. Each
+   cell rebuilds a fresh SQLite database from `setup`, then runs whatever
+   is currently in the textarea (starting as `starter`).
+   ========================================================================= */
+const CELLS = {
+
+  strategy_single: {
+    setup: '',
+    starter:
+`CREATE TABLE person (
+  id       INTEGER PRIMARY KEY,
+  name     TEXT NOT NULL,
+  kind     TEXT NOT NULL CHECK (kind IN ('S','E')),
+  gpa      REAL,
+  major    TEXT,
+  salary   REAL,
+  department TEXT
+);
+
+INSERT INTO person (id, name, kind, gpa, major) VALUES (1, 'Ada', 'S', 3.9, 'CS');
+INSERT INTO person (id, name, kind, salary, department) VALUES (2, 'Grace', 'E', 95000, 'Engineering');
+
+SELECT * FROM person;
+-- Notice: Ada has NULL salary/department, Grace has NULL gpa/major.
+-- One table, one query, no joins -- but NULLs everywhere.`
+  },
+
+  strategy_subclass: {
+    setup: '',
+    starter:
+`CREATE TABLE person   (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+CREATE TABLE student   (id INTEGER PRIMARY KEY REFERENCES person(id), gpa REAL NOT NULL, major TEXT);
+CREATE TABLE employee  (id INTEGER PRIMARY KEY REFERENCES person(id), salary REAL NOT NULL, department TEXT);
+
+INSERT INTO person VALUES (1,'Ada'), (2,'Grace'), (3,'Alan');
+INSERT INTO student  VALUES (1, 3.9, 'CS');
+INSERT INTO employee VALUES (2, 95000, 'Engineering');
+-- Alan is BOTH -- overlapping is trivially supported: he just gets a row
+-- in each child table, no schema change needed.
+INSERT INTO student  VALUES (3, 3.5, 'Math');
+INSERT INTO employee VALUES (3, 60000, 'TA Office');
+
+SELECT p.name, s.gpa, e.salary
+FROM person p
+LEFT JOIN student  s ON s.id = p.id
+LEFT JOIN employee e ON e.id = p.id;
+-- No wasted NULLs in student/employee themselves -- gpa and salary are
+-- NOT NULL in their own tables -- but "get everyone" now needs two joins.`
+  },
+
+  strategy_concrete: {
+    setup: '',
+    starter:
+`CREATE TABLE student  (id INTEGER PRIMARY KEY, name TEXT NOT NULL, gpa REAL NOT NULL, major TEXT);
+CREATE TABLE employee (id INTEGER PRIMARY KEY, name TEXT NOT NULL, salary REAL NOT NULL, department TEXT);
+
+INSERT INTO student  VALUES (1, 'Ada', 3.9, 'CS');
+INSERT INTO employee VALUES (2, 'Grace', 95000, 'Engineering');
+
+SELECT name, gpa AS payload FROM student
+UNION ALL
+SELECT name, salary FROM employee;
+-- No joins, no NULLs -- but try modeling Alan (both a student AND an
+-- employee) here: you'd need his name duplicated in two unrelated rows,
+-- with nothing enforcing they're the same person. That's the redundancy
+-- trap the reading warns about.`
+  },
+
+  agg_ternary: {
+    setup: '',
+    starter:
+`-- Option A: one ternary relationship. tutor_id is NOT NULL because the
+-- ternary tuple is meant to record "this tutor helped with this enrollment."
+CREATE TABLE assists (
+  student_id INTEGER,
+  course_id  INTEGER,
+  tutor_id   INTEGER NOT NULL,
+  PRIMARY KEY (student_id, course_id, tutor_id)
+);
+
+-- Try recording an enrollment that has NO tutor yet:
+INSERT INTO assists (student_id, course_id, tutor_id) VALUES (1, 100, NULL);
+-- This fails -- the ternary structure has no way to represent
+-- "this enrollment exists" independent of "a tutor is assigned to it."`
+  },
+
+  agg_aggregation: {
+    setup: '',
+    starter:
+`-- Option B: aggregation. Enrollment exists on its own; Assists is a
+-- separate, optional table hanging off it.
+CREATE TABLE enrollment (
+  enrollment_id INTEGER PRIMARY KEY,
+  student_id    INTEGER NOT NULL,
+  course_id     INTEGER NOT NULL
+);
+CREATE TABLE assists (
+  enrollment_id INTEGER,
+  tutor_id      INTEGER NOT NULL,
+  PRIMARY KEY (enrollment_id, tutor_id)
+);
+
+INSERT INTO enrollment VALUES (1, 1, 100);
+-- The enrollment exists with zero tutors -- no error, no placeholder needed.
+SELECT * FROM enrollment;
+
+-- Later, a tutor gets assigned -- added independently, doesn't touch enrollment:
+INSERT INTO assists VALUES (1, 55);
+SELECT * FROM assists;`
+  },
+
+  totality_gap: {
+    setup:
+`PRAGMA foreign_keys = ON;
+CREATE TABLE person (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+CREATE TABLE student (id INTEGER PRIMARY KEY REFERENCES person(id), gpa REAL);
+CREATE TABLE employee (id INTEGER PRIMARY KEY REFERENCES person(id), salary REAL);`,
+    starter:
+`-- Intent: every Person should be a Student or an Employee (total).
+-- Try inserting a person with NO matching row in either subclass table:
+INSERT INTO person VALUES (99, 'Nobody In Particular');
+SELECT * FROM person;
+-- This succeeds. Plain foreign keys can require a CHILD to reference a
+-- valid PARENT -- they cannot require a PARENT to have at least one
+-- CHILD. That direction of "must exist" has no native SQL constraint;
+-- see Practice Problem 5 for what it actually takes to enforce this.`
+  },
+
+  worked_strategy_tradeoff: {
+    setup: '',
+    starter:
+`-- One hierarchy (Person -> Student, Employee), mapped three ways at once.
+CREATE TABLE person_single (id INTEGER PRIMARY KEY, name TEXT NOT NULL, kind TEXT NOT NULL,
+  gpa REAL, salary REAL);
+CREATE TABLE person_root (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+CREATE TABLE student_sub (id INTEGER PRIMARY KEY REFERENCES person_root(id), gpa REAL NOT NULL);
+CREATE TABLE employee_sub (id INTEGER PRIMARY KEY REFERENCES person_root(id), salary REAL NOT NULL);
+
+INSERT INTO person_single VALUES (1,'Ada','S',3.9,NULL),(2,'Grace','E',NULL,95000);
+INSERT INTO person_root VALUES (1,'Ada'),(2,'Grace');
+INSERT INTO student_sub VALUES (1,3.9);
+INSERT INTO employee_sub VALUES (2,95000);
+
+-- Single table: one query, no join -- but NULLs encode the missing columns.
+SELECT id, name, kind, gpa, salary FROM person_single;
+
+-- Subclass tables: no wasted columns (gpa/salary are NOT NULL where they
+-- live), but every "get everyone" query now joins upward.
+SELECT p.name, s.gpa, e.salary
+FROM person_root p
+LEFT JOIN student_sub  s ON s.id = p.id
+LEFT JOIN employee_sub e ON e.id = p.id;`
+  },
+};
+</script>
+
+<script>
+/* =========================================================================
+   QUIZ DATA — the Specialization Constraint Picker, ten scenarios,
+   each mapped to its correct mode with reasoning grounded in the reading.
+   ========================================================================= */
+const SPEC_QUESTIONS = [
+  {
+    prompt: `A DMV registers every vehicle as exactly one of <code class="inline">Car</code>, <code class="inline">Truck</code>, or <code class="inline">Motorcycle</code>. There are no generic <code class="inline">Vehicle</code> rows — every vehicle is classified into one subclass, and never more than one. Which specialization mode is this?`,
+    options: [
+      { label: 'Disjoint + Total', sub: '(d, total)', correct: true },
+      { label: 'Disjoint + Partial', sub: '(d, partial)', correct: false },
+      { label: 'Overlapping + Total', sub: '(o, total)', correct: false },
+      { label: 'Overlapping + Partial', sub: '(o, partial)', correct: false },
+    ],
+    explanation: `<strong>Disjoint + Total.</strong> "Never more than one" is disjointness (d). "No generic rows — every vehicle is classified" is totality. Both constraints are the strictest of their kind, which fits a legal registry perfectly: the DMV wants no ambiguity and no gaps.`
+  },
+  {
+    prompt: `A tech company classifies every employee as <code class="inline">Engineer</code>, <code class="inline">Manager</code>, or both — a tech lead is often an engineer AND a manager. But every employee holds at least one of these roles; there are no generic <code class="inline">Employee</code> rows. Which mode?`,
+    options: [
+      { label: 'Disjoint + Total', sub: '(d, total)', correct: false },
+      { label: 'Disjoint + Partial', sub: '(d, partial)', correct: false },
+      { label: 'Overlapping + Total', sub: '(o, total)', correct: true },
+      { label: 'Overlapping + Partial', sub: '(o, partial)', correct: false },
+    ],
+    explanation: `<strong>Overlapping + Total.</strong> "Or both" is the tell for overlapping (o) — a tech lead needs two subclass rows simultaneously. "Every employee holds at least one" is totality — no generic Employee is allowed to exist unclassified.`
+  },
+  {
+    prompt: `A bank tracks <code class="inline">Account</code> with subclasses <code class="inline">Checking</code>, <code class="inline">Savings</code>, <code class="inline">Investment</code>. Some accounts start as generic <code class="inline">Account</code> rows before being upgraded to a specific type. An account is exactly one of the three subclasses OR none. Which mode?`,
+    options: [
+      { label: 'Disjoint + Total', sub: '(d, total)', correct: false },
+      { label: 'Disjoint + Partial', sub: '(d, partial)', correct: true },
+      { label: 'Overlapping + Total', sub: '(o, total)', correct: false },
+      { label: 'Overlapping + Partial', sub: '(o, partial)', correct: false },
+    ],
+    explanation: `<strong>Disjoint + Partial.</strong> "Exactly one... or none" is disjoint (never more than one) but explicitly not total — generic, not-yet-classified Account rows are allowed to exist. This is the classic "upgrade later" pattern.`
+  },
+  {
+    prompt: `A ride-share app has <code class="inline">User</code> subclasses <code class="inline">Rider</code> and <code class="inline">Driver</code>. Some users are Riders, some are Drivers, some are both (driver-riders), and some have signed up but haven't picked a role yet. Which mode?`,
+    options: [
+      { label: 'Disjoint + Total', sub: '(d, total)', correct: false },
+      { label: 'Disjoint + Partial', sub: '(d, partial)', correct: false },
+      { label: 'Overlapping + Total', sub: '(o, total)', correct: false },
+      { label: 'Overlapping + Partial', sub: '(o, partial)', correct: true },
+    ],
+    explanation: `<strong>Overlapping + Partial.</strong> "Some are both" rules out disjoint. "Some haven't picked a role yet" rules out total. This is the most permissive of the four modes — a generic User can exist with zero, one, or both roles.`
+  },
+  {
+    prompt: `You need to model <code class="inline">Order</code>, where <code class="inline">Rider</code> places an order and <code class="inline">Driver</code> delivers it, and the order carries <code class="inline">quantity</code> + <code class="inline">price</code>. Then you want to track which <code class="inline">Coupon</code> was applied to each order. Which construct do you use?`,
+    options: [
+      { label: 'Specialization', sub: 'Rider IS-A Order', correct: false },
+      { label: 'Aggregation', sub: 'Box Order-relationship, attach Coupon', correct: true },
+      { label: 'Ternary relationship', sub: '3-way between Rider/Driver/Coupon', correct: false },
+      { label: 'Weak entity', sub: 'Order depends on Rider', correct: false },
+    ],
+    explanation: `<strong>Aggregation.</strong> Order is already a relationship-with-attributes between Rider and Driver (the same "promote to its own entity" pattern from basic ER modeling). Attaching Coupon to that whole Order unit — not to Rider or Driver individually — is exactly the Student-Enrolls-Course-then-Tutor pattern from this reading, renamed.`
+  },
+  {
+    prompt: `You're mapping <code class="inline">Person</code> with subclasses <code class="inline">Student</code> and <code class="inline">Employee</code> where an overlap is possible (work-study students). You want subclass-specific <code class="inline">NOT NULL</code> columns (a student MUST have a GPA; an employee MUST have a salary). Which mapping strategy?`,
+    options: [
+      { label: 'Single-table + discriminator', sub: 'One wide table', correct: false },
+      { label: 'Table-per-subclass', sub: 'Parent + child tables', correct: true },
+      { label: 'Table-per-concrete-class', sub: 'Only leaf tables', correct: false },
+      { label: 'Any of the three', sub: "They're equivalent", correct: false },
+    ],
+    explanation: `<strong>Table-per-subclass.</strong> It's the only strategy where <code class="inline">gpa NOT NULL</code> on Student and <code class="inline">salary NOT NULL</code> on Employee can both hold simultaneously without contradiction, AND overlap (a work-study student appearing in both tables) is trivially supported. Single-table can't apply two different NOT NULL rules to one row's optional columns; table-per-concrete-class can't represent one person in two tables without duplicating their shared data.`
+  },
+  {
+    prompt: `A vehicle registry records each vehicle as a <code class="inline">Car</code> or a <code class="inline">Truck</code>, and never both. A newly imported vehicle sits as a generic <code class="inline">Vehicle</code> row until its type is confirmed. Which mode?`,
+    options: [
+      { label: 'Disjoint + Total', sub: '(d, total)', correct: false },
+      { label: 'Disjoint + Partial', sub: '(d, partial)', correct: true },
+      { label: 'Overlapping + Total', sub: '(o, total)', correct: false },
+      { label: 'Overlapping + Partial', sub: '(o, partial)', correct: false },
+    ],
+    explanation: `<strong>Disjoint + Partial.</strong> "Never both" is disjoint (d). "Sits as a generic Vehicle until confirmed" is the tell for partial — the superclass is allowed to exist on its own. Compare with the DMV example, where no generic Vehicle row may exist at all.`
+  },
+  {
+    prompt: `A library catalogues <code class="inline">Publication</code> with subclasses <code class="inline">Book</code> and <code class="inline">Journal</code>. Some items are both (a bound annual volume), and donated boxes sit unclassified for weeks before anyone assigns a type. Which mode?`,
+    options: [
+      { label: 'Disjoint + Total', sub: '(d, total)', correct: false },
+      { label: 'Disjoint + Partial', sub: '(d, partial)', correct: false },
+      { label: 'Overlapping + Total', sub: '(o, total)', correct: false },
+      { label: 'Overlapping + Partial', sub: '(o, partial)', correct: true },
+    ],
+    explanation: `<strong>Overlapping + Partial.</strong> "Some are both" rules out disjoint; "sit unclassified for weeks" rules out total. This is the most permissive of the four modes, and the only one that lets a dual-typed item and a not-yet-typed item coexist.`
+  },
+  {
+    prompt: `A <code class="inline">Course</code> is taught by several <code class="inline">Instructor</code>s, and an instructor can teach several courses. Every (course, instructor) pairing also records a <code class="inline">semester</code>. Which construct models this?`,
+    options: [
+      { label: '1:N relationship', sub: 'One side has many', correct: false },
+      { label: 'M:N relationship', sub: 'Promoted to an associative entity', correct: true },
+      { label: 'Specialization', sub: 'IS-A hierarchy', correct: false },
+      { label: 'Aggregation', sub: 'A relationship inside another', correct: false },
+    ],
+    explanation: `<strong>M:N relationship.</strong> Many-to-many is the base shape; because the pairing carries its own attribute (semester), it is promoted to an associative entity — <code class="inline">Teaches(course_id, instructor_id, semester)</code>. Aggregation is for a <em>relationship</em> that participates in another relationship, which is not what is happening here.`
+  },
+  {
+    prompt: `A social app has <code class="inline">User</code> with subclasses <code class="inline">Free</code> and <code class="inline">Premium</code>, differing by a couple of columns. Almost every page begins with "load all users" and only rarely filters by tier. Which mapping strategy fits best?`,
+    options: [
+      { label: 'Single table + discriminator', sub: 'One table, a tier column', correct: true },
+      { label: 'Table-per-subclass', sub: 'Parent + child tables', correct: false },
+      { label: 'Table-per-concrete-class', sub: 'Only leaf tables', correct: false },
+      { label: 'None of them', sub: 'A hierarchy cannot be mapped', correct: false },
+    ],
+    explanation: `<strong>Single table with a discriminator.</strong> The hot path asks for "all users," and the subclasses add only a couple of columns, so one table with a <code class="inline">tier</code> column answers it with no join. Table-per-subclass would put a join on every such query; table-per-concrete-class would need a UNION and would duplicate the shared columns.`
+  },
+];
+</script>
+
+<script>
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function cell(id, label){
+  const hint = label ? label : 'edit and run';
+  return `
+  <div class="cell" data-cell="${id}">
+    <div class="cell-head"><span class="cell-title">${hint}</span></div>
+    <textarea spellcheck="false"></textarea>
+    <div class="cell-actions">
+      <button class="btn run-btn">▶ Run</button>
+      <button class="btn secondary reset-btn">↺ Reset</button>
+      <span class="hint">Ctrl/Cmd + Enter also runs it</span>
+    </div>
+    <div class="output"></div>
+  </div>`;
+}
+
+function choiceQuizHtml(prefix, title, subtitle, total){
+  return `
+  <div class="cq" id="${prefix}">
+    <div class="cq-header">
+      <div class="cq-title">${title}</div>
+      <div class="cq-score">Score: <strong id="${prefix}Score">0</strong> / <span id="${prefix}Total">${total}</span></div>
+    </div>
+    <p class="cq-subtitle">${subtitle}</p>
+    <div id="${prefix}Questions"></div>
+    <div class="cq-final" id="${prefix}Final" style="display:none;">
+      <div class="cq-final-score"></div>
+      <button class="cq-retry-btn" id="${prefix}Retry">↺ Try again</button>
+    </div>
+  </div>`;
+}
+
+/* Disjoint/Overlapping simulator: a real SQLite database with triggers
+   that only exist in "Disjoint" mode, so the DBMS itself -- not a
+   JavaScript re-implementation -- decides whether a dual-role insert
+   is allowed. */
+function dosWidgetHtml(){
+  return `
+  <div class="dos" id="dos">
+    <div class="dos-picker">
+      <button class="dos-mode-btn" data-mode="overlapping">Overlapping</button>
+      <button class="dos-mode-btn" data-mode="disjoint">Disjoint</button>
+    </div>
+    <div class="dos-ddl" id="dosDdl"></div>
+    <div class="dos-explain" id="dosExplain"></div>
+    <div class="dos-actions">
+      <button class="dos-action-btn" id="dosInsertStudent">Insert Ada as Student</button>
+      <button class="dos-action-btn" id="dosInsertEmployee">Now also insert Ada as Employee</button>
+    </div>
+    <div class="dos-message" id="dosMessage"></div>
+    <div class="dos-tables">
+      <div class="dos-table-wrap"><div class="dos-table-label">person</div>
+        <table><thead><tr><th>id</th><th>name</th></tr></thead><tbody id="dosPersonBody"></tbody></table></div>
+      <div class="dos-table-wrap"><div class="dos-table-label">student</div>
+        <table><thead><tr><th>id</th><th>gpa</th></tr></thead><tbody id="dosStudentBody"></tbody></table></div>
+      <div class="dos-table-wrap"><div class="dos-table-label">employee</div>
+        <table><thead><tr><th>id</th><th>salary</th></tr></thead><tbody id="dosEmployeeBody"></tbody></table></div>
+    </div>
+    <button class="dos-reset-btn" id="dosReset">↺ Reset simulation</button>
+  </div>`;
+}
+
+const SECTIONS = [
+
+{
+  id: 'overview', title: 'The Hierarchy: Superclasses and Subclasses', kicker: 'Foundations',
+  html: `
+  <p>Basic ER modeling puts every entity in its own box. But a Student and a Professor are both a kind of Person — that's an <strong>Is-A</strong> relationship. In EER, Person is the <strong>superclass</strong>; Student and Professor are <strong>subclasses</strong>. Subclasses inherit every attribute from the superclass automatically — you only draw what's <em>unique</em> to each subclass.</p>
+  ${diagBasicSpecialization()}
+  <p>Going from broad to specific — Person into Student/Professor — is called <strong>specialization</strong>. Going the other way, noticing that Car and Truck are both kinds of Vehicle and grouping them, is <strong>generalization</strong>. The diagram ends up looking identical either way; only the direction you thought in changes.</p>`
+},
+
+{
+  id: 'disjoint-overlap', title: 'Disjoint vs. Overlapping', kicker: 'Foundations',
+  html: `
+  <p>Once you have a hierarchy, you need rules of membership. <strong>Disjointness</strong> asks: can one entity instance belong to more than one subclass at the same time? If no, it's <strong>Disjoint</strong> (marked <code class="inline">d</code> in the circle) — a student is Undergrad or Graduate, never both. If yes, it's <strong>Overlapping</strong> (marked <code class="inline">o</code>) — a person can be Staff and Faculty simultaneously.</p>
+  ${diagDisjointOverlapCompare()}
+  <div class="callout rust"><strong>Get this wrong and the database enforces the wrong rule.</strong> Mark a genuinely overlapping relationship as Disjoint, and your schema will physically prevent someone from holding two roles — forcing two separate Person records for one human being, which corrupts everything downstream that assumes one person = one row.</div>
+  <p>The simulator below isn't a diagram — it's a real SQLite database. Pick a mode, then actually try inserting the same person as both a Student and an Employee, and let the database decide.</p>
+  ${dosWidgetHtml()}`
+},
+
+{
+  id: 'completeness', title: 'Completeness: Total vs. Partial', kicker: 'Foundations',
+  html: `
+  <p><strong>Total specialization</strong> means no generic instances are allowed — every Person must be a Student, an Employee, or both. Drawn as a <strong>double line</strong> from superclass to circle. <strong>Partial specialization</strong> allows the superclass to exist on its own (an alumnus who's neither) — drawn as a single line.</p>
+  <p>Disjointness and completeness are independent choices, so together they give four distinct modes. Using Vehicle → {Car, Truck}:</p>
+  ${diagFourModes()}
+  <table class="datatable">
+    <tr><th>Mode</th><th>Meaning</th><th>Real example</th></tr>
+    <tr><td>d, total</td><td>Every vehicle is exactly one of Car or Truck. No generic vehicles, no dual identities.</td><td>DMV registration — every vehicle is legally classified.</td></tr>
+    <tr><td>d, partial</td><td>A vehicle can be a Car, a Truck, or neither, but not both.</td><td>Fleet system where specialty equipment stays generic until classified.</td></tr>
+    <tr><td>o, total</td><td>Every vehicle is a Car or a Truck, and can be both.</td><td>Hybrid-classification insurance system.</td></tr>
+    <tr><td>o, partial</td><td>A vehicle can be neither, one, or both. Most permissive.</td><td>Museum inventory where old prototypes resist categorization.</td></tr>
+  </table>
+  <div class="callout blue"><strong>The enforcement code differs radically by mode.</strong> <code class="inline">d</code> needs a check (or trigger) blocking insertion into two subclass tables for the same ID — exactly what the simulator above just demonstrated. <code class="inline">total</code> needs every superclass row to have a matching subclass row — and, as the next cell shows, plain SQL genuinely cannot express that on its own.</div>
+  ${cell('totality_gap', 'the totality gap — a real limitation, not a diagram problem')}`
+},
+
+{
+  id: 'mode-explorer', title: 'The Four Modes, Side by Side', kicker: 'Foundations',
+  html: `
+  <p>Disjointness and completeness are independent choices, so a hierarchy has exactly one of four modes. Pick a mode below and watch which example people it accepts, and which it refuses &mdash; the memberships that break the rule light up.</p>
+  <div class="widget">
+    <div class="widget-title">Inheritance Mode Explorer</div>
+    <div class="widget-sub">choose a mode · see who is legal, and why</div>
+    <div class="iem-grid" id="iem-grid"></div>
+    <div class="iem-legend">
+      <span><span class="iem-sw ok"></span>Legal under this mode</span>
+      <span><span class="iem-sw bad"></span>Violates this mode</span>
+    </div>
+    <div class="iem-rows" id="iem-rows"></div>
+    <div class="iem-note" id="iem-note"></div>
+  </div>`
+},
+
+{
+  id: 'aggregation', title: 'Aggregation: Relationships Between Relationships', kicker: 'Foundations',
+  html: `
+  <p>Standard ER can only connect <em>entities</em> with relationships. But sometimes a relationship itself needs to participate in another relationship. A Student <code class="inline">Enrolls</code> in a Course — that's a relationship. Now the university wants to assign a Tutor <em>to that specific enrollment</em>, not to the student in general and not to the course in general.</p>
+  <p><strong>Aggregation</strong> draws a box around Student–Enrolls–Course and treats the whole thing as a single unit. A new relationship line runs from Tutor to that box.</p>
+  ${diagAggregation()}
+  <p>Without aggregation, you'd need a <strong>ternary</strong> relationship — Student, Course, and Tutor all connected to one three-way relationship. That works mathematically, but it obscures that a tutor is an add-on to an <em>existing</em> enrollment, and it creates a real modeling problem: run both versions below.</p>
+  ${cell('agg_ternary', 'Option A — ternary')}
+  ${cell('agg_aggregation', 'Option B — aggregation')}
+  <p>Aggregation isn't a diagramming flourish — it changes the shape of the resulting tables, and which facts they're able to represent on their own.</p>`
+},
+
+{
+  id: 'mapping-strategies', title: 'Mapping Inheritance to Tables: Three Strategies', kicker: 'Mapping',
+  html: `
+  <p>EER inheritance doesn't survive into the relational model directly — you have to choose how to flatten it. Run all three below against the same underlying data and compare.</p>
+  <p><strong>Strategy 1 — single table with a discriminator.</strong> Fast, no joins, but wasted NULLs, and you can't require "students must have a GPA" without also forbidding all employees from existing in the same table.</p>
+  ${cell('strategy_single', 'table-per-class-hierarchy')}
+  <p><strong>Strategy 2 — table-per-subclass (joined).</strong> No NULLs, subclass-specific <code class="inline">NOT NULL</code> works, overlap is trivial. Costs a join on every subclass query.</p>
+  ${cell('strategy_subclass', 'table-per-subclass — the usual default')}
+  <p><strong>Strategy 3 — table-per-concrete-class.</strong> No joins, no NULLs, each table stands alone — but overlap becomes a redundancy trap (the same person duplicated across two unrelated tables with nothing tying them together), and "give me everyone" needs a <code class="inline">UNION</code>.</p>
+  ${cell('strategy_concrete', 'table-per-concrete-class')}
+  <div class="callout"><strong>The right choice depends on your queries.</strong> Constantly asking "give me all people regardless of type"? Strategy 1 or 2. Never treating subclasses uniformly, and they're genuinely disjoint? Strategy 3 is fine. Need clean per-subclass constraints and overlap support? Strategy 2 is the usual default.</div>`
+},
+
+{
+  id: 'critique', title: 'Critiquing the Model: Over- and Under-Modeling', kicker: 'Mapping',
+  html: `
+  <p>The most common new-designer mistake is <strong>over-modeling</strong>: creating a subclass for every tiny variation. Before adding a subclass, ask two questions:</p>
+  <ol class="plain">
+    <li>Does this subclass have unique attributes the superclass doesn't?</li>
+    <li>Does this subclass participate in unique relationships that other subclasses don't?</li>
+  </ol>
+  <p>If both answers are no, you don't need a subclass — just add the attribute to the existing entity and leave it blank where it doesn't apply. An insurance company creating <code class="inline">HomeownersInPennsylvania</code>, <code class="inline">HomeownersInNewJersey</code>, and 45 more (product line, state) combinations has failed this test twice over: state is a plain attribute, not a structural difference.</p>
+  <p><strong>Under-modeling</strong> is the opposite failure: one giant entity with dozens of attributes each used maybe 10% of the time — <code class="inline">ResearchGrantAmount</code> only for Faculty, <code class="inline">TypedWordsPerMinute</code> only for Staff, both living on one bloated Employee table. That's exactly the NULL-sprawl problem Strategy 1 above showed in miniature — under-modeling is what happens when you never reach for Strategy 2 even when the subclasses clearly warrant it.</p>
+  <div class="callout blue"><strong>The bigger picture:</strong> EER isn't about making diagrams look impressive — it's about capturing the rules of the business so the database can enforce them. Every choice between <code class="inline">d</code> and <code class="inline">o</code>, single line and double line, is a decision about what your system will and won't allow to happen.</div>`
+},
+
+{
+  id: 'hierarchy-to-schema', title: 'From a Hierarchy to a Real Schema', kicker: 'Mapping',
+  html: `
+  <p>Specialization is not decoration — every line you draw forces a decision about tables, NULLs, and constraints later. Walk the sequence once and the choice stops feeling arbitrary.</p>
+  <div class="widget">
+    <div class="widget-title">From a Hierarchy to a Schema</div>
+    <div class="widget-sub">superclass → subclasses → constraints → tables → DDL</div>
+    <div class="qstep-rail" id="hierstep-rail"></div>
+    <div class="qstep-body" id="hierstep-body"></div>
+    <div class="qstep-controls">
+      <button class="qstep-restart-btn" id="hierstep-back">◀ Back</button>
+      <button class="qstep-next-btn" id="hierstep-next">Next step ▶</button>
+      <button class="qstep-restart-btn" id="hierstep-restart">↺ Restart</button>
+      <span class="qstep-count" id="hierstep-count"></span>
+    </div>
+  </div>`
+},
+
+{
+  id: 'worked-mapping-tradeoff', title: 'Worked Example: One Hierarchy, Three Schemas', kicker: 'Worked Examples',
+  html: `
+  <p>A work-study program needs <code class="inline">Person</code> with subclasses <code class="inline">Student</code> and <code class="inline">Employee</code> — and some people are both. The three mapping strategies from the last section are not equally good here, and the difference is what "get everyone" costs.</p>
+  <p>Run the cell: it builds all three shapes at once from the same two people.</p>
+  ${cell('worked_strategy_tradeoff', 'one hierarchy, three table shapes — edit and run')}
+  <ul>
+    <li><strong>Single table.</strong> One query, no joins — but <code class="inline">gpa</code> and <code class="inline">salary</code> are NULL for whichever subtype a row is not, so a NOT NULL business rule cannot be expressed and every reader must remember which NULLs are "real".</li>
+    <li><strong>Table-per-subclass.</strong> <code class="inline">gpa</code> and <code class="inline">salary</code> are NOT NULL precisely where they belong, and overlap is free — a work-study student simply gets a row in each child table. The cost is that "get everyone" now joins upward from the superclass.</li>
+    <li><strong>Table-per-concrete-class.</strong> No joins and no NULLs — but modeling someone who is <em>both</em> requires duplicating their name across two unrelated rows, with nothing enforcing that the two rows are the same human. That is the redundancy trap from the first lecture, reintroduced by the mapping choice.</li>
+  </ul>
+  <p class="small">The rule of thumb: overlap → table-per-subclass; no overlap and a strict "everyone is exactly one kind" → single table; truly independent subtypes with no shared identity → concrete tables. The diagram decides what is <em>possible</em>; the workload decides which cost you are willing to pay.</p>`
+},
+
+{
+  id: 'interview', title: 'In the Interview', kicker: 'Apply It',
+  html: `
+  <p>Inheritance and specialization show up whenever an interviewer asks about polymorphic data.</p>
+  <div class="interview-box">
+    <h3>The "user types" question</h3>
+    <p>"Our app has Riders and Drivers. Both are Users but with different attributes. How do you model this?" Every interviewer knows there are three answers and wants to hear you name them — and weigh each against the system's actual constraints:</p>
+    <ul>
+      <li><strong>Table-per-subclass</strong> wins when subclasses have very different attributes (drivers have vehicles, licenses, background checks; riders don't) — cleaner <code class="inline">NOT NULL</code> constraints, no wasted columns.</li>
+      <li><strong>Single-table-with-discriminator</strong> wins when subclasses are lightweight and most queries hit the parent ("list all users regardless of type") — avoids joins on the hot path.</li>
+      <li><strong>Table-per-concrete-class</strong> wins when subclasses are truly disjoint and never queried uniformly — but it's the rarest choice in practice.</li>
+    </ul>
+    <p>Articulating the <em>criteria</em>, not just reciting the three names, is what separates candidates.</p>
+    <h3>The GraphQL / ORM tie-in</h3>
+    <p>"Your GraphQL schema has a <code class="inline">User</code> interface with <code class="inline">Rider</code> and <code class="inline">Driver</code> implementations — what's the SQL side look like?" Recognizing that a GraphQL interface and an EER specialization hierarchy are the same idea at different layers of the stack is a promotion-worthy insight.</p>
+    <h3>The aggregation question</h3>
+    <p>"A Booking involves a Rider, a Driver, and a Car. Every booking also gets rated. How do you model the rating?" This is aggregation territory: box the Rider–Books–Driver–Car unit as an associative entity, then Rating → Booking becomes a clean 1:1 or 1:N. Getting there without being led is a strong signal.</p>
+  </div>
+  <p><strong>Rule of thumb:</strong> any time an interviewer says "this thing has different kinds," they're inviting the three-inheritance-strategies discussion. Naming all three and picking one for a specific, stated reason is the winning move.</p>`
+},
+
+{
+  id: 'quiz', title: 'Try It Yourself: Specialization Constraint Picker', kicker: 'Apply It',
+  html: `
+  <p>Ten scenarios covering disjoint/overlapping × total/partial specialization modes, plus questions on choosing the right construct and mapping strategy.</p>
+  ${choiceQuizHtml('specq', 'Specialization Constraint Picker', 'Read each scenario carefully — the wording is the whole exercise.', SPEC_QUESTIONS.length)}`
+},
+
+{
+  id: 'practice', title: 'Practice Problems', kicker: 'Apply It',
+  html: `
+  <div class="problem">
+    <div class="pnum">Problem 1</div>
+    <p>A university models Person with subclasses Student and Employee. Alumni are people no longer students or employees but who remain in the system. Faculty members are employees who also study part-time toward a PhD. Which specialization constraints apply?</p>
+    <details class="answer"><summary>Show answer</summary><div class="answer-body">
+      <p><strong>Overlapping, partial.</strong></p>
+      <ul>
+        <li>Overlapping: a faculty-PhD candidate is both a Student and an Employee simultaneously — the subclasses are not disjoint.</li>
+        <li>Partial: alumni are Persons who are neither Student nor Employee — the specialization doesn't cover the whole superclass.</li>
+      </ul>
+      <p>Forcing disjoint would corrupt the data (two Person rows per faculty-PhD candidate). Forcing total would prevent alumni from existing. Both constraints are wrong here; both must be relaxed.</p>
+    </div></details>
+  </div>
+
+  <div class="problem">
+    <div class="pnum">Problem 2</div>
+    <p>You're mapping Person(id,name) with disjoint total subclasses Student(gpa) and Employee(salary) to tables. Compare how the three strategies handle: "list every person's name and, if they're a student, their GPA, otherwise their salary."</p>
+    <details class="answer"><summary>Show answer</summary><div class="answer-body">
+      <p><strong>Single table</strong> — one query, no joins: <code class="inline">SELECT name, CASE WHEN kind='S' THEN gpa ELSE salary END FROM person;</code></p>
+      <p><strong>Table-per-subclass</strong> — needs a <code class="inline">LEFT JOIN</code> to both children: <code class="inline">SELECT p.name, COALESCE(s.gpa, e.salary) FROM person p LEFT JOIN student s ON s.id=p.id LEFT JOIN employee e ON e.id=p.id;</code></p>
+      <p><strong>Table-per-concrete-class</strong> — needs a <code class="inline">UNION</code>: <code class="inline">SELECT name, gpa FROM student UNION ALL SELECT name, salary FROM employee;</code></p>
+      <p>The single-table approach is shortest; the join approach is most flexible; the union approach is what you get when the tables were designed for a disjoint-only world. Query patterns should drive the choice — try all three live in the Mapping Strategies section above.</p>
+    </div></details>
+  </div>
+
+  <div class="problem">
+    <div class="pnum">Problem 3</div>
+    <p>Critique this design: an insurance company creates 47 subclasses of Policy — HomeownersInPennsylvania, HomeownersInNewJersey, AutoInPennsylvania, etc. — one per (product line, state) combination. What's wrong?</p>
+    <details class="answer"><summary>Show answer</summary><div class="answer-body">
+      <p><strong>Over-modeling.</strong> The subclasses are being created for value combinations, not structural differences. The proper model has two independent concerns: a Policy superclass specialized by product line (Homeowners, Auto, Life — genuinely different attributes: dwelling coverage vs. VIN vs. beneficiaries), and state as a plain attribute (<code class="inline">policy_state</code>) — a Homeowners policy in PA and one in NJ have the same shape, just different values.</p>
+      <p>The two-question test: does <code class="inline">HomeownersInPennsylvania</code> have attributes <code class="inline">HomeownersInNewJersey</code> doesn't? No. Unique relationships? No. It shouldn't be a subclass.</p>
+    </div></details>
+  </div>
+
+  <div class="problem">
+    <div class="pnum">Problem 4</div>
+    <p>A hospital wants to model that a Doctor operates on a Patient (relationship <em>Operates</em>), and each such operation is assisted by a set of Nurses. Ternary relationship, aggregation, or something else?</p>
+    <details class="answer"><summary>Show answer</summary><div class="answer-body">
+      <p><strong>Aggregation.</strong> Box Doctor–Operates–Patient as an "Operation" unit; draw Nurse–Assists→[Operation] as M:N. A ternary <code class="inline">OperatesAssists(Doctor,Patient,Nurse)</code> implies all three participate at the same level — but the operation exists whether or not nurses assisted it, and the ternary structure would force at least one nurse tuple per operation (or explode into a near-Cartesian mess).</p>
+      <p>Relational mapping: <code class="inline">Operation(op_id, doctor_id, patient_id, date)</code> plus a clean <code class="inline">Assists(op_id, nurse_id)</code> junction table. Aggregation gives the right structure directly — this is exactly the pattern demonstrated live in the Aggregation section above.</p>
+    </div></details>
+  </div>
+
+  <div class="problem">
+    <div class="pnum">Problem 5</div>
+    <p>Given Vehicle → {Car, Truck} marked (d, total), what SQL constraint(s) would the DBMS need, and why is at least one typically impossible with plain SQL constraints alone?</p>
+    <details class="answer"><summary>Show answer</summary><div class="answer-body">
+      <p>Assuming table-per-subclass mapping — <code class="inline">Vehicle(id,...)</code>, <code class="inline">Car(id FK,...)</code>, <code class="inline">Truck(id FK,...)</code> — you need:</p>
+      <ul>
+        <li><strong>Disjoint (d):</strong> an ID in <code class="inline">Car</code> must not appear in <code class="inline">Truck</code>. Achievable with a trigger — exactly what the Disjoint/Overlapping simulator above runs for real.</li>
+        <li><strong>Total:</strong> every ID in <code class="inline">Vehicle</code> must appear in at least one of <code class="inline">Car</code> or <code class="inline">Truck</code>. Standard SQL has no "row must exist in at least one of two tables" constraint. You're left with a trigger (chicken-and-egg with the FK ordering), application-level enforcement, or switching to the single-table mapping, where a <code class="inline">CHECK IN ('Car','Truck')</code> discriminator gets totality for free.</li>
+      </ul>
+      <p>Verified above in the "totality gap" cell: SQLite lets a parentless-of-subtype Person row through every time. The mismatch between the elegance of the EER model and the awkwardness of SQL enforcement is a real driver behind choosing the single-table strategy in practice.</p>
+    </div></details>
+  </div>`
+},
+  {
+    id: 'in-2026', title: "In 2026: What Has Changed", kicker: '2026 Status',
+    html: `
+      <p>Hierarchies are still modelled on paper, but how you store one is now a deliberate physical choice.</p>
+      <ul>
+        <li><strong>Three ways to store a hierarchy:</strong> table-per-type, a single table with a discriminator column, or a JSON column holding the subtype's extra attributes.</li>
+        <li><strong>The choice is visible in the tooling</strong> — a discriminator column in the ORM, a <code>kind</code> field in the API, a partial index in the DDL.</li>
+        <li><strong>Disjointness can be enforced, not just drawn.</strong> CHECK constraints and partial unique indexes stop a row belonging to two subtypes at once.</li>
+        <li><strong>Aggregation versus association</strong> decides whether a relationship becomes an entity in its own right — the difference between a real table and a foreign key.</li>
+      </ul>
+      <p class="small">The same hierarchy can be stored three ways with three different cost profiles; the model has to survive all of them.</p>`
+  },
+];
+</script>
+
+<script>
+/* =========================================================================
+   ENGINE
+   ========================================================================= */
+
+let SQL = null;
+
+const NAV_GROUPS = [{label:'Foundations', ids:['overview','disjoint-overlap','completeness','mode-explorer','aggregation']},{label:'Mapping', ids:['mapping-strategies','critique','hierarchy-to-schema']},{label:'Worked Examples', ids:['worked-mapping-tradeoff']},{label:'Apply It', ids:['quiz','practice','interview']},{label:'2026 Status', ids:['in-2026']}];
+
+function renderNav(){
+  const nav = document.getElementById('playgroundNav');
+  if (!nav) return;
+  NAV_GROUPS.forEach(g => {
+    const grp = document.createElement('div');
+    grp.className = 'grp';
+    grp.textContent = g.label;
+    nav.appendChild(grp);
+    g.ids.forEach(id => {
+      const sec = SECTIONS.find(s => s.id === id);
+      if (!sec) return;
+      const a = document.createElement('a');
+      a.href = '#' + id;
+      a.textContent = sec.title;
+      nav.appendChild(a);
+    });
+  });
+}
+
+function renderSections(){
+  const container = document.getElementById('sections');
+  SECTIONS.forEach(sec => {
+    const el = document.createElement('section');
+    el.id = sec.id;
+    el.innerHTML = `<div class="kicker">${sec.kicker}</div><h2>${sec.title}</h2>${sec.html}`;
+    container.appendChild(el);
+  });
+  renderNav();
+}
+
+function wireNavHighlight(){
+  const sections = Array.from(document.querySelectorAll('main section'));
+  const links = Array.from(document.querySelectorAll('#playgroundNav a'));
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const link = links.find(a => a.getAttribute('href') === '#' + entry.target.id);
+      if (!link) return;
+      if (entry.isIntersecting){
+        links.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+}
+
+/* ---- SQL execution (iterateStatements so zero-row SELECTs still show) ---- */
+function commonErrorHint(message){
+  const m = message.toLowerCase();
+  if (m.includes('no such column')) return 'SQLite can\'t find a column with that exact name in the table(s) you\'re querying — check spelling, and which table it lives in.';
+  if (m.includes('no such table')) return 'There\'s no table by that name in this cell\'s database — check spelling, or it may not exist until later in this reading.';
+  if (m.includes('unique constraint failed')) return 'You tried to insert or update a value that must be unique but already exists in this table.';
+  if (m.includes('foreign key constraint failed')) return 'A foreign key stopped this. Either you inserted/updated a row pointing at a parent that doesn\'t exist, or you tried to delete/update a parent a child still depends on.';
+  if (m.includes('not null constraint failed')) return 'A column marked NOT NULL was left empty. Every required column needs a value in every row.';
+  if (m.includes('syntax error')) return 'SQLite couldn\'t parse this — look for a missing comma, keyword, or parenthesis.';
+  if (m.includes('check constraint failed')) return 'A CHECK constraint rejected this value — it violates a rule declared on the column or table.';
+  return null;
+}
+
+function runSqlAgainstFreshDb(setupSql, userSql){
+  const db = new SQL.Database();
+  try{
+    if (setupSql && setupSql.trim().length) db.run(setupSql);
+  } catch (e){
+    db.close();
+    throw new Error('Internal setup error: ' + e.message);
+  }
+  const queryResults = [];
+  let statementCount = 0;
+  let err = null;
+  try{
+    for (const stmt of db.iterateStatements(userSql)){
+      statementCount++;
+      const cols = stmt.getColumnNames();
+      const rows = [];
+      while (stmt.step()){ if (cols.length > 0) rows.push(stmt.get()); }
+      if (cols.length > 0) queryResults.push({ columns: cols, values: rows });
+      stmt.free();
+    }
+  } catch(e){ err = e; }
+  const rowsModified = db.getRowsModified();
+  db.close();
+  return { queryResults, statementCount, rowsModified, err };
+}
+
+function renderResultTable(r){
+  let html = '<table><thead><tr>' + r.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('') + '</tr></thead><tbody>';
+  r.values.forEach(row => {
+    html += '<tr>' + row.map(v => `<td>${v === null ? '<em style="color:var(--ink-soft)">NULL</em>' : escapeHtml(String(v))}</td>`).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+  html += `<div class="rowcount">${r.values.length} row${r.values.length===1?'':'s'}</div>`;
+  return html;
+}
+
+function renderOutput(outEl, sql){
+  if (!SQL){ outEl.innerHTML = `<div class="msg">Engine still loading — try again in a moment.</div>`; return; }
+  if (!sql.trim()){ outEl.innerHTML = ''; return; }
+  const cellId = outEl.closest('.cell').getAttribute('data-cell');
+  const config = CELLS[cellId];
+  let html = '';
+  try{
+    const { queryResults, statementCount, rowsModified, err } = runSqlAgainstFreshDb(config.setup, sql);
+    queryResults.forEach(r => { html += renderResultTable(r); });
+    if (err){
+      const hint = commonErrorHint(err.message);
+      html += `<div class="msg error"><strong>Error:</strong> ${escapeHtml(err.message)}${hint ? `<span class="msg hint">${escapeHtml(hint)}</span>` : ''}</div>`;
+    } else if (queryResults.length === 0 && statementCount > 0){
+      html += `<div class="msg ok">Statement(s) executed successfully.${rowsModified ? ` (${rowsModified} row${rowsModified===1?'':'s'} affected by the final data-changing statement)` : ''}</div>`;
+    } else if (statementCount === 0){
+      html += `<div class="msg">Nothing to run — this looks like only comments or blank lines.</div>`;
+    }
+    outEl.innerHTML = html;
+  } catch(e){
+    outEl.innerHTML = `<div class="msg error"><strong>Error:</strong> ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+
+function wireCell(cellEl){
+  const id = cellEl.getAttribute('data-cell');
+  const config = CELLS[id];
+  if (!config) return;
+  const textarea = cellEl.querySelector('textarea');
+  const outEl = cellEl.querySelector('.output');
+  textarea.value = config.starter;
+  pgGrow(textarea);
+  textarea.addEventListener('input', () => pgGrow(textarea));
+  const runBtn = cellEl.querySelector('.run-btn');
+  const resetBtn = cellEl.querySelector('.reset-btn');
+  runBtn.addEventListener('click', () => renderOutput(outEl, textarea.value));
+  resetBtn.addEventListener('click', () => { textarea.value = config.starter; pgGrow(textarea); outEl.innerHTML = ''; });
+  textarea.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){ e.preventDefault(); renderOutput(outEl, textarea.value); }
+  });
+  if (!SQL) runBtn.disabled = true;
+}
+function wireCells(){ document.querySelectorAll('.cell').forEach(wireCell); }
+
+/* ---- Generic one-at-a-time multiple-choice quiz engine ---- */
+const quizState = {};
+
+function choiceQuestionHtml(prefix, q, i, total){
+  const optsHtml = q.options.map((o, oi) => `
+    <button class="cq-option" data-qi="${i}" data-oi="${oi}">
+      <span class="cq-opt-main">${escapeHtml(o.label)}</span>
+      ${o.sub ? `<span class="cq-opt-sub">${escapeHtml(o.sub)}</span>` : ''}
+    </button>`).join('');
+  return `
+  <div class="cq-question" data-index="${i}" style="display:${i===0?'':'none'}">
+    <div class="cq-eyebrow">${i + 1} OF ${total}</div>
+    <p class="cq-scenario">${q.prompt}</p>
+    <p class="cq-pick-label">Pick the best answer</p>
+    <div class="cq-options">${optsHtml}</div>
+    <div class="cq-feedback"></div>
+  </div>`;
+}
+
+function choiceSelectOption(prefix, questions, qi, oi){
+  const q = questions[qi];
+  const qEl = document.querySelector(`#${prefix}Questions .cq-question[data-index="${qi}"]`);
+  const buttons = qEl.querySelectorAll('.cq-option');
+  const chosen = q.options[oi];
+  const correctIndex = q.options.findIndex(o => o.correct);
+  buttons.forEach((b, bi) => {
+    b.disabled = true;
+    if (bi === correctIndex) b.classList.add('correct');
+    else if (bi === oi) b.classList.add('incorrect');
+  });
+  if (chosen.correct){
+    quizState[prefix].score++;
+    document.getElementById(prefix + 'Score').textContent = quizState[prefix].score;
+  }
+  const isLast = qi === questions.length - 1;
+  qEl.querySelector('.cq-feedback').innerHTML = `
+    <div class="cq-verdict ${chosen.correct ? 'right' : 'wrong'}">${chosen.correct ? 'Correct.' : 'Not quite.'}</div>
+    <p class="cq-explain">${q.explanation}</p>
+    <button class="cq-next-btn">${isLast ? 'See final score →' : 'Next →'}</button>`;
+  qEl.querySelector('.cq-next-btn').addEventListener('click', () => choiceNext(prefix, questions, qi));
+}
+
+function choiceNext(prefix, questions, qi){
+  if (qi < questions.length - 1){
+    document.querySelector(`#${prefix}Questions .cq-question[data-index="${qi}"]`).style.display = 'none';
+    document.querySelector(`#${prefix}Questions .cq-question[data-index="${qi + 1}"]`).style.display = '';
+  } else {
+    document.getElementById(prefix + 'Questions').style.display = 'none';
+    const finalEl = document.getElementById(prefix + 'Final');
+    finalEl.style.display = '';
+    finalEl.querySelector('.cq-final-score').textContent = `You scored ${quizState[prefix].score} / ${questions.length}.`;
+  }
+}
+
+function choiceRenderAll(prefix, questions){
+  const container = document.getElementById(prefix + 'Questions');
+  container.innerHTML = questions.map((q, i) => choiceQuestionHtml(prefix, q, i, questions.length)).join('');
+  container.style.display = '';
+  document.getElementById(prefix + 'Final').style.display = 'none';
+  container.querySelectorAll('.cq-option').forEach(btn => {
+    btn.addEventListener('click', () => choiceSelectOption(prefix, questions, Number(btn.dataset.qi), Number(btn.dataset.oi)));
+  });
+  quizState[prefix] = { score: 0 };
+  document.getElementById(prefix + 'Score').textContent = '0';
+}
+
+function initChoiceQuiz(prefix, questions){
+  if (!document.getElementById(prefix)) return;
+  choiceRenderAll(prefix, questions);
+  document.getElementById(prefix + 'Retry').addEventListener('click', () => choiceRenderAll(prefix, questions));
+}
+
+/* ---- Disjoint / Overlapping simulator ---- */
+let dosDb = null;
+let dosMode = 'overlapping';
+
+function dosSetupSql(mode){
+  let sql = `
+CREATE TABLE person (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+CREATE TABLE student (id INTEGER PRIMARY KEY REFERENCES person(id), gpa REAL);
+CREATE TABLE employee (id INTEGER PRIMARY KEY REFERENCES person(id), salary REAL);
+INSERT INTO person VALUES (1, 'Ada');`;
+  if (mode === 'disjoint'){
+    sql += `
+CREATE TRIGGER disjoint_student
+BEFORE INSERT ON student
+WHEN EXISTS (SELECT 1 FROM employee WHERE employee.id = NEW.id)
+BEGIN SELECT RAISE(ABORT, 'Disjoint violation: person is already an Employee'); END;
+CREATE TRIGGER disjoint_employee
+BEFORE INSERT ON employee
+WHEN EXISTS (SELECT 1 FROM student WHERE student.id = NEW.id)
+BEGIN SELECT RAISE(ABORT, 'Disjoint violation: person is already a Student'); END;`;
+  }
+  return sql.trim();
+}
+
+function dosDdlSnippet(mode){
+  if (mode === 'disjoint'){
+    return `CREATE TABLE student (id INTEGER PRIMARY KEY REFERENCES person(id), gpa REAL);
+CREATE TABLE employee (id INTEGER PRIMARY KEY REFERENCES person(id), salary REAL);
+
+-- a trigger blocks inserting an id into one table if it's already in the other
+CREATE TRIGGER disjoint_student BEFORE INSERT ON student
+  WHEN EXISTS (SELECT 1 FROM employee WHERE employee.id = NEW.id)
+  BEGIN SELECT RAISE(ABORT, 'Disjoint violation'); END;
+-- (mirrored the other direction on employee)`;
+  }
+  return `CREATE TABLE student (id INTEGER PRIMARY KEY REFERENCES person(id), gpa REAL);
+CREATE TABLE employee (id INTEGER PRIMARY KEY REFERENCES person(id), salary REAL);
+
+-- no trigger -- an id is free to appear in both tables at once`;
+}
+
+function dosRebuild(){
+  if (dosDb) dosDb.close();
+  dosDb = new SQL.Database();
+  dosDb.run(dosSetupSql(dosMode));
+}
+
+function dosQueryAll(){
+  const p = dosDb.exec('SELECT * FROM person ORDER BY id;');
+  const s = dosDb.exec('SELECT * FROM student ORDER BY id;');
+  const e = dosDb.exec('SELECT * FROM employee ORDER BY id;');
+  return {
+    person: p.length ? p[0] : { values: [] },
+    student: s.length ? s[0] : { values: [] },
+    employee: e.length ? e[0] : { values: [] },
+  };
+}
+
+function dosRenderTables(){
+  const { person, student, employee } = dosQueryAll();
+  document.getElementById('dosPersonBody').innerHTML =
+    person.values.map(r => `<tr><td>${r[0]}</td><td>${escapeHtml(String(r[1]))}</td></tr>`).join('') || '<tr><td colspan="2" style="color:var(--ink-soft)">empty</td></tr>';
+  document.getElementById('dosStudentBody').innerHTML =
+    student.values.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('') || '<tr><td colspan="2" style="color:var(--ink-soft)">empty</td></tr>';
+  document.getElementById('dosEmployeeBody').innerHTML =
+    employee.values.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('') || '<tr><td colspan="2" style="color:var(--ink-soft)">empty</td></tr>';
+
+  const studentIds = new Set(student.values.map(r => r[0]));
+  const employeeIds = new Set(employee.values.map(r => r[0]));
+  document.getElementById('dosInsertStudent').disabled = studentIds.has(1);
+  document.getElementById('dosInsertEmployee').disabled = !studentIds.has(1) || employeeIds.has(1);
+}
+
+function dosInsert(table, sql){
+  const msgEl = document.getElementById('dosMessage');
+  try{
+    dosDb.exec(sql);
+    msgEl.innerHTML = `<div class="dos-result ok"><strong>Inserted.</strong> Ada now has a row in <code class="inline">${table}</code>.</div>`;
+  } catch(e){
+    msgEl.innerHTML = `<div class="dos-result blocked"><strong>Blocked:</strong> ${escapeHtml(e.message)}</div>`;
+  }
+  dosRenderTables();
+}
+
+function dosSwitchMode(mode){
+  dosMode = mode;
+  document.querySelectorAll('.dos-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.getElementById('dosDdl').textContent = dosDdlSnippet(mode);
+  document.getElementById('dosExplain').innerHTML = mode === 'disjoint'
+    ? '<strong>Disjoint:</strong> the trigger checks the other table before every insert. Ada can be a Student, or an Employee, but the second insert for the same id will be rejected.'
+    : '<strong>Overlapping:</strong> no trigger exists. Ada can freely appear in both student and employee at once.';
+  document.getElementById('dosMessage').innerHTML = '';
+  dosRebuild();
+  dosRenderTables();
+}
+
+function dosInit(){
+  const root = document.getElementById('dos');
+  if (!root) return;
+  root.querySelectorAll('.dos-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => dosSwitchMode(btn.dataset.mode));
+  });
+  document.getElementById('dosInsertStudent').addEventListener('click', () => dosInsert('student', 'INSERT INTO student (id, gpa) VALUES (1, 3.9);'));
+  document.getElementById('dosInsertEmployee').addEventListener('click', () => dosInsert('employee', 'INSERT INTO employee (id, salary) VALUES (1, 90000);'));
+  document.getElementById('dosReset').addEventListener('click', () => {
+    document.getElementById('dosMessage').innerHTML = '';
+    dosRebuild();
+    dosRenderTables();
+  });
+  dosSwitchMode('overlapping');
+}
+
+async function boot(){
+  renderSections();
+  wireNavHighlight();
+  wireCells();
+  initChoiceQuiz('specq', SPEC_QUESTIONS);
+
+  const dot = document.getElementById('engineDot');
+  const status = document.getElementById('engineStatus');
+  const runButtons = document.querySelectorAll('.cell .run-btn');
+  runButtons.forEach(b => b.disabled = true);
+
+  try{
+    SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${file}` });
+    dot.classList.add('ready');
+    status.textContent = 'SQLite engine ready';
+    runButtons.forEach(b => b.disabled = false);
+    dosInit();
+  } catch(e){
+    status.textContent = 'engine failed to load — check your connection and reload';
+    console.error(e);
+  }
+}
+
+boot();
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: From a hierarchy to a schema ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const STEPS = [
+    { name: '1 · Name the superclass', tag: 'shared attributes',
+      action: 'Collect everything true of every member of the hierarchy. That shared part becomes the superclass. Specialize only what genuinely differs — a subclass that adds nothing is a role, not a subtype.',
+      artLabel: 'Artifact · the superclass',
+      art: 'PERSON( person_id KEY, name, ssn )\n  -- true of every member, stored once' },
+    { name: '2 · List the subclasses', tag: 'distinguishing attributes',
+      action: 'Each subclass is defined by what the superclass lacks: Student(gpa, major), Employee(salary, department). If two candidate subclasses would end up with identical attributes, you are modeling a role, not a kind.',
+      artLabel: 'Artifact · subclasses',
+      art: 'STUDENT  ( gpa, major )\nEMPLOYEE ( salary, department )\n\n  each adds exactly what PERSON does not have' },
+    { name: '3 · Disjoint or overlapping', tag: 'd  or  o',
+      action: 'Ask whether one entity may belong to two subclasses at once. Nobody is both an undergraduate and a graduate, so that pair is disjoint (d). A person can be both staff and faculty, so that pair is overlapping (o).',
+      artLabel: 'Artifact · the specialization circle',
+      art: 'Undergrad / Graduate   ->  d   disjoint\nStaff / Faculty        ->  o   overlapping\n\n  (the letter goes inside the circle)' },
+    { name: '4 · Total or partial', tag: 'double line?',
+      action: 'Ask whether every superclass instance must belong to some subclass. If it must, participation is total and drawn with a double line; if a person may have no subtype at all, it is partial.',
+      artLabel: 'Artifact · participation',
+      art: 'Every PERSON is a STUDENT or an EMPLOYEE?  TOTAL\nSome people are neither?                      PARTIAL\n\n  total  -> double line to the circle' },
+    { name: '5 · Pick a mapping strategy', tag: 'three choices',
+      action: 'Now decide how to store it: one table with a discriminator, a table per type, or a table per concrete class. Each is a different trade-off between NULLs, joins, and where constraints live.',
+      artLabel: 'Artifact · storage options',
+      art: 'A) single table + a kind/discriminator column\nB) table per type: Person + Student + Employee\nC) table per concrete class: Student, Employee only' },
+    { name: '6 · Enforce the constraint', tag: 'make it impossible',
+      action: 'Whatever you decided must be enforced by the database, not hoped for by the application. A CHECK on the discriminator holds disjointness; a NOT NULL discriminator holds totality.',
+      artLabel: 'Artifact · the constraint',
+      art: 'CREATE TABLE Person(\n  person_id INTEGER PRIMARY KEY,\n  kind TEXT NOT NULL CHECK (kind IN (\'S\',\'E\')),\n  gpa REAL, salary REAL,\n  CHECK ((kind=\'S\' AND gpa    IS NOT NULL)\n      OR (kind=\'E\' AND salary IS NOT NULL))\n);' },
+    { name: '7 · Pay the trade-off', tag: 'NULLs vs joins',
+      action: 'Neither strategy is free. Single-table keeps one row per person but stores NULLs in the discriminated columns. Table-per-type can make those columns NOT NULL, but every read joins. Table-per-concrete avoids both and duplicates the shared attributes.',
+      artLabel: 'Artifact · the trade-off',
+      art: 'A) 1 row per person  · NULLs       · one place to enforce\nB) no NULLs          · joins       · clean NOT NULL rules\nC) no joins          · duplicates  · two rows for a work-study student' },
+  ];
+  let i = 0;
+  const rail = byId('hierstep-rail'), body = byId('hierstep-body');
+  if (!body) return;
+  function railRender(){
+    rail.innerHTML = STEPS.map((s, k) =>
+      `<div class="qstep-node${k === i ? ' active' : (k < i ? ' done' : '')}" data-i="${k}"><span class="qstep-idx">STEP ${k + 1}</span>${esc(s.name)}</div>`).join('');
+    rail.querySelectorAll('.qstep-node').forEach(n => n.addEventListener('click', () => { i = +n.dataset.i; render(); }));
+  }
+  function render(){
+    const s = STEPS[i];
+    body.innerHTML =
+      `<div class="qstep-head"><div class="qstep-name">${esc(s.name)}</div><div class="qstep-layer">${esc(s.tag)}</div></div>` +
+      `<div class="qstep-action">${esc(s.action)}</div>` +
+      `<div class="qstep-art"><span class="art-label">${esc(s.artLabel)}</span>${esc(s.art)}</div>`;
+    railRender();
+    byId('hierstep-count').textContent = `Step ${i + 1} of ${STEPS.length}`;
+    byId('hierstep-back').disabled = i === 0;
+    byId('hierstep-next').disabled = i === STEPS.length - 1;
+  }
+  byId('hierstep-back').addEventListener('click', () => { if (i > 0) { i--; render(); } });
+  byId('hierstep-next').addEventListener('click', () => { if (i < STEPS.length - 1) { i++; render(); } });
+  byId('hierstep-restart').addEventListener('click', () => { i = 0; render(); });
+  render();
+})();
+</script>
+
+<script>
+/* ===== Inheritance Mode Explorer ===== */
+(function () {
+  const byId = id => document.getElementById(id);
+  const MODES = [
+    { id:'d-total',   dis:true,  total:true,  name:'d, total',   sub:'exactly one subclass' },
+    { id:'o-total',   dis:false, total:true,  name:'o, total',   sub:'at least one, may be both' },
+    { id:'d-partial', dis:true,  total:false, name:'d, partial', sub:'at most one, or none' },
+    { id:'o-partial', dis:false, total:false, name:'o, partial', sub:'anything goes' },
+  ];
+  const PEOPLE = [
+    { name:'Ada',  mem:'Student only',            inS:true,  inE:false },
+    { name:'Bo',   mem:'Employee only',           inS:false, inE:true  },
+    { name:'Chen', mem:'both Student and Employee', inS:true, inE:true  },
+    { name:'Dana', mem:'neither (generic Person)', inS:false, inE:false },
+  ];
+  let mode = MODES[0];
+
+  function legal(p){
+    if (!p.inS && !p.inE && mode.total) return { ok:false, why:'total — every Person must be in a subclass' };
+    if (p.inS && p.inE && mode.dis)    return { ok:false, why:'disjoint — cannot be in both at once' };
+    return { ok:true, why:'' };
+  }
+
+  function renderGrid(){
+    const g = byId('iem-grid');
+    g.innerHTML = '<div class="iem-axis"></div><div class="iem-axis" style="justify-content:center;">Disjoint (d)</div><div class="iem-axis" style="justify-content:center;">Overlapping (o)</div>';
+    [['total', 'Total'], ['partial', 'Partial']].forEach(([rowKey]) => {
+      g.insertAdjacentHTML('beforeend', '<div class="iem-axis">' + (rowKey === 'total' ? 'Total' : 'Partial') + '</div>');
+      MODES.filter(m => (rowKey === 'total') === m.total).forEach(m => {
+        g.insertAdjacentHTML('beforeend', '<div class="iem-cell' + (m.id === mode.id ? ' active' : '') + '" data-id="' + m.id + '">' + m.name + '<span class="iem-sub">' + m.sub + '</span></div>');
+      });
+    });
+    g.querySelectorAll('.iem-cell').forEach(c => c.addEventListener('click', () => {
+      mode = MODES.find(m => m.id === c.dataset.id); renderGrid(); renderRows();
+    }));
+  }
+
+  function renderRows(){
+    byId('iem-rows').innerHTML = PEOPLE.map(p => {
+      const v = legal(p);
+      return '<div class="iem-row ' + (v.ok ? 'ok' : 'bad') + '">' +
+        '<span class="iem-name">' + p.name + '</span>' +
+        '<span class="iem-mem">' + p.mem + (v.ok ? '' : ' — ' + v.why) + '</span>' +
+        '<span class="iem-verdict">' + (v.ok ? '✓ legal' : '✕ illegal') + '</span>' +
+      '</div>';
+    }).join('');
+    const note = [];
+    if (mode.dis) note.push('<strong>Disjoint</strong> means you must block one id from appearing in both subclass tables — a CHECK or trigger enforces it in the relational schema.');
+    else note.push('<strong>Overlapping</strong> needs no extra rule: the same id simply lives in both subclass rows, which is the normal table-per-subclass shape.');
+    if (mode.total) note.push('<strong>Total</strong> means every superclass row needs at least one subclass row — and, as the next section shows, plain SQL genuinely cannot express that on its own.');
+    else note.push('<strong>Partial</strong> lets a superclass row stand alone, so no extra rule is required.');
+    byId('iem-note').innerHTML = note.join(' ');
+  }
+
+  function init(){
+    if (!byId('iem-grid')) return;
+    renderGrid();
+    renderRows();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

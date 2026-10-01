@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · Aggregation, GROUP BY, and HAVING</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --pink:#A73E7A; --pink-soft:#F5E3EE;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, .cell, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:920px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:700px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+.cell{background:var(--code-bg); border-radius:8px; margin:14px 0; overflow:hidden; border:1px solid var(--code-rule);}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75;}
+.cell textarea{
+  width:100%; min-height:0; background:var(--code-bg); color:var(--code-text);
+  border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; resize:none; outline:none; line-height:1.55; overflow:hidden; display:block; tab-size:2;
+}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+table.dbtable{border-collapse:collapse; margin:8px 0; font-size:12.5px; width:100%; background:var(--code-bg); border-radius:6px; overflow:hidden;}
+table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-align:left; padding:5px 10px; border:1px solid var(--code-rule);}
+table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text); background:var(--code-bg);}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip:hover{border-color:var(--blue);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.lm-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-answer-btn{background:transparent; color:var(--blue); border:1px solid var(--blue); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-answer-btn:hover:not(:disabled){background:var(--blue-soft);}
+.lm-answer-btn:disabled{color:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed;}
+.lm-key{margin-top:14px; border:1px solid var(--rule); border-radius:10px; background:var(--paper-raised); padding:14px 16px;}
+.lm-key-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+.lm-key-row{display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:6px 0; border-bottom:1px dashed var(--rule); font-size:.9em;}
+.lm-key-row:last-child{border-bottom:none;}
+.lm-key-item{flex:1;}
+.lm-key-zone{font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:700; white-space:nowrap;}
+.lm-key-row.ok .lm-key-zone{color:var(--green);}
+.lm-key-row.bad .lm-key-zone{color:var(--rust);}
+.lm-key-row.bad .lm-key-item{color:var(--rust);}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+/* ---- generic widget shell (reused by Group By Visualizer) ---- */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.widget-label:first-of-type{margin-top:0;}
+.expr-box{font-family:"IBM Plex Mono",monospace; background:var(--code-bg); color:#F4C97A; padding:12px 14px; border-radius:6px; font-size:13px; margin-bottom:6px; white-space:pre; overflow-x:auto; line-height:1.6;}
+table.mini{border-collapse:collapse; width:100%; font-size:12.5px;}
+table.mini th{background:var(--blue-soft); color:var(--blue); padding:5px 8px; text-align:left; border:1px solid var(--rule); font-family:"IBM Plex Mono",monospace;}
+table.mini td{padding:5px 8px; border:1px solid var(--rule); font-family:"IBM Plex Mono",monospace;}
+table.mini tr.result-row{background:var(--green-soft);}
+.row-count{font-size:.78em; color:var(--ink-soft); font-weight:400; font-family:"IBM Plex Mono",monospace;}
+
+/* ---- Group By Visualizer controls ---- */
+.gbv-row{display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-bottom:6px;}
+.gbv-select{font-family:"IBM Plex Mono",monospace; font-size:13px; padding:7px 10px; border-radius:6px; border:1px solid var(--rule); background:#fff; color:var(--ink);}
+.gbv-input{font-family:"IBM Plex Mono",monospace; font-size:13px; padding:7px 10px; border-radius:6px; border:1px solid var(--rule); background:#fff; color:var(--ink); width:80px;}
+.pill-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+.pill-btn{padding:8px 14px; border-radius:20px; border:1.5px solid var(--rule); background:var(--paper); cursor:pointer; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:12px; color:var(--ink-soft);}
+.pill-btn.active{border-color:var(--ink); background:var(--ink); color:#fff;}
+.gbv-having-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+.gbv-buckets{display:flex; gap:12px; flex-wrap:wrap; margin:16px 0;}
+.gbv-bucket{flex:1; min-width:150px; border-radius:10px; padding:12px 14px; border:1.5px solid var(--rule); background:#fff; opacity:0; transform:translateY(8px); transition:opacity .35s ease, transform .35s ease;}
+.gbv-bucket.show{opacity:1; transform:translateY(0);}
+.gbv-bucket .bucket-label{font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:13px; margin-bottom:4px;}
+.gbv-bucket .bucket-count{font-size:.8em; color:var(--ink-soft); margin-bottom:6px;}
+.gbv-bucket .bucket-rows{font-size:.78em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+.gbv-bucket.excluded{opacity:.5; border-style:dashed;}
+.gbv-row-tint{transition:background-color .3s ease, box-shadow .3s ease;}
+.gbv-result-wrap{margin-top:14px;}
+.gbv-placeholder{font-size:.85em; color:var(--ink-soft); font-style:italic;}
+
+/* ---- Aggregation Pipeline Tester quiz ---- */
+.agg-quiz{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:18px 0;}
+.agg-quiz-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+.agg-dots{display:inline-flex; gap:6px; align-items:center;}
+.agg-dots .dot{width:9px; height:9px; border-radius:50%; background:var(--rule-strong); display:inline-block;}
+.agg-dots .dot.current{background:var(--ink);}
+.agg-dots .dot.correct{background:var(--green);}
+.agg-dots .dot.incorrect{background:var(--rust);}
+.agg-dots-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-right:8px;}
+.agg-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft);}
+.agg-score b{color:var(--ink); font-size:1.1em;}
+.agg-progressbar{height:3px; background:var(--rule); border-radius:2px; margin:10px 0 18px; overflow:hidden;}
+.agg-progressbar-fill{height:100%; background:var(--blue); transition:width .2s ease;}
+.agg-scenario-card{background:#fff; border:1px solid var(--rule); border-radius:12px; padding:22px 24px;}
+.agg-scenario-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:10px;}
+.agg-scenario-text{font-size:1.05em; margin-bottom:6px;}
+.agg-scenario-text code{background:var(--paper-raised); padding:1px 5px; border-radius:4px;}
+.agg-pick-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:18px 0 10px;}
+.agg-options-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:600px){ .agg-options-grid{grid-template-columns:1fr;} }
+.agg-option-card{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+.agg-option-card:hover{border-color:var(--blue);}
+.agg-option-card.selected{border-color:var(--blue); background:var(--blue-soft);}
+.agg-option-card.correct{border-color:var(--green); background:var(--green-soft);}
+.agg-option-card.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.agg-option-card.disabled{cursor:default;}
+.agg-option-title{font-weight:700; font-size:.98em;}
+.agg-option-hint{font-size:.8em; color:var(--ink-soft); margin-top:4px;}
+.agg-check-btn{margin-top:18px; padding:10px 20px; border-radius:8px; border:none; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13px; cursor:pointer;}
+.agg-check-btn:disabled{background:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.agg-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.agg-feedback.correct{background:var(--green-soft); color:var(--green);}
+.agg-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.agg-verify-btn{margin-top:12px;}
+.btn.secondary.agg-verify-btn, .btn.secondary.agg-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.agg-verify-output{margin-top:10px; display:none; background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px;}
+.agg-verify-output.show{display:block;}
+.agg-next-btn{margin-top:14px;}
+.agg-quiz-done{text-align:center; padding:24px;}
+.agg-quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical cell buttons (shared) ===== */
+.cell .btn{ background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace; }
+.cell .btn:hover{ opacity:.9; }
+.cell .btn.secondary{ background:transparent; color:var(--code-text); border:1px solid var(--code-rule); }
+.cell .btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.agg-verify-btn{color:var(--ink); border-color:var(--rule-strong);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">The Big Five Aggregates</a>
+      <a href="#null-trap">The NULL Trap</a>
+      <a href="#group-by">The Logic of Buckets</a>
+      <div class="grp">Filtering</div>
+      <a href="#where-vs-having">WHERE vs. HAVING</a>
+      <a href="#group-by-visualizer">Group By Visualizer</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-execution-trace">Trace: Execution Order</a>
+      <a href="#worked-count-variants">COUNT(*) vs COUNT(col) vs DISTINCT</a>
+      <a href="#worked-having-only">A HAVING You Can't Write as WHERE</a>
+      <a href="#worked-cohort">Cohort Retention</a>
+      <div class="grp">Apply It</div>
+      <a href="#aggregation-quiz">Aggregation Pipeline Tester</a>
+      <a href="#where-having-select">WHERE, HAVING, or SELECT?</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+          <div class="grp">2026 Status</div>
+      <a href="#in-2026">In 2026: What Has Changed</a>
+</nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>Aggregation, GROUP BY, and HAVING</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">A raw table has details; a business decision needs a number. Aggregation is the bridge. <code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> turn ten million rows of transactions into the kind of report a CFO can read. <code>GROUP BY</code> breaks the data into meaningful buckets before those functions run; <code>HAVING</code> filters the buckets afterward. Nailing these three ideas is what separates someone who can query data from someone who can report on it.</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>The Big Five Aggregates</h2>
+      <p>Aggregation is the art of collapsing data — taking a pile of rows and squashing them into a summary. That requires a shift in how you picture your tables: you're no longer looking at a list, you're looking at a collection of buckets.</p>
+      <ul>
+        <li><code>COUNT</code> — how many items are in the set.</li>
+        <li><code>SUM</code> — adds up every value in a numeric column.</li>
+        <li><code>AVG</code> — the arithmetic mean.</li>
+        <li><code>MIN</code> / <code>MAX</code> — the smallest / largest value.</li>
+      </ul>
+      <p>Run <code>SELECT SUM(total_price) FROM orders;</code> and the database doesn't hand back a table with thousands of rows — it returns a single row with a single value. Every row has been consumed to produce that one result.</p>
+      <figure class="diagram">
+        <svg viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Many individual rows on the left collapse into a single summary value on the right, illustrating what an aggregate function computes." font-family="IBM Plex Mono, monospace">
+          <text x="320" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#4A564F" letter-spacing="1">INDIVIDUAL RECORDS (5 ROWS)</text>
+          <g fill="none" stroke="#1E2A25" stroke-width="1.5">
+            <rect x="20" y="42" width="150" height="26" rx="4" fill="#F6F7F2"/>
+            <rect x="20" y="76" width="150" height="26" rx="4" fill="#F6F7F2"/>
+            <rect x="20" y="110" width="150" height="26" rx="4" fill="#F6F7F2"/>
+            <rect x="20" y="144" width="150" height="26" rx="4" fill="#F6F7F2"/>
+            <rect x="20" y="178" width="150" height="26" rx="4" fill="#F6F7F2"/>
+          </g>
+          <g font-size="12.5" fill="#1E2A25">
+            <text x="95" y="59" text-anchor="middle">Transaction</text>
+            <text x="95" y="93" text-anchor="middle">Transaction</text>
+            <text x="95" y="127" text-anchor="middle">Transaction</text>
+            <text x="95" y="161" text-anchor="middle">Transaction</text>
+            <text x="95" y="195" text-anchor="middle">Transaction</text>
+          </g>
+          <g stroke="#1E2A25" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)">
+            <line x1="172" y1="55" x2="300" y2="100"/>
+            <line x1="172" y1="89" x2="300" y2="108"/>
+            <line x1="172" y1="123" x2="300" y2="120"/>
+            <line x1="172" y1="157" x2="300" y2="132"/>
+            <line x1="172" y1="191" x2="300" y2="140"/>
+          </g>
+          <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#1E2A25"/>
+            </marker>
+          </defs>
+          <path d="M 300 88 L 400 112 L 400 128 L 300 152 Z" fill="none" stroke="#1E2A25" stroke-width="1.5"/>
+          <path d="M 400 116 L 445 120 L 445 120 L 400 124 Z" fill="none" stroke="#1E2A25" stroke-width="1.5"/>
+          <text x="330" y="72" font-size="12" font-weight="700" fill="#1E2A25">AGGREGATION PROCESS</text>
+          <text x="330" y="86" font-size="11" fill="#4A564F">(e.g., SUM())</text>
+          <line x1="445" y1="120" x2="490" y2="120" stroke="#1E2A25" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <rect x="495" y="95" width="120" height="50" rx="4" fill="#A73E7A" stroke="#1E2A25" stroke-width="1.5"/>
+          <text x="555" y="126" text-anchor="middle" font-size="13.5" font-weight="700" fill="#fff">TOTAL SALES</text>
+          <text x="555" y="168" text-anchor="middle" font-size="12" fill="#4A564F">SUMMARIZED ROW</text>
+        </svg>
+        <figcaption>Aggregation collapses many individual rows into a single summary value.</figcaption>
+      </figure>
+    </section>
+
+    <section id="null-trap">
+      <div class="kicker">Foundations</div>
+      <h2>The NULL Trap</h2>
+      <p><code>NULL</code> means "unknown or missing," and aggregate functions generally ignore it. If a <code>users</code> table has some rows with no <code>age</code> entered, <code>AVG(age)</code> does not treat the missing ages as zero — it removes those rows from the calculation entirely: <code>AVG = SUM(non-NULL values) / COUNT(non-NULL values)</code>.</p>
+      <div class="cell" data-cell="avg_ignores_null">
+        <div class="cell-head"><span class="cell-title">avg_ignores_null.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p>The single most common point of confusion: <code>COUNT(*)</code> counts every row that matches your criteria, full stop. <code>COUNT(email)</code> only counts rows where <code>email</code> is not NULL. With 100 users and 90 emails on file, <code>COUNT(*)</code> returns 100; <code>COUNT(email)</code> returns 90. Want the size of the group? Use the asterisk. Want to know how many people actually filled in a field? Use the column name.</p>
+      <div class="cell" data-cell="count_star_vs_col">
+        <div class="cell-head"><span class="cell-title">count_star_vs_count_column.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="group-by">
+      <div class="kicker">Foundations</div>
+      <h2>The Logic of Buckets</h2>
+      <p>Aggregation becomes genuinely useful once you stop squashing the whole table and start squashing specific sections of it — that's <code>GROUP BY</code>. Think of it as a sorting machine: <code>GROUP BY department</code> tosses every row into a bucket labeled by its department, and only once every row has a bucket do the aggregate functions run — one calculation per bucket.</p>
+      <div class="schema-line">SELECT region, SUM(amount) FROM sales GROUP BY region;</div>
+      <p>A critical rule: every column in your <code>SELECT</code> list must either be inside an aggregate function or listed in <code>GROUP BY</code>. <code>SELECT region, salesperson, SUM(amount) ... GROUP BY region</code> is a contradiction — SQL knows how to squash <code>amount</code> and how to group by <code>region</code>, but there might be fifty salespeople in the North bucket, and nothing tells it which one to show you.</p>
+      <div class="callout amber">
+        <strong>SQLite quirk — it doesn't actually enforce that rule.</strong> Standard SQL (and PostgreSQL, and MySQL in strict mode) reject a bare, non-aggregated, non-grouped column with an error. SQLite instead applies a documented extension: for a bare column paired with <code>MIN()</code> or <code>MAX()</code>, it deterministically returns the value from the same row that produced that extreme — genuinely useful. Paired with <code>SUM()</code>, <code>COUNT()</code>, or <code>AVG()</code>, though, the bare column's value is picked from an <em>arbitrary</em> row in the group — not an error, not necessarily the first or last row, just unspecified. Run the cell below twice and compare the two bare-column queries.
+      </div>
+      <div class="cell" data-cell="groupby_bare_column">
+        <div class="cell-head"><span class="cell-title">groupby_bare_column_quirk.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">Code that "works" against SQLite this way can break the moment it's deployed against PostgreSQL or a strict MySQL — a real portability trap, not a hypothetical one. Two honest fixes below: aggregate the extra column away, or attach it per-row with a window function instead of collapsing rows at all.</p>
+      <div class="cell" data-cell="groupby_correct_rewrites">
+        <div class="cell-head"><span class="cell-title">groupby_correct_rewrites.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p>You can also group by multiple columns — <code>GROUP BY region, year</code> creates one bucket per unique combination ("North 2025," "North 2026," ...). And NULL isn't special-cased away here the way it is in aggregates: every NULL in the grouped column lands in the <em>same single bucket</em>, not one bucket per row.</p>
+      <div class="cell" data-cell="groupby_null_bucket">
+        <div class="cell-head"><span class="cell-title">groupby_groups_nulls_together.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="where-vs-having">
+      <div class="kicker">Filtering</div>
+      <h2>Filtering: WHERE vs. HAVING</h2>
+      <p>Both filter data, but at different stages of the pipeline. The order the database actually executes a query is not the order you write it in:</p>
+      <table class="compare">
+        <tr><th>Stage</th><th>Clause</th><th>What it filters</th><th>Can it see aggregates?</th></tr>
+        <tr><td>1</td><td><code>FROM</code></td><td>picks source table(s)</td><td>—</td></tr>
+        <tr><td>2</td><td><code>WHERE</code></td><td>individual rows</td><td>❌ No — groups don't exist yet</td></tr>
+        <tr><td>3</td><td><code>GROUP BY</code></td><td>collapses rows into buckets</td><td>—</td></tr>
+        <tr><td>4</td><td><code>HAVING</code></td><td>whole groups</td><td>✅ Yes — that's the whole point</td></tr>
+        <tr><td>5</td><td><code>SELECT</code></td><td>computes final columns</td><td>—</td></tr>
+        <tr><td>6</td><td><code>ORDER BY</code></td><td>sorts</td><td>—</td></tr>
+      </table>
+      <p>That's why an aggregate expression can only appear in <code>HAVING</code>, never in <code>WHERE</code> — by the time <code>HAVING</code> runs, the groups exist; when <code>WHERE</code> runs, they don't.</p>
+      <figure class="diagram">
+        <svg viewBox="0 0 660 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="WHERE filters rows before grouping, while HAVING filters the groups after aggregation, shown as two stages of the same pipeline." font-family="IBM Plex Mono, monospace">
+          <defs>
+            <marker id="arrow2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#1E2A25"/>
+            </marker>
+          </defs>
+          <rect x="10" y="60" width="80" height="46" rx="6" fill="#F6F7F2" stroke="#1E2A25" stroke-width="1.5"/>
+          <text x="50" y="88" text-anchor="middle" font-size="13" font-weight="700">'FROM'</text>
+          <line x1="90" y1="83" x2="128" y2="83" stroke="#1E2A25" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+          <rect x="132" y="44" width="120" height="78" rx="8" fill="none" stroke="#A1402A" stroke-width="2.5"/>
+          <text x="192" y="36" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">'WHERE'</text>
+          <text x="192" y="90" text-anchor="middle" font-size="12.5" font-weight="600">filters</text>
+          <text x="192" y="106" text-anchor="middle" font-size="12.5" font-weight="600">ROWS</text>
+          <line x1="252" y1="83" x2="300" y2="83" stroke="#1E2A25" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+          <ellipse cx="330" cy="83" rx="26" ry="20" fill="#F6F7F2" stroke="#1E2A25" stroke-width="1.5"/>
+          <g fill="#A73E7A"><circle cx="322" cy="78" r="3"/><circle cx="330" cy="83" r="3"/><circle cx="338" cy="78" r="3"/><circle cx="326" cy="90" r="3"/></g>
+          <text x="330" y="118" text-anchor="middle" font-size="11" font-weight="700">'GROUP BY'</text>
+          <line x1="358" y1="83" x2="402" y2="83" stroke="#1E2A25" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+          <rect x="406" y="44" width="120" height="78" rx="8" fill="none" stroke="#A1402A" stroke-width="2.5"/>
+          <text x="466" y="36" text-anchor="middle" font-size="12" font-weight="700" fill="#A1402A">'HAVING'</text>
+          <text x="466" y="90" text-anchor="middle" font-size="12.5" font-weight="600">filters</text>
+          <text x="466" y="106" text-anchor="middle" font-size="12.5" font-weight="600">GROUPS</text>
+          <line x1="526" y1="83" x2="579" y2="83" stroke="#1E2A25" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+          <g font-size="15">
+            <circle cx="592" cy="58" r="9" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1.5"/>
+            <circle cx="622" cy="58" r="9" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1.5"/>
+            <circle cx="592" cy="82" r="9" fill="none" stroke="#A1402A" stroke-width="1.5"/>
+            <line x1="586" y1="76" x2="598" y2="88" stroke="#A1402A" stroke-width="1.5"/>
+            <line x1="598" y1="76" x2="586" y2="88" stroke="#A1402A" stroke-width="1.5"/>
+            <circle cx="622" cy="82" r="9" fill="none" stroke="#A1402A" stroke-width="1.5"/>
+            <line x1="616" y1="76" x2="628" y2="88" stroke="#A1402A" stroke-width="1.5"/>
+            <line x1="628" y1="76" x2="616" y2="88" stroke="#A1402A" stroke-width="1.5"/>
+            <circle cx="607" cy="106" r="9" fill="#E2EDE3" stroke="#3D6B4A" stroke-width="1.5"/>
+          </g>
+
+          <path d="M 150 150 Q 330 178 500 150" fill="none" stroke="#A1402A" stroke-width="1.5"/>
+          <text x="330" y="196" text-anchor="middle" font-size="12.5" font-weight="700" fill="#A1402A">same job, different stage</text>
+        </svg>
+        <figcaption>WHERE vs. HAVING: two filters that run at very different stages of the pipeline.</figcaption>
+      </figure>
+      <div class="cell" data-cell="where_having_demo">
+        <div class="cell-head"><span class="cell-title">where_cannot_see_aggregates.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small"><strong>WHERE</strong> filters the input (raw rows). <strong>HAVING</strong> filters the output (bucketed summaries). One nuance: standard SQL evaluates <code>HAVING</code> before <code>SELECT</code>, so relying on a <code>SELECT</code>-list alias inside <code>HAVING</code> is dialect-dependent — SQLite happens to allow it, but PostgreSQL and others may not in every context. Safer to repeat the aggregate expression.</p>
+      <div class="cell" data-cell="having_alias_check">
+        <div class="cell-head"><span class="cell-title">having_alias_sqlite_allows_it.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+    </section>
+
+    <section id="group-by-visualizer">
+      <div class="kicker">Filtering</div>
+      <h2>Group By Visualizer</h2>
+      <p>Select a column to group by, pick aggregates, and watch rows flow into buckets — every run below executes for real against a live SQLite engine.</p>
+      <div class="widget" id="gbv-widget">
+        <div class="widget-label">Live SQL</div>
+        <div class="expr-box" id="gbv-sql"></div>
+
+        <div class="gbv-row" style="margin-top:14px;">
+          <div>
+            <div class="widget-label" style="margin:0 0 6px;">Group by column</div>
+            <select class="gbv-select" id="gbv-groupcol">
+              <option value="category">category</option>
+              <option value="region">region</option>
+              <option value="salesperson">salesperson</option>
+            </select>
+          </div>
+          <button class="btn" id="gbv-animate">▶ Animate</button>
+          <button class="btn secondary" id="gbv-reset" style="color:var(--ink); border-color:var(--rule);">↺ Reset</button>
+        </div>
+
+        <div class="widget-label">Show aggregates</div>
+        <div class="pill-row" id="gbv-aggregates">
+          <button class="pill-btn active" data-agg="count_star">COUNT(*)</button>
+          <button class="pill-btn" data-agg="count_amount">COUNT(amount)</button>
+          <button class="pill-btn active" data-agg="sum_amount">SUM(amount)</button>
+          <button class="pill-btn" data-agg="avg_amount">AVG(amount)</button>
+          <button class="pill-btn" data-agg="min_amount">MIN(amount)</button>
+          <button class="pill-btn" data-agg="max_amount">MAX(amount)</button>
+        </div>
+
+        <div class="widget-label">Having</div>
+        <div class="gbv-having-row">
+          <select class="gbv-select" id="gbv-having-expr">
+            <option value="">— none —</option>
+            <option value="COUNT(*)">COUNT(*)</option>
+            <option value="COUNT(amount)">COUNT(amount)</option>
+            <option value="SUM(amount)">SUM(amount)</option>
+            <option value="AVG(amount)">AVG(amount)</option>
+            <option value="MIN(amount)">MIN(amount)</option>
+            <option value="MAX(amount)">MAX(amount)</option>
+          </select>
+          <select class="gbv-select" id="gbv-having-op">
+            <option value=">">&gt;</option>
+            <option value=">=">&gt;=</option>
+            <option value="<">&lt;</option>
+            <option value="<=">&lt;=</option>
+            <option value="=">=</option>
+            <option value="!=">!=</option>
+          </select>
+          <input class="gbv-input" id="gbv-having-value" type="number" value="200">
+        </div>
+
+        <div class="widget-label">Raw rows <span class="row-count">10 rows</span></div>
+        <div id="gbv-raw-table"></div>
+
+        <div class="gbv-buckets" id="gbv-buckets"></div>
+
+        <div class="widget-label">Result</div>
+        <div class="gbv-result-wrap">
+          <div id="gbv-result-table"></div>
+          <p class="gbv-placeholder" id="gbv-placeholder">Click Animate to run this query for real.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="worked-execution-trace">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Trace a Query Through Execution Order</h2>
+      <p>Given this <code>sales</code> table:</p>
+      <table class="compare">
+        <tr><th>region</th><th>product</th><th>year</th><th>amount</th></tr>
+        <tr><td>North</td><td>Widget</td><td>2026</td><td>100</td></tr>
+        <tr><td>North</td><td>Widget</td><td>2026</td><td>100</td></tr>
+        <tr><td>North</td><td>Gadget</td><td>2026</td><td>200</td></tr>
+        <tr><td>South</td><td>Widget</td><td>2026</td><td>80</td></tr>
+        <tr><td>South</td><td>Gadget</td><td>2026</td><td><em>NULL</em></td></tr>
+        <tr><td>East</td><td>Widget</td><td>2025</td><td>500</td></tr>
+      </table>
+      <div class="schema-line">SELECT region, SUM(amount) AS total
+FROM   sales
+WHERE  year = 2026
+GROUP BY region
+HAVING SUM(amount) > 100
+ORDER BY total DESC;</div>
+      <p>Trace it: <code>FROM</code> starts with all 6 rows. <code>WHERE year = 2026</code> drops East's 2025 row — 5 remain. <code>GROUP BY region</code> buckets North into {100, 100, 200} and South into {80, NULL}. <code>HAVING SUM(amount) &gt; 100</code> computes each bucket's sum — North totals 400 and passes; South totals 80 (the NULL is silently ignored, not treated as zero) and fails. Only North survives to <code>SELECT</code>.</p>
+      <div class="cell" data-cell="worked_execution_trace">
+        <div class="cell-head"><span class="cell-title">worked_execution_trace.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">If you needed South's NULL to count as zero, you'd write <code>SUM(COALESCE(amount, 0))</code> instead — that changes South's total to 80, still failing here, but the distinction matters when a NULL-heavy group is close to the threshold.</p>
+    </section>
+
+    <section id="worked-count-variants">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: COUNT(*), COUNT(col), and COUNT(DISTINCT col) Are All Different</h2>
+      <p>Given a <code>feedback</code> table:</p>
+      <table class="compare">
+        <tr><th>id</th><th>user_id</th><th>score</th></tr>
+        <tr><td>1</td><td>U1</td><td>5</td></tr>
+        <tr><td>2</td><td>U1</td><td>4</td></tr>
+        <tr><td>3</td><td>U2</td><td><em>NULL</em></td></tr>
+        <tr><td>4</td><td>U2</td><td>5</td></tr>
+        <tr><td>5</td><td>U3</td><td>3</td></tr>
+      </table>
+      <div class="cell" data-cell="worked_count_variants">
+        <div class="cell-head"><span class="cell-title">count_variants_all_different.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p>Each variant answers a genuinely different question: <code>COUNT(*)</code> — how many feedback events happened? <code>COUNT(score)</code> — how many people actually gave a score? <code>COUNT(DISTINCT user_id)</code> — how many unique users gave feedback? <code>COUNT(DISTINCT score)</code> — how many distinct score values appeared? Picking the wrong one is a semantic bug: you'll get a number, it may look plausible, and it will answer the wrong question.</p>
+    </section>
+
+    <section id="worked-having-only">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: A HAVING Clause You Cannot Write with WHERE</h2>
+      <p>Find products where the average sale price is below $10 across at least a handful of sales. Both conditions are about aggregate values, so both belong in <code>HAVING</code>:</p>
+      <div class="cell" data-cell="worked_having_only">
+        <div class="cell-head"><span class="cell-title">having_only_avg_and_count.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <p class="small">You cannot express this with <code>WHERE</code> alone: <code>AVG(sale_price)</code> doesn't exist until after grouping, and <code>COUNT(*)</code> isn't a value on any individual row — it's a per-group cardinality. Attempting <code>WHERE AVG(sale_price) &lt; 10</code> throws exactly the error the <code>where_cannot_see_aggregates.sql</code> cell above demonstrated. <code>WHERE</code> and <code>HAVING</code> combine freely — a row-level date filter in <code>WHERE</code>, followed by a group-level threshold in <code>HAVING</code>, is one of the most common shapes in real reporting SQL.</p>
+    </section>
+
+    <section id="worked-cohort">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Cohort Retention (Multi-Level Aggregation)</h2>
+      <p>Every SaaS and consumer product asks the same question: "of the users who signed up in a given week, how many are still active N weeks later?" This is cohort retention analysis, and it lives entirely in the world of aggregation — but it needs <em>two</em> levels of it: bucket users into signup cohorts, then separately bucket their activity, then divide one by the other.</p>
+      <div class="schema-line">users(user_id, signup_date)
+events(user_id, event_ts, event_type)</div>
+      <p>The reference article's version uses PostgreSQL's <code>DATE_TRUNC('week', ...)</code> and <code>DATEDIFF('week', ...)</code> — both are non-standard, Postgres-flavored functions. SQLite has no <code>DATE_TRUNC</code> or <code>DATEDIFF</code> at all; the cell below rebuilds the exact same four-step logic with SQLite's own date functions (<code>date(..., 'weekday 0', '-6 days')</code> for a Monday-anchored week, <code>julianday(...)</code> for the day-difference math) so it can actually run.</p>
+      <div class="cell" data-cell="cohort_retention">
+        <div class="cell-head"><span class="cell-title">cohort_retention_sqlite.sql</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+      <div class="callout">
+        <strong>Where this pattern breaks new practitioners:</strong>
+        <ul style="margin:8px 0 0;">
+          <li>Forgetting <code>DISTINCT</code> in the activity CTE — a user with 100 events in one week counts 100 times, wildly inflating retention.</li>
+          <li>Grouping on the raw timestamp instead of the truncated week — every event gets its own bucket, exploding the row count.</li>
+          <li>Filtering cohorts <em>before</em> joining — a "cohorts with more than N signups" filter is a <code>HAVING</code> on the cohort-size aggregation, not a row filter on individual events.</li>
+          <li>Using <code>LEFT JOIN</code> backwards — the cohort table should drive the analysis; a user who never had an event gets a zero, not a missing row.</li>
+        </ul>
+      </div>
+      <p class="small">This is the multi-level pattern Practice Problem 4 below uses in miniature: a CTE with its own <code>HAVING</code>, joined into a second aggregation. Whenever a filter operates at a <em>different</em> grain than your final report — "big countries" vs. "country × category" — a single flat <code>GROUP BY</code> cannot express it; a CTE stack, one aggregation per level, can.</p>
+    </section>
+
+    <section id="aggregation-quiz">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Aggregation Pipeline Tester</h2>
+      <p>Ten scenarios. Predict where each filter belongs — <code>WHERE</code> or <code>HAVING</code> — and which aggregation pattern actually solves the problem, then verify against a live database.</p>
+      <div id="agg-quiz-mount"></div>
+    </section>
+
+    <section id="where-having-select">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: WHERE, HAVING, or SELECT?</h2>
+      <p>Aggregation questions almost always fail on one decision: <em>which clause does this filter belong to?</em> The rule is positional, not stylistic. Sort these nine jobs by the clause that must do them.</p>
+
+      <div class="widget">
+        <div class="widget-title">WHERE, HAVING, or SELECT?</div>
+        <div class="widget-sub">before grouping · after grouping · the projection</div>
+        <div class="widget-label">Jobs to place</div>
+        <div class="lm-bank" id="whsbank"></div>
+        <div class="lm-zones">
+          <div class="lm-zone z-a" data-zone="where"><div class="lm-zone-head">WHERE · before any grouping</div><div id="whszone-where"></div></div>
+          <div class="lm-zone z-b" data-zone="having"><div class="lm-zone-head">HAVING · after the groups exist</div><div id="whszone-having"></div></div>
+          <div class="lm-zone z-c" data-zone="select"><div class="lm-zone-head">SELECT · computes the output row</div><div id="whszone-select"></div></div>
+        </div>
+        <div class="lm-hint">Tip: click a job, then click a clause. Click a placed job to send it back.</div>
+        <div class="qstep-controls">
+          <button class="lm-check-btn" id="whscheck">Check mapping</button>
+          <button class="lm-answer-btn" id="whsanswer" disabled>Show correct mapping</button>
+          <button class="lm-restart-btn" id="whsrestart">↺ Restart</button>
+          <span class="lm-score" id="whsscore"></span>
+        </div>
+        <div id="whsfeedback"></div>
+        <div id="whskey"></div>
+      </div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. COUNT(*), COUNT(status), and GROUP BY, with NULLs in the mix</h4>
+        <p>Given <code>orders(order_id, customer_id, total, status)</code> with 100 rows total, 20 of which have <code>status = NULL</code> and 20 of which have <code>total = NULL</code>, what do these return?</p>
+        <p>(a) <code>SELECT COUNT(*) FROM orders</code> &nbsp; (b) <code>SELECT COUNT(status) FROM orders</code> &nbsp; (c) <code>SELECT status, COUNT(*) FROM orders GROUP BY status</code> &nbsp; (d) <code>SELECT AVG(total) FROM orders</code></p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <ul>
+              <li><strong>(a) 100</strong> — <code>COUNT(*)</code> counts every row.</li>
+              <li><strong>(b) 80</strong> — <code>COUNT(status)</code> skips NULLs: 100 − 20.</li>
+              <li><strong>(c) One row per distinct status, plus one row for NULL.</strong> <code>GROUP BY</code> treats all NULLs as a single group — you'd see rows like <code>('pending', 30)</code>, <code>('shipped', 50)</code>, <code>(NULL, 20)</code>, not 20 separate NULL rows.</li>
+              <li><strong>(d) The sum of the 80 non-NULL totals divided by 80</strong> — not divided by 100. This can silently shift a reported average whenever a lot of NULLs really mean "zero" rather than "missing."</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Diagnose and rewrite</h4>
+        <p>What's wrong with this query, and what are two valid fixes?</p>
+        <div class="schema-line">SELECT department, employee_name, COUNT(*)
+FROM employees
+GROUP BY department;</div>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>In standard SQL this fails: <code>employee_name</code> is neither in the <code>GROUP BY</code> nor wrapped in an aggregate, and each department has many names — SQL can't pick which one to show. (As the SQLite quirk above demonstrated, SQLite itself won't actually error here — it'll silently return one arbitrary name per department, which is its own kind of trap.)</p>
+            <p><strong>Version A</strong> — count employees per department:</p>
+            <div class="schema-line">SELECT department, COUNT(*) AS employee_count
+FROM employees
+GROUP BY department;</div>
+            <p><strong>Version B</strong> — list every employee with their department's count, without collapsing any rows:</p>
+            <div class="schema-line">SELECT department, employee_name,
+       COUNT(*) OVER (PARTITION BY department) AS department_count
+FROM employees;</div>
+            <p>Version B uses a window function to attach a per-group aggregate to every row instead of collapsing them.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Both conditions are group-level</h4>
+        <p>For <code>sales(product_id, sale_date, sale_price)</code>, write a single query returning products where (a) at least 10 sales occurred, AND (b) the average sale price is above 25. Which clause holds each condition?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>Both conditions are aggregate values, not individual-row values — both go in <code>HAVING</code>:</p>
+            <div class="schema-line">SELECT product_id, COUNT(*) AS n_sales, AVG(sale_price) AS avg_price
+FROM sales
+GROUP BY product_id
+HAVING COUNT(*) >= 10
+   AND AVG(sale_price) > 25;</div>
+            <p><code>WHERE</code> cannot see <code>COUNT(*)</code> or <code>AVG(sale_price)</code>. If you also needed to restrict to a specific year, that row-level filter would go in <code>WHERE</code>, before the <code>GROUP BY</code>:</p>
+            <div class="schema-line">...
+FROM sales
+WHERE sale_date >= '2026-01-01'   -- row-level filter
+GROUP BY product_id
+HAVING ...                          -- group-level filter</div>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. Two aggregation levels in one query</h4>
+        <p>Given <code>sales(country, category, revenue)</code>, write a query that produces, for each country whose <em>total</em> revenue exceeds 1,000, a breakdown by category ordered by revenue descending within each country.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>This needs two aggregation levels: aggregate first to test the country total, then aggregate again to break down by (country, category). A CTE keeps them cleanly separated:</p>
+            <div class="schema-line">WITH big_countries AS (
+    SELECT country
+    FROM sales
+    GROUP BY country
+    HAVING SUM(revenue) > 1000
+)
+SELECT s.country, s.category, SUM(s.revenue) AS revenue
+FROM sales s
+JOIN big_countries bc ON bc.country = s.country
+GROUP BY s.country, s.category
+ORDER BY s.country, revenue DESC;</div>
+            <p>The <code>HAVING</code> inside the CTE filters countries; the outer query then aggregates the survivors by (country, category). A single flat <code>GROUP BY</code> can't express this — the "big country" test lives at a different aggregation level than the final report.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>5. The COUNT(*) / COUNT(col) identity</h4>
+        <p>If <code>users</code> has 500 rows and 300 have a non-null <code>last_login</code>, what do these return?</p>
+        <p>(a) <code>SELECT COUNT(*) FROM users WHERE last_login IS NULL</code> &nbsp; (b) <code>SELECT COUNT(last_login) FROM users</code></p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <ul>
+              <li><strong>(a) 200</strong> — the 500 − 300 = 200 rows where <code>last_login IS NULL</code>.</li>
+              <li><strong>(b) 300</strong> — <code>COUNT</code> on a column skips NULLs, so only the non-null rows count.</li>
+            </ul>
+            <p>200 + 300 = 500 = total rows. The identity <code>COUNT(*) = COUNT(col) + COUNT(*) WHERE col IS NULL</code> always holds — the missing rows are counted somewhere, they just never count as a value.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p>Aggregation shows up in every analytics-flavored SQL round and every product-metrics interview.</p>
+
+        <p><strong>Product-analytics classic.</strong> "Given an <code>events</code> table, compute the 7-day rolling active users." The strong answer sketches <code>COUNT(DISTINCT user_id) OVER (ORDER BY event_date RANGE BETWEEN INTERVAL '6 days' PRECEDING AND CURRENT ROW)</code>. Recognizing that a rolling metric is fundamentally a <em>windowed</em> aggregation — not a plain <code>GROUP BY</code> — instantly upgrades the conversation.</p>
+
+        <p><strong>The "top-N per group" pattern.</strong> "Find the top 3 highest-paid employees in each department." A weak answer reaches for subqueries and <code>LIMIT</code> inside <code>WHERE ... IN (...)</code>. The strong answer uses <code>ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC)</code> and filters <code>WHERE rn &lt;= 3</code> in the outer query. This is one of the most-asked SQL interview problems on any leaderboard.</p>
+
+        <p><strong>The "cohort analysis" pattern.</strong> "For each week of signup, what percentage of users were still active 4 weeks later?" Any senior data-engineering interviewer asks some variant. The four-step CTE walk-through above is the reference answer — sketch it on a whiteboard and you look like someone who has actually shipped analytics dashboards.</p>
+
+        <p><strong>The gotcha interviewers use to filter candidates.</strong> "Given a <code>feedback</code> table where 30% of rows have <code>NULL</code> score, what does <code>SELECT AVG(score) FROM feedback WHERE score &gt;= 0</code> return, and what does <code>SELECT AVG(score) FROM feedback</code> return — are they the same?" The junior answer says yes without thinking. The correct answer: they're the same <em>if</em> all real scores are non-negative, because <code>AVG(score)</code> already ignores NULLs and <code>WHERE score &gt;= 0</code> is Unknown (dropped) for NULL rows — so both computations exclude exactly the same rows. A senior candidate then asks whether NULLs should count as zero for the business logic and, if so, wraps in <code>COALESCE(score, 0)</code> to change the answer.</p>
+
+        <p><strong>Rule of thumb.</strong></p>
+        <ul class="criteria-list">
+          <li><span class="c-num">•</span>Row-level filter → <code>WHERE</code>.</li>
+          <li><span class="c-num">•</span>Group-level filter (uses <code>SUM</code>/<code>AVG</code>/<code>COUNT</code>) → <code>HAVING</code>.</li>
+          <li><span class="c-num">•</span>Aggregation without collapsing rows → window function with <code>OVER</code>.</li>
+          <li><span class="c-num">•</span>Multi-level aggregation → CTE stack, one aggregation per level.</li>
+        </ul>
+        <p>Any interviewer who asks "what would you use?" is testing whether you can pick the right tool without over-engineering.</p>
+      </div>
+    </section>
+
+    <section id="in-2026">
+      <div class="kicker">2026 Status</div>
+      <h2>In 2026: What Has Changed</h2>
+      <p>GROUP BY is no longer the end of the story — it is the first rung of a ladder that ends at window functions.</p>
+      <ul>
+        <li><strong><code>GROUPING SETS</code>, <code>ROLLUP</code> and <code>CUBE</code></strong> produce several levels of summary — subtotals and grand totals — in a single pass.</li>
+        <li><strong><code>FILTER (WHERE …)</code></strong> gives conditional aggregates (count of paid orders, average of refunded ones) without wrapping a CASE inside the aggregate.</li>
+        <li><strong>Aggregation is the stepping stone to window functions:</strong> <code>SUM(x) OVER (ORDER BY …)</code> is the running total that GROUP BY cannot express.</li>
+        <li><strong>Warehouse engines add approximations</strong> (<code>approx_distinct</code>, <code>percentile_cont</code>) that trade exactness for speed at scale.</li>
+      </ul>
+      <p class="small">GROUP BY collapses rows; window functions keep them. Knowing which one the question needs is the whole skill.</p>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="10_join_pattern_selector_playground.html">← 10. Joins & Subqueries</a>
+        <a class="pgnav-pos" href="index.html">Playground 11 of 15</a>
+        <a class="pgnav-next" href="12_cte_recursive_playground.html">12. CTEs & Recursion →</a>
+      </nav>
+    </footer>
+
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
+const CELLS = {
+  avg_ignores_null: {
+    setup: ``,
+    starter:
+`CREATE TABLE users (id INT PRIMARY KEY, age INT);
+INSERT INTO users VALUES (1,25), (2,NULL), (3,35), (4,NULL), (5,40);
+
+-- AVG divides by the COUNT of non-NULL values, not the total row count
+SELECT AVG(age) AS avg_age, COUNT(*) AS total_rows, COUNT(age) AS non_null_ages FROM users;`
+  },
+  count_star_vs_col: {
+    setup: ``,
+    starter:
+`CREATE TABLE orders (order_id INT PRIMARY KEY, status TEXT);
+INSERT INTO orders
+SELECT value,
+       CASE WHEN value <= 20 THEN NULL
+            WHEN value <= 50 THEN 'pending'
+            ELSE 'shipped' END
+FROM (
+  WITH RECURSIVE seq(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM seq WHERE value < 100)
+  SELECT value FROM seq
+);
+
+-- COUNT(*) counts every row; COUNT(status) skips the 20 NULL-status rows
+SELECT COUNT(*) AS total, COUNT(status) AS non_null_status FROM orders;
+
+-- GROUP BY buckets all NULLs into ONE group, not zero and not 20 separate rows
+SELECT status, COUNT(*) FROM orders GROUP BY status;`
+  },
+  groupby_bare_column: {
+    setup: ``,
+    starter:
+`CREATE TABLE employees (name TEXT, dept TEXT, salary INT);
+INSERT INTO employees VALUES
+  ('Alice','Eng',90000), ('Bob','Eng',120000),
+  ('Carol','Sales',70000), ('Dave','Sales',95000);
+
+-- Bare column paired with MAX(): SQLite deterministically returns the name
+-- from the SAME ROW that produced the max salary in each department.
+SELECT dept, name, MAX(salary) FROM employees GROUP BY dept;
+
+-- Bare column paired with SUM(): no such row exists to borrow from, so
+-- SQLite picks an ARBITRARY row's name per department -- not an error,
+-- but not something you should rely on either.
+SELECT dept, name, SUM(salary) FROM employees GROUP BY dept;`
+  },
+  groupby_correct_rewrites: {
+    setup: ``,
+    starter:
+`CREATE TABLE employees (name TEXT, dept TEXT, salary INT);
+INSERT INTO employees VALUES ('Alice','Eng',90000), ('Bob','Eng',120000), ('Carol','Sales',70000);
+
+-- Fix A: aggregate the extra column away -- just count, don't try to show a name
+SELECT dept, COUNT(*) AS employee_count FROM employees GROUP BY dept;
+
+-- Fix B: don't collapse rows at all -- attach the per-group count to every row instead
+SELECT dept, name, COUNT(*) OVER (PARTITION BY dept) AS department_count FROM employees;`
+  },
+  groupby_null_bucket: {
+    setup: ``,
+    starter:
+`CREATE TABLE leads (lead_id INT PRIMARY KEY, source TEXT);
+INSERT INTO leads VALUES (1,'ads'), (2,'ads'), (3,NULL), (4,'referral'), (5,NULL), (6,NULL);
+
+-- Three untracked leads (NULL source) land in ONE bucket, not three
+SELECT source, COUNT(*) FROM leads GROUP BY source;`
+  },
+  where_having_demo: {
+    setup: ``,
+    starter:
+`CREATE TABLE sales (product_id INT, sale_price REAL);
+INSERT INTO sales VALUES (1,20), (1,30), (2,5), (2,8);
+
+-- WHERE cannot see an aggregate -- AVG(sale_price) doesn't exist yet at this stage.
+-- Expected to fail with "misuse of aggregate function AVG()".
+SELECT product_id FROM sales WHERE AVG(sale_price) < 10;
+
+-- HAVING can, because it runs after GROUP BY has already computed the aggregate.
+SELECT product_id, AVG(sale_price) AS avg_price
+FROM sales
+GROUP BY product_id
+HAVING AVG(sale_price) < 10;`
+  },
+  having_alias_check: {
+    setup: ``,
+    starter:
+`CREATE TABLE sales (region TEXT, amount REAL);
+INSERT INTO sales VALUES ('North',100), ('North',100), ('North',200), ('South',80);
+
+-- SQLite allows referencing a SELECT-list alias inside HAVING -- this works here.
+-- Not every dialect honors this the same way, so repeating the expression is
+-- the more portable habit: HAVING SUM(amount) > 100.
+SELECT region, SUM(amount) AS total FROM sales GROUP BY region HAVING total > 100;`
+  },
+  worked_execution_trace: {
+    setup: ``,
+    starter:
+`CREATE TABLE sales2 (region TEXT, product TEXT, year INT, amount REAL);
+INSERT INTO sales2 VALUES
+  ('North','Widget',2026,100),
+  ('North','Widget',2026,100),
+  ('North','Gadget',2026,200),
+  ('South','Widget',2026,80),
+  ('South','Gadget',2026,NULL),
+  ('East','Widget',2025,500);
+
+SELECT region, SUM(amount) AS total
+FROM sales2
+WHERE year = 2026
+GROUP BY region
+HAVING SUM(amount) > 100
+ORDER BY total DESC;`
+  },
+  worked_count_variants: {
+    setup: ``,
+    starter:
+`CREATE TABLE feedback (id INT PRIMARY KEY, user_id TEXT, score INT);
+INSERT INTO feedback VALUES (1,'U1',5), (2,'U1',4), (3,'U2',NULL), (4,'U2',5), (5,'U3',3);
+
+SELECT COUNT(*) AS all_rows,
+       COUNT(score) AS scored_rows,
+       COUNT(DISTINCT user_id) AS unique_users,
+       COUNT(DISTINCT score) AS distinct_scores
+FROM feedback;`
+  },
+  worked_having_only: {
+    setup: ``,
+    starter:
+`CREATE TABLE sales3 (product_id INT, sale_date TEXT, sale_price REAL);
+INSERT INTO sales3
+SELECT (value % 5) + 1,
+       '2026-0' || ((value % 3) + 1) || '-01',
+       CASE WHEN (value % 5) + 1 = 3 THEN 5.0 + (value % 4) ELSE 20.0 + (value % 10) END
+FROM (
+  WITH RECURSIVE seq(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM seq WHERE value < 120)
+  SELECT value FROM seq
+);
+
+SELECT product_id, AVG(sale_price) AS avg_price, COUNT(*) AS n_sales
+FROM sales3
+GROUP BY product_id
+HAVING AVG(sale_price) < 10
+   AND COUNT(*) >= 20;`
+  },
+  cohort_retention: {
+    setup: ``,
+    starter:
+`CREATE TABLE users2 (user_id INT PRIMARY KEY, signup_date TEXT);
+INSERT INTO users2 VALUES (1,'2026-01-01'), (2,'2026-01-02'), (3,'2026-01-08'), (4,'2026-01-09');
+
+CREATE TABLE events2 (user_id INT, event_ts TEXT);
+INSERT INTO events2 VALUES
+  (1,'2026-01-03'), (1,'2026-01-10'), (1,'2026-01-10'),
+  (2,'2026-01-05'),
+  (3,'2026-01-09'), (3,'2026-01-16');
+
+-- Step 1: bucket users into weekly signup cohorts (Monday-anchored week)
+WITH cohorts AS (
+  SELECT user_id, date(signup_date, 'weekday 0', '-6 days') AS cohort_week
+  FROM users2
+),
+-- Step 2: distinct active weeks per user (DISTINCT is critical -- see callout below)
+activity AS (
+  SELECT DISTINCT user_id, date(event_ts, 'weekday 0', '-6 days') AS active_week
+  FROM events2
+),
+-- Step 3: join cohort to activity, group by (cohort_week, weeks_since_signup)
+retention AS (
+  SELECT c.cohort_week,
+         CAST((julianday(a.active_week) - julianday(c.cohort_week)) / 7 AS INT) AS weeks_after,
+         COUNT(DISTINCT a.user_id) AS active_users
+  FROM cohorts c
+  JOIN activity a ON a.user_id = c.user_id AND a.active_week >= c.cohort_week
+  GROUP BY c.cohort_week, weeks_after
+),
+-- Step 4: divide by cohort size to get a percentage
+cohort_sizes AS (
+  SELECT cohort_week, COUNT(*) AS n_signups FROM cohorts GROUP BY cohort_week
+)
+SELECT r.cohort_week, r.weeks_after,
+       ROUND(100.0 * r.active_users / cs.n_signups, 1) AS retention_pct
+FROM retention r
+JOIN cohort_sizes cs ON cs.cohort_week = r.cohort_week
+ORDER BY r.cohort_week, r.weeks_after;`
+  }
+};
+
+function commonErrorHint(msg){
+  const m = msg.toLowerCase();
+  if (m.includes('misuse of aggregate')) {
+    return "WHERE runs before GROUP BY, so aggregates like AVG()/SUM()/COUNT() don't exist yet at this stage -- that's the WHERE-vs-HAVING trap this cell demonstrates.";
+  }
+  if (m.includes('no such column')) {
+    return "That column (or alias) isn't in scope at this point in query execution.";
+  }
+  if (m.includes('unique constraint failed')) {
+    return "A UNIQUE or PRIMARY KEY constraint stopped this -- that value already exists in the table.";
+  }
+  return null;
+}
+
+/* ============ SQL execution engine (uses iterateStatements so zero-row SELECTs and partial output before an error are preserved) ============ */
+let SQL = null;
+async function getSqlJsModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderResultTable(columns, rows){
+  if (!columns.length) return '';
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of columns) html += `<th>${escapeHtml(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += '<tr>';
+    for (const v of row) html += `<td>${v === null ? '<em>NULL</em>' : escapeHtml(v)}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+async function runSqlAgainstFreshDb(setupSql, mainSql, outputEl){
+  outputEl.innerHTML = '';
+  outputEl.classList.remove('err');
+  outputEl.classList.add('show');
+  try {
+    const SQLmod = await getSqlJsModule();
+    const db = new SQLmod.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setupSql && setupSql.trim()) db.run(setupSql);
+    let out = '';
+    let hadOutput = false;
+    let stmtIter;
+    try {
+      stmtIter = db.iterateStatements(mainSql);
+    } catch (e) {
+      throw e;
+    }
+    for (const stmt of stmtIter) {
+      try {
+        const cols = stmt.getColumnNames();
+        const rows = [];
+        while (stmt.step()) {
+          rows.push(stmt.get());
+        }
+        if (cols.length) {
+          out += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length===1?'':'s'}</div>`;
+          out += renderResultTable(cols, rows);
+          hadOutput = true;
+        }
+      } catch (stmtErr) {
+        const hint = commonErrorHint(stmtErr.message);
+        out += `<div style="color:#F0A38A; margin-top:8px;">✖ Error: ${escapeHtml(stmtErr.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+        hadOutput = true;
+        outputEl.innerHTML = out;
+        outputEl.classList.add('err');
+        db.close();
+        return;
+      }
+    }
+    if (!hadOutput) out = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    outputEl.innerHTML = out;
+    db.close();
+  } catch (e) {
+    const hint = commonErrorHint(e.message);
+    outputEl.innerHTML = `<div style="color:#F0A38A;">✖ Error: ${escapeHtml(e.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+    outputEl.classList.add('err');
+  }
+}
+
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+
+function wireCell(cellEl){
+  const id = cellEl.getAttribute('data-cell');
+  const spec = CELLS[id];
+  if (!spec) return;
+  const textarea = cellEl.querySelector('textarea');
+  const output = cellEl.querySelector('.cell-output');
+  const runBtn = cellEl.querySelector('.run-btn');
+  const resetBtn = cellEl.querySelector('.reset-btn');
+  textarea.value = spec.starter;
+  pgGrow(textarea);
+  textarea.addEventListener('input', () => pgGrow(textarea));
+  runBtn.addEventListener('click', () => {
+    runSqlAgainstFreshDb(spec.setup, textarea.value, output);
+  });
+  resetBtn.addEventListener('click', () => {
+    textarea.value = spec.starter;
+    pgGrow(textarea);
+    output.classList.remove('show', 'err');
+    output.innerHTML = '';
+  });
+}
+
+function initAllCells(){
+  document.querySelectorAll('.cell[data-cell]').forEach(wireCell);
+}
+
+/* ============ Group By Visualizer widget ============ */
+const GBV_ROWS = [
+  {id:1, category:'Electronics', region:'North', salesperson:'Alice', amount:320, qty:2},
+  {id:2, category:'Clothing', region:'South', salesperson:'Bob', amount:85, qty:3},
+  {id:3, category:'Electronics', region:'South', salesperson:'Alice', amount:150, qty:1},
+  {id:4, category:'Food', region:'North', salesperson:'Carol', amount:60, qty:5},
+  {id:5, category:'Clothing', region:'North', salesperson:'Bob', amount:120, qty:2},
+  {id:6, category:'Electronics', region:'East', salesperson:'Carol', amount:480, qty:4},
+  {id:7, category:'Food', region:'South', salesperson:'Alice', amount:45, qty:8},
+  {id:8, category:'Food', region:'East', salesperson:'Bob', amount:90, qty:6},
+  {id:9, category:'Clothing', region:'East', salesperson:'Carol', amount:200, qty:3},
+  {id:10, category:'Electronics', region:'North', salesperson:'Bob', amount:275, qty:2}
+];
+const GBV_AGG_SQL = {
+  count_star: 'COUNT(*)', count_amount: 'COUNT(amount)', sum_amount: 'SUM(amount)',
+  avg_amount: 'AVG(amount)', min_amount: 'MIN(amount)', max_amount: 'MAX(amount)'
+};
+const GBV_BUCKET_COLORS = ['#2F5D8A','#A73E7A','#A9781F','#3D6B4A','#6B4C8A','#A1402A'];
+
+const gbvState = { groupCol: 'category', aggregates: new Set(['count_star','sum_amount']) };
+
+function gbvBuildSql(){
+  const cols = [gbvState.groupCol, ...[...gbvState.aggregates].map(k => GBV_AGG_SQL[k])];
+  let sql = `SELECT ${cols.join(', ')} FROM sales_data GROUP BY ${gbvState.groupCol}`;
+  const expr = document.getElementById('gbv-having-expr').value;
+  if (expr) {
+    const op = document.getElementById('gbv-having-op').value;
+    const val = document.getElementById('gbv-having-value').value || '0';
+    sql += `\nHAVING ${expr} ${op} ${val}`;
+  }
+  return sql + ';';
+}
+
+function gbvSetupSql(){
+  const values = GBV_ROWS.map(r => `(${r.id},'${r.category}','${r.region}','${r.salesperson}',${r.amount},${r.qty})`).join(',\n  ');
+  return `CREATE TABLE sales_data (id INT PRIMARY KEY, category TEXT, region TEXT, salesperson TEXT, amount REAL, qty INT);
+INSERT INTO sales_data VALUES\n  ${values};`;
+}
+
+function gbvRenderRawTable(){
+  let html = '<table class="mini"><thead><tr><th>id</th><th>category</th><th>region</th><th>salesperson</th><th>amount</th><th>qty</th></tr></thead><tbody>';
+  for (const r of GBV_ROWS) {
+    html += `<tr id="gbv-row-${r.id}" class="gbv-row-tint"><td>${r.id}</td><td>${r.category}</td><td>${r.region}</td><td>${r.salesperson}</td><td>${r.amount}</td><td>${r.qty}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('gbv-raw-table').innerHTML = html;
+}
+
+function gbvUpdateSqlPreview(){
+  document.getElementById('gbv-sql').textContent = gbvBuildSql();
+}
+
+function gbvGroupColorMap(){
+  const distinctVals = [...new Set(GBV_ROWS.map(r => r[gbvState.groupCol]))];
+  const map = {};
+  distinctVals.forEach((v, i) => { map[v] = GBV_BUCKET_COLORS[i % GBV_BUCKET_COLORS.length]; });
+  return map;
+}
+
+function gbvClearAnimation(){
+  document.getElementById('gbv-buckets').innerHTML = '';
+  document.getElementById('gbv-result-table').innerHTML = '';
+  const ph = document.getElementById('gbv-placeholder');
+  ph.classList.remove('hidden');
+  ph.textContent = 'Click Animate to run this query for real.';
+  GBV_ROWS.forEach(r => {
+    const el = document.getElementById(`gbv-row-${r.id}`);
+    if (el) { el.style.background = ''; el.style.boxShadow = ''; }
+  });
+}
+
+async function gbvAnimate(){
+  const colorMap = gbvGroupColorMap();
+  const bucketsEl = document.getElementById('gbv-buckets');
+  const resultEl = document.getElementById('gbv-result-table');
+  const ph = document.getElementById('gbv-placeholder');
+  bucketsEl.innerHTML = '';
+  resultEl.innerHTML = '';
+
+  // tint raw rows by their group color immediately
+  GBV_ROWS.forEach(r => {
+    const el = document.getElementById(`gbv-row-${r.id}`);
+    if (el) el.style.boxShadow = `inset 4px 0 0 ${colorMap[r[gbvState.groupCol]]}`;
+  });
+
+  try {
+    const SQLmod = await getSqlJsModule();
+    const db = new SQLmod.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    db.run(gbvSetupSql());
+    const havingExpr = document.getElementById('gbv-having-expr').value;
+    const res = db.exec(gbvBuildSql());
+    db.close();
+
+    const groupVals = [...new Set(GBV_ROWS.map(r => r[gbvState.groupCol]))];
+    const passing = new Set((res.length ? res[0].values : []).map(row => row[0]));
+
+    // staggered bucket reveal
+    groupVals.forEach((v, i) => {
+      const memberIds = GBV_ROWS.filter(r => r[gbvState.groupCol] === v).map(r => r.id);
+      const excluded = havingExpr && !passing.has(v);
+      const card = document.createElement('div');
+      card.className = 'gbv-bucket' + (excluded ? ' excluded' : '');
+      card.style.borderLeftColor = colorMap[v];
+      card.style.borderLeftWidth = '4px';
+      card.innerHTML = `<div class="bucket-label" style="color:${colorMap[v]}">${escapeHtml(v)}</div>
+        <div class="bucket-count">${memberIds.length} row${memberIds.length===1?'':'s'}${excluded ? ' — excluded by HAVING' : ''}</div>
+        <div class="bucket-rows">ids: ${memberIds.join(', ')}</div>`;
+      bucketsEl.appendChild(card);
+      setTimeout(() => card.classList.add('show'), 60 * i);
+    });
+
+    setTimeout(() => {
+      if (!res.length) {
+        ph.classList.remove('hidden');
+        ph.textContent = 'No groups matched the HAVING filter.';
+        return;
+      }
+      ph.classList.add('hidden');
+      resultEl.innerHTML = renderResultTable(res[0].columns, res[0].values);
+    }, 60 * groupVals.length + 150);
+  } catch (e) {
+    ph.classList.remove('hidden');
+    ph.textContent = `✗ ${e.message}`;
+  }
+}
+
+function gbvReset(){
+  gbvState.groupCol = 'category';
+  gbvState.aggregates = new Set(['count_star','sum_amount']);
+  document.getElementById('gbv-groupcol').value = 'category';
+  document.querySelectorAll('#gbv-aggregates .pill-btn').forEach(btn => {
+    btn.classList.toggle('active', gbvState.aggregates.has(btn.getAttribute('data-agg')));
+  });
+  document.getElementById('gbv-having-expr').value = '';
+  document.getElementById('gbv-having-op').value = '>';
+  document.getElementById('gbv-having-value').value = '200';
+  gbvUpdateSqlPreview();
+  gbvClearAnimation();
+}
+
+function initGbvWidget(){
+  gbvRenderRawTable();
+  gbvUpdateSqlPreview();
+  document.getElementById('gbv-groupcol').addEventListener('change', (e) => {
+    gbvState.groupCol = e.target.value;
+    gbvUpdateSqlPreview();
+    gbvClearAnimation();
+  });
+  document.querySelectorAll('#gbv-aggregates .pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-agg');
+      if (gbvState.aggregates.has(key)) { gbvState.aggregates.delete(key); btn.classList.remove('active'); }
+      else { gbvState.aggregates.add(key); btn.classList.add('active'); }
+      gbvUpdateSqlPreview();
+      gbvClearAnimation();
+    });
+  });
+  ['gbv-having-expr','gbv-having-op','gbv-having-value'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => { gbvUpdateSqlPreview(); gbvClearAnimation(); });
+    document.getElementById(id).addEventListener('change', () => { gbvUpdateSqlPreview(); gbvClearAnimation(); });
+  });
+  document.getElementById('gbv-animate').addEventListener('click', gbvAnimate);
+  document.getElementById('gbv-reset').addEventListener('click', gbvReset);
+  gbvClearAnimation();
+}
+
+/* ============ Aggregation Pipeline Tester quiz ============ */
+const AGG_QUESTIONS = [
+  {
+    scenario: "You want the total revenue per region, but only for regions where total revenue exceeds $1M. Where does the '$1M' filter belong?",
+    verifySetup: `CREATE TABLE revenue_by_region (region TEXT, revenue REAL);
+INSERT INTO revenue_by_region VALUES ('North',1200000),('South',600000),('East',900000);`,
+    verifyMain: `SELECT region, SUM(revenue) AS total FROM revenue_by_region GROUP BY region HAVING SUM(revenue) > 1000000;`,
+    options: [
+      { title: "WHERE total > 1000000", hint: "Row filter", correct: false },
+      { title: "HAVING SUM(revenue) > 1000000", hint: "Group filter", correct: true },
+      { title: "Either place — they mean the same", hint: "", correct: false },
+      { title: "Neither — needs a subquery", hint: "", correct: false }
+    ],
+    feedback: "\"Total revenue\" is an aggregate that doesn't exist until after GROUP BY runs, so only HAVING can filter on it. WHERE total > 1000000 would fail outright -- total isn't a real column, and even SUM(revenue) directly in WHERE is illegal at that stage."
+  },
+  {
+    scenario: "Table orders has 5000 rows total. 800 rows have status = 'cancelled' (not counted in reports). You want the average revenue of NON-cancelled orders. Which query is correct?",
+    verifySetup: `CREATE TABLE orders (id INT PRIMARY KEY, status TEXT, revenue REAL);
+INSERT INTO orders VALUES (1,'cancelled',50),(2,'completed',100),(3,'completed',200),(4,'cancelled',80);`,
+    verifyMain: `SELECT AVG(revenue) FROM orders WHERE status != 'cancelled';`,
+    options: [
+      { title: "SELECT AVG(revenue) FROM orders WHERE status != 'cancelled'", hint: "", correct: true },
+      { title: "SELECT AVG(revenue) FROM orders HAVING status != 'cancelled'", hint: "", correct: false },
+      { title: "SELECT status, AVG(revenue) FROM orders GROUP BY status", hint: "", correct: false },
+      { title: "All three are equivalent", hint: "", correct: false }
+    ],
+    feedback: "status is a raw row-level column -- filtering it belongs in WHERE, before any grouping. HAVING with no GROUP BY and a non-aggregate condition is invalid in standard SQL. GROUP BY status returns one row PER status (including cancelled), not a single non-cancelled average."
+  },
+  {
+    scenario: "A sales table has 100 rows. 20 rows have NULL in the amount column (draft sales, not priced yet). What does SELECT COUNT(*), COUNT(amount) FROM sales return?",
+    verifySetup: `CREATE TABLE sales4 (id INT PRIMARY KEY, amount REAL);
+INSERT INTO sales4 SELECT value, CASE WHEN value <= 20 THEN NULL ELSE 10.0 END
+FROM (WITH RECURSIVE seq(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM seq WHERE value < 100) SELECT value FROM seq);`,
+    verifyMain: `SELECT COUNT(*), COUNT(amount) FROM sales4;`,
+    options: [
+      { title: "100, 100", hint: "", correct: false },
+      { title: "100, 80", hint: "* counts everything; column counts non-null", correct: true },
+      { title: "80, 80", hint: "", correct: false },
+      { title: "80, 100", hint: "", correct: false }
+    ],
+    feedback: "COUNT(*) counts every row regardless of content: 100. COUNT(amount) skips the 20 NULL rows: 80. This is the single most common source of a silently-wrong report."
+  },
+  {
+    scenario: "Table employees(name, dept, salary). You write SELECT dept, name, MAX(salary) FROM employees GROUP BY dept. What happens?",
+    verifySetup: `CREATE TABLE employees2 (name TEXT, dept TEXT, salary INT);
+INSERT INTO employees2 VALUES ('Alice','Eng',90000),('Bob','Eng',120000),('Carol','Sales',70000);`,
+    verifyMain: `SELECT dept, name, MAX(salary) FROM employees2 GROUP BY dept;`,
+    options: [
+      { title: "Returns the highest-paid person's name in each dept", hint: "", correct: false },
+      { title: "Error — name is not in GROUP BY and not aggregated", hint: "", correct: true },
+      { title: "Works but name is an arbitrary row from each group", hint: "MySQL-specific", correct: false },
+      { title: "Depends on the DBMS", hint: "", correct: false }
+    ],
+    feedback: "Standard SQL (and PostgreSQL, and strict-mode MySQL) reject this outright -- that's the textbook-correct, portable answer. Click Verify, though: SQLite specifically does NOT error here. It applies a documented extension where a bare column paired with MAX() deterministically borrows its value from the row that produced that max -- in this exact case it happens to give the right answer, but only because the aggregate is MAX(). Swap in SUM() or AVG() and SQLite picks an arbitrary row instead. Never rely on this."
+  },
+  {
+    scenario: "For a rolling 7-day active-user count, you need one row PER day with the DAU for that day AND the running 7-day average. GROUP BY alone can produce the daily count. What produces the rolling average?",
+    verifySetup: `CREATE TABLE dau (day TEXT PRIMARY KEY, active_users INT);
+INSERT INTO dau VALUES ('2026-01-01',100),('2026-01-02',110),('2026-01-03',95),('2026-01-04',120),('2026-01-05',130),('2026-01-06',115),('2026-01-07',125),('2026-01-08',140);`,
+    verifyMain: `SELECT day, active_users,
+       AVG(active_users) OVER (ORDER BY day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS rolling_7day_avg
+FROM dau
+ORDER BY day;`,
+    options: [
+      { title: "GROUP BY on a 7-day window", hint: "", correct: false },
+      { title: "HAVING COUNT(*) >= 7", hint: "", correct: false },
+      { title: "Self-join on a date range", hint: "Slow but works", correct: false },
+      { title: "AVG(...) OVER (ORDER BY day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)", hint: "Window function", correct: true }
+    ],
+    feedback: "GROUP BY collapses rows -- you'd lose the one-row-per-day requirement entirely. A window function computes the aggregate WITHOUT collapsing anything, so every day keeps its own row while still seeing a rolling slice of the 6 preceding rows plus itself."
+  },
+  {
+    scenario: "A leads table has a source column; some rows have source = NULL (untracked / organic traffic). You run SELECT source, COUNT(*) FROM leads GROUP BY source. How many result rows show source = NULL?",
+    verifySetup: `CREATE TABLE leads2 (lead_id INT PRIMARY KEY, source TEXT);
+INSERT INTO leads2 VALUES (1,'ads'),(2,'ads'),(3,NULL),(4,'referral'),(5,NULL),(6,NULL),(7,'ads');`,
+    verifyMain: `SELECT source, COUNT(*) FROM leads2 GROUP BY source;`,
+    options: [
+      { title: "One row per NULL lead", hint: "", correct: false },
+      { title: "0 rows — NULLs are dropped from GROUP BY", hint: "", correct: false },
+      { title: "Exactly 1 row, grouping all NULLs together", hint: "", correct: true },
+      { title: "Error — can't GROUP BY a nullable column", hint: "", correct: false }
+    ],
+    feedback: "GROUP BY treats every NULL as belonging to the same single group, exactly like it does for any other repeated value -- it does NOT drop them (that's aggregate functions like AVG ignoring NULLs; GROUP BY is a different mechanism entirely) and it does NOT give each NULL row its own bucket."
+  },
+  {
+    scenario: "Some rows in a users table have NULL in the email column. You want both the total number of rows and the number of rows with a known email. Which pair of aggregates gives that?",
+    verifySetup: `CREATE TABLE users (id INT PRIMARY KEY, email TEXT);
+INSERT INTO users VALUES (1,'a@x.com'),(2,NULL),(3,'c@x.com');`,
+    verifyMain: `SELECT COUNT(*) AS all_rows, COUNT(email) AS known_emails FROM users;`,
+    options: [
+      { title: "COUNT(*) and COUNT(email)", hint: "Rows vs non-NULL values", correct: true },
+      { title: "COUNT(email) and COUNT(*)", hint: "", correct: false },
+      { title: "SUM(*) and SUM(email)", hint: "", correct: false },
+      { title: "COUNT(*) for both", hint: "", correct: false }
+    ],
+    feedback: "<code>COUNT(*)</code> counts rows and never looks at values, so it returns 3. <code>COUNT(email)</code> skips NULLs and returns 2. Using <code>COUNT(*)</code> for both would quietly overstate how many known emails exist -- the kind of off-by-N that shows up only when there are NULLs."
+  },
+  {
+    scenario: "An orders table records one row per order, and the same customer can order many times. You want the number of distinct customers who have ordered at all.",
+    verifySetup: `CREATE TABLE orders (id INT PRIMARY KEY, customer_id INT);
+INSERT INTO orders VALUES (1,10),(2,10),(3,20),(4,30),(5,20);`,
+    verifyMain: `SELECT COUNT(DISTINCT customer_id) AS distinct_customers FROM orders;`,
+    options: [
+      { title: "COUNT(*)", hint: "Counts orders, not customers", correct: false },
+      { title: "COUNT(DISTINCT customer_id)", hint: "Dedupes before counting", correct: true },
+      { title: "COUNT(customer_id) GROUP BY nothing", hint: "", correct: false },
+      { title: "MAX(customer_id)", hint: "", correct: false }
+    ],
+    feedback: "<code>COUNT(*)</code> would return 5 -- the number of orders -- not the 3 distinct customers. <code>COUNT(DISTINCT customer_id)</code> removes duplicates before counting. This is the difference between \"how many orders\" and \"how many customers\", and mixing them up is one of the most common reporting bugs."
+  },
+  {
+    scenario: "You want the single highest salary in the whole company, as one number.",
+    verifySetup: `CREATE TABLE employees (id INT PRIMARY KEY, dept TEXT, name TEXT, salary REAL);
+INSERT INTO employees VALUES (1,'Eng','Ada',120000),(2,'Eng','Linus',110000),(3,'Sales','Grace',95000);`,
+    verifyMain: `SELECT MAX(salary) AS top_salary FROM employees;`,
+    options: [
+      { title: "SELECT MAX(salary) FROM employees", hint: "No GROUP BY means one group: the whole table", correct: true },
+      { title: "SELECT salary FROM employees ORDER BY salary DESC LIMIT 1", hint: "Correct, but not what's asked", correct: false },
+      { title: "SELECT MAX(salary) FROM employees GROUP BY dept", hint: "One row per department", correct: false },
+      { title: "SELECT TOP(salary) FROM employees", hint: "", correct: false }
+    ],
+    feedback: "An aggregate with no GROUP BY collapses the entire table into one group and returns a single row -- here, the maximum salary (120000). Adding <code>GROUP BY dept</code> would instead return one maximum <em>per department</em>. The clause you omit is what decides the number of output rows."
+  },
+  {
+    scenario: "You write SELECT dept, name, MAX(salary) FROM employees GROUP BY dept; -- name is neither aggregated nor in the GROUP BY. What does SQLite do?",
+    verifySetup: `CREATE TABLE employees (id INT PRIMARY KEY, dept TEXT, name TEXT, salary REAL);
+INSERT INTO employees VALUES (1,'Eng','Ada',120000),(2,'Eng','Linus',110000),(3,'Sales','Grace',95000);`,
+    verifyMain: `SELECT dept, name, MAX(salary) FROM employees GROUP BY dept;`,
+    options: [
+      { title: "Raises an error, as standard SQL and PostgreSQL require", hint: "", correct: false },
+      { title: "Returns the name from the row that supplied each MAX", hint: "A documented SQLite extension, not portable", correct: true },
+      { title: "Concatenates every name in the group", hint: "", correct: false },
+      { title: "Returns NULL for name", hint: "", correct: false }
+    ],
+    feedback: "Standard SQL rejects a bare column that is not functionally dependent on the GROUP BY keys, and PostgreSQL does exactly that. SQLite is deliberately looser: with a single <code>MIN()</code> or <code>MAX()</code> aggregate it returns the bare columns <em>from the row that produced that extremum</em> -- here, Ada for Eng. It is convenient, but it is a SQLite extension: don't rely on it in portable SQL."
+  }
+];
+
+const aggQuizState = { idx: 0, score: 0, selected: null, answered: false, history: [] };
+
+function aggDotsHtml(){
+  let html = '';
+  for (let i = 0; i < AGG_QUESTIONS.length; i++) {
+    let cls = '';
+    if (i < aggQuizState.history.length) cls = aggQuizState.history[i] ? 'correct' : 'incorrect';
+    else if (i === aggQuizState.idx) cls = 'current';
+    html += `<span class="dot ${cls}"></span>`;
+  }
+  return html;
+}
+
+function aggQuestionHtml(){
+  const total = AGG_QUESTIONS.length;
+  const q = AGG_QUESTIONS[aggQuizState.idx];
+  let html = `<div class="agg-quiz-head">
+    <div><span class="agg-dots-label">Scenario</span><span class="agg-dots">${aggDotsHtml()}</span></div>
+    <div class="agg-score">Score: <b>${aggQuizState.score}</b> / ${total}</div>
+  </div>
+  <div class="agg-progressbar"><div class="agg-progressbar-fill" style="width:${(aggQuizState.idx/total)*100}%"></div></div>
+  <div class="agg-scenario-card">
+    <div class="agg-scenario-label">Scenario</div>
+    <div class="agg-scenario-text">${escapeHtml(q.scenario)}</div>
+    <div class="agg-pick-label">Pick the best answer</div>
+    <div class="agg-options-grid">`;
+  q.options.forEach((opt, i) => {
+    html += `<div class="agg-option-card" data-idx="${i}">
+      <div class="agg-option-title">${escapeHtml(opt.title)}</div>
+      ${opt.hint ? `<div class="agg-option-hint">${escapeHtml(opt.hint)}</div>` : ''}
+    </div>`;
+  });
+  html += `</div>
+    <button class="agg-check-btn" id="agg-check-btn" disabled>Check answer</button>
+    <div id="agg-feedback-slot"></div>
+    <button class="btn secondary agg-verify-btn" id="agg-verify-btn" style="display:none;">▶ Verify against real SQLite</button>
+    <div class="cell-output agg-verify-output" id="agg-verify-output"></div>
+  </div>`;
+  return html;
+}
+
+function aggDoneHtml(){
+  const total = AGG_QUESTIONS.length;
+  return `<div class="agg-quiz-done">
+    <div class="big-score">${aggQuizState.score} / ${total}</div>
+    <p>${aggQuizState.score === total ? "Perfect score." : "Review the ones you missed above, then try again."}</p>
+    <button class="btn secondary agg-restart-btn" id="agg-restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+
+function aggRenderQuiz(){
+  const mount = document.getElementById('agg-quiz-mount');
+  if (aggQuizState.idx >= AGG_QUESTIONS.length) {
+    mount.innerHTML = `<div class="agg-quiz">${aggDoneHtml()}</div>`;
+    document.getElementById('agg-restart-btn').addEventListener('click', aggInitQuiz);
+    return;
+  }
+  mount.innerHTML = `<div class="agg-quiz">${aggQuestionHtml()}</div>`;
+  mount.querySelectorAll('.agg-option-card').forEach(card => {
+    card.addEventListener('click', () => aggSelectOption(parseInt(card.getAttribute('data-idx'), 10)));
+  });
+  document.getElementById('agg-check-btn').addEventListener('click', aggCheckAnswer);
+}
+
+function aggSelectOption(idx){
+  if (aggQuizState.answered) return;
+  aggQuizState.selected = idx;
+  document.querySelectorAll('.agg-option-card').forEach((card, i) => {
+    card.classList.toggle('selected', i === idx);
+  });
+  document.getElementById('agg-check-btn').disabled = false;
+}
+
+function aggCheckAnswer(){
+  if (aggQuizState.answered || aggQuizState.selected === null) return;
+  aggQuizState.answered = true;
+  const q = AGG_QUESTIONS[aggQuizState.idx];
+  const chosen = q.options[aggQuizState.selected];
+  const cards = document.querySelectorAll('.agg-option-card');
+  cards.forEach((card, i) => {
+    card.classList.add('disabled');
+    card.classList.remove('selected');
+    if (q.options[i].correct) card.classList.add('correct');
+    else if (i === aggQuizState.selected) card.classList.add('incorrect');
+  });
+  document.getElementById('agg-check-btn').style.display = 'none';
+  const isCorrect = chosen.correct;
+  if (isCorrect) aggQuizState.score++;
+  aggQuizState.history.push(isCorrect);
+  document.querySelector('.agg-dots').innerHTML = aggDotsHtml();
+  document.querySelector('.agg-score b').textContent = aggQuizState.score;
+
+  const slot = document.getElementById('agg-feedback-slot');
+  slot.innerHTML = `<div class="agg-feedback ${isCorrect ? 'correct' : 'incorrect'}">${isCorrect ? '✓ Correct.' : '✖ Not quite.'} ${escapeHtml(q.feedback)}</div>
+    <button class="btn agg-next-btn" id="agg-next-btn">${aggQuizState.idx === AGG_QUESTIONS.length - 1 ? 'See score →' : 'Next →'}</button>`;
+  document.getElementById('agg-next-btn').addEventListener('click', aggNext);
+
+  const verifyBtn = document.getElementById('agg-verify-btn');
+  verifyBtn.style.display = 'inline-block';
+  verifyBtn.onclick = async () => {
+    const out = document.getElementById('agg-verify-output');
+    out.classList.add('show');
+    await runSqlAgainstFreshDb(q.verifySetup, q.verifyMain, out);
+  };
+}
+
+function aggNext(){
+  aggQuizState.idx++;
+  aggQuizState.selected = null;
+  aggQuizState.answered = false;
+  aggRenderQuiz();
+}
+
+function aggInitQuiz(){
+  aggQuizState.idx = 0;
+  aggQuizState.score = 0;
+  aggQuizState.selected = null;
+  aggQuizState.answered = false;
+  aggQuizState.history = [];
+  aggRenderQuiz();
+}
+
+/* ============ boot ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  initAllCells();
+  initGbvWidget();
+  aggInitQuiz();
+});
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: WHERE, HAVING, or SELECT? ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const ZONES = ['where', 'having', 'select'];
+  const ITEMS = [
+    { id: 'w1', text: "Discard rows with status = 'cancelled'", zone: 'where' },
+    { id: 'w2', text: 'Keep only orders placed this year', zone: 'where' },
+    { id: 'w3', text: 'Drop rows where amount IS NULL', zone: 'where' },
+    { id: 'h1', text: 'Keep only groups where COUNT(*) > 5', zone: 'having' },
+    { id: 'h2', text: 'Drop departments whose SUM(salary) exceeds 1M', zone: 'having' },
+    { id: 'h3', text: 'Keep only regions that appear more than once', zone: 'having' },
+    { id: 's1', text: 'Compute SUM(amount) AS revenue', zone: 'select' },
+    { id: 's2', text: 'Label the grouped column AS region', zone: 'select' },
+    { id: 's3', text: 'Apply ROUND(AVG(price), 2)', zone: 'select' },
+  ];
+  let placed = {}, selected = null, checked = false;
+  const bank = byId('whsbank');
+  if (!bank) return;
+  function keyHtml(){
+    return '<div class="lm-key"><div class="lm-key-head">Correct mapping</div>' +
+      ITEMS.map(it => {
+        const ok = placed[it.id] === it.zone;
+        const h = document.querySelector('.lm-zone[data-zone="' + it.zone + '"] .lm-zone-head');
+        const name = h ? h.textContent.split('·')[0].trim() : it.zone;
+        return '<div class="lm-key-row ' + (ok ? 'ok' : 'bad') + '"><span class="lm-key-item">' + (ok ? '✓' : '✗') + ' ' + esc(it.text) + '</span><span class="lm-key-zone">' + esc(name) + '</span></div>';
+      }).join('') + '</div>';
+  }
+  function render(){
+    const rest = ITEMS.filter(it => !placed[it.id]);
+    bank.innerHTML = rest.length ? rest.map(it =>
+      `<div class="lm-chip${selected === it.id ? ' selected' : ''}" data-id="${it.id}">${esc(it.text)}</div>`).join('')
+      : `<span class="lm-hint" style="margin:0;">${checked ? 'All jobs placed and checked.' : 'All jobs placed — press “Check mapping”.'}</span>`;
+    bank.querySelectorAll('.lm-chip').forEach(chip => chip.addEventListener('click', () => {
+      if (checked) return;
+      selected = selected === chip.dataset.id ? null : chip.dataset.id;
+      render();
+    }));
+    ZONES.forEach(z => {
+      byId('whszone-' + z).innerHTML = ITEMS.filter(it => placed[it.id] === z).map(it => {
+        let cls = 'lm-item';
+        if (checked) cls += it.zone === z ? ' correct' : ' incorrect';
+        return `<div class="${cls}" data-id="${it.id}">${esc(it.text)}</div>`;
+      }).join('');
+      byId('whszone-' + z).querySelectorAll('.lm-item').forEach(el => el.addEventListener('click', () => {
+        if (checked) return;
+        delete placed[el.dataset.id]; selected = null; render();
+      }));
+    });
+    document.querySelectorAll('.lm-zone').forEach(z => z.classList.toggle('armed', !!selected));
+    byId('whscheck').disabled = Object.keys(placed).length < ITEMS.length;
+    byId('whsanswer').disabled = !checked;
+    if (!checked) byId('whsscore').textContent = `${Object.keys(placed).length} of ${ITEMS.length} placed`;
+  }
+  document.querySelectorAll('.lm-zone').forEach(z => z.addEventListener('click', () => {
+    if (checked || !selected) return;
+    placed[selected] = z.dataset.zone; selected = null; render();
+  }));
+  byId('whscheck').addEventListener('click', () => {
+    checked = true;
+    const wrong = ITEMS.filter(it => placed[it.id] !== it.zone);
+    const score = ITEMS.length - wrong.length;
+    byId('whsfeedback').innerHTML = wrong.length === 0
+      ? `<div class="lm-feedback correct">✓ ${score} / ${ITEMS.length}. The rule is positional: WHERE runs per row <em>before</em> groups exist, so it can never mention an aggregate. HAVING runs on the groups <em>after</em> they exist, so it can. SELECT computes what each output row actually contains — including the aggregate that HAVING is testing.</div>`
+      : `<div class="lm-feedback incorrect">✗ ${score} / ${ITEMS.length}. The red ones are misplaced — click “Restart”. Ask one question: does this job need to see a <em>single row</em> (WHERE), a <em>finished group</em> (HAVING), or is it <em>producing the output value</em> (SELECT)?</div>`;
+    render();
+    byId('whsscore').textContent = `${score} / ${ITEMS.length} correct`;
+  });
+  byId('whsanswer').addEventListener('click', () => { byId('whskey').innerHTML = keyHtml(); });
+  byId('whsrestart').addEventListener('click', () => {
+    placed = {}; selected = null; checked = false;
+    byId('whsfeedback').innerHTML = ''; byId('whskey').innerHTML = ''; render();
+  });
+  render();
+})();
+</script>
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

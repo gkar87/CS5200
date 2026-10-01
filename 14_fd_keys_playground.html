@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS5200 · Functional Dependencies and Keys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --paper-raised:#F6F7F2;
+  --ink:#1E2A25; --ink-soft:#4A564F;
+  --rule:#C9CFC2; --rule-strong:#A8B0A0;
+  --blue:#2F5D8A; --blue-soft:#E4EBF2;
+  --amber:#A9781F; --amber-soft:#F4EBD6;
+  --rust:#A1402A; --rust-soft:#F6E4DE;
+  --green:#3D6B4A; --green-soft:#E2EDE3;
+  --purple:#6B4C8A; --purple-soft:#EBE4F2;
+  --pink:#A73E7A; --pink-soft:#F5E3EE;
+  --code-bg:#16211C; --code-bg-raised:#1E2C24;
+  --code-text:#E7ECE3; --code-rule:#33443A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif;
+  font-size:17px; line-height:1.6;
+}
+code, pre, .mono, table.dbtable, .badge, .tag, .nav a, .btn, kbd{
+  font-family:"IBM Plex Mono", monospace;
+}
+a{color:var(--blue);}
+h1,h2,h3,h4{font-family:"Source Serif 4", Georgia, serif; line-height:1.25; font-weight:700; color:var(--ink);}
+.layout{display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--rule); padding:24px 18px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sidebar .course{
+  font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--ink-soft);
+  border-bottom:1px solid var(--rule); padding-bottom:14px; margin-bottom:14px; line-height:1.5;
+}
+.sidebar nav a{
+  display:block; padding:6px 8px; border-radius:5px; font-size:13px; color:var(--ink-soft);
+  text-decoration:none; margin-bottom:2px;
+}
+.sidebar nav a:hover{background:var(--blue-soft); color:var(--blue);}
+.sidebar nav .grp{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--rule-strong); margin:14px 0 4px; padding:0 8px;}
+main{flex:1; min-width:0; max-width:920px; margin:0 auto; padding:40px 32px 100px;}
+header.hero{margin-bottom:40px;}
+header.hero .eyebrow{font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--blue); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+header.hero h1{font-size:2.3em; margin:0 0 8px;}
+header.hero .byline{font-family:"IBM Plex Mono", monospace; font-size:13px; color:var(--ink-soft); margin-bottom:14px;}
+header.hero p.lede{font-size:1.1em; color:var(--ink-soft); max-width:700px;}
+section{margin:52px 0; scroll-margin-top:20px;}
+section h2{font-size:1.55em; border-bottom:2px solid var(--rule); padding-bottom:8px; margin-bottom:16px;}
+section h3{font-size:1.2em; margin-top:28px; color:var(--ink);}
+p{margin:0 0 14px;}
+.small{font-size:.9em; color:var(--ink-soft);}
+ul,ol{padding-left:22px;}
+li{margin-bottom:6px;}
+.callout{background:var(--paper-raised); border-left:4px solid var(--blue); border-radius:0 8px 8px 0; padding:14px 18px; margin:18px 0;}
+.callout.amber{border-color:var(--amber); background:var(--amber-soft);}
+.callout.rust{border-color:var(--rust); background:var(--rust-soft);}
+.callout.green{border-color:var(--green); background:var(--green-soft);}
+.callout.purple{border-color:var(--purple); background:var(--purple-soft);}
+.badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; font-weight:600; letter-spacing:.02em;}
+.badge.blue{background:var(--blue-soft); color:var(--blue);}
+.badge.amber{background:var(--amber-soft); color:var(--amber);}
+.badge.rust{background:var(--rust-soft); color:var(--rust);}
+.badge.green{background:var(--green-soft); color:var(--green);}
+.badge.purple{background:var(--purple-soft); color:var(--purple);}
+
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+
+.diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
+.diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+.diagram figcaption{font-size:.85em; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+/* ===== Canonical figure reveal (motion; inert without JS, off on request) ===== */
+.js .diagram{opacity:0; transform:translateY(8px); transition:opacity .5s ease, transform .5s ease;}
+.js .diagram.in{opacity:1; transform:none;}
+.js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:0; transition:opacity .45s ease .2s;}
+.js .diagram.in svg [marker-end],.js .diagram.in svg .fade-in{opacity:1;}
+.js .diagram [data-beat]{opacity:0; transition:opacity .5s ease;}
+.js .diagram.in [data-beat="1"]{opacity:1; transition-delay:.15s;}
+.js .diagram.in [data-beat="2"]{opacity:1; transition-delay:.85s;}
+.js .diagram.in [data-beat="3"]{opacity:1; transition-delay:1.55s;}
+.js .diagram.in [data-beat="4"]{opacity:1; transition-delay:2.25s;}
+@media (prefers-reduced-motion: reduce){
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important; transition:none !important;}
+  .js .diagram [data-beat]{opacity:1 !important; transition:none !important;}
+}
+@media print{
+  .js .diagram{opacity:1 !important; transform:none !important;}
+  .js .diagram svg [marker-end],.js .diagram svg .fade-in{opacity:1 !important;}
+  .js .diagram [data-beat]{opacity:1 !important;}
+}
+
+.btn{
+  background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600;
+}
+.btn:hover{opacity:.9;}
+.btn.secondary{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+
+.problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
+.problem h4{margin:0 0 8px; font-size:1.05em;}
+details.answer{margin-top:12px;}
+details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
+details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
+
+.interview-box{border:1px solid var(--purple); border-radius:10px; background:var(--purple-soft); padding:22px 24px; margin:18px 0;}
+.interview-box h3{color:var(--purple); margin-top:0;}
+
+/* ===== Play-and-learn widget kit (stepper · mapper) ===== */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.qstep-rail{display:flex; gap:6px; margin:16px 0 18px; flex-wrap:wrap;}
+.qstep-node{flex:1; min-width:88px; border:1.5px solid var(--rule); border-radius:10px; background:#fff; padding:9px 8px; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; line-height:1.3;}
+.qstep-node:hover{border-color:var(--blue);}
+.qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
+.qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
+.qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+.qstep-name{font-weight:700; font-size:1.05em;}
+.qstep-layer{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; background:var(--ink); color:#fff;}
+.qstep-action{font-size:.95em; margin-bottom:12px;}
+.qstep-art{background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap; line-height:1.5; overflow-x:auto;}
+.qstep-art .art-label{display:block; color:#9FB4A6; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+.qstep-controls{display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+.qstep-count{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft); margin-left:auto;}
+.qstep-next-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.qstep-next-btn:hover{opacity:.9;}
+.qstep-next-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.qstep-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+.qstep-restart-btn:hover{border-color:var(--blue); color:var(--blue);}
+.lm-bank{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; min-height:34px;}
+.lm-chip{border:1.5px solid var(--rule-strong); background:#fff; border-radius:20px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);}
+.lm-chip.selected{border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
+.lm-zones{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lm-zone{border:1.5px dashed var(--rule-strong); border-radius:10px; padding:12px; min-height:118px; background:var(--paper);}
+.lm-zone.armed{border-style:solid; border-color:var(--blue); background:var(--blue-soft);}
+.lm-zone-head{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; margin-bottom:8px;}
+.lm-zone.z-a .lm-zone-head{color:var(--blue);}
+.lm-zone.z-b .lm-zone-head{color:var(--amber);}
+.lm-zone.z-c .lm-zone-head{color:var(--purple);}
+.lm-item{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:7px 10px; margin-bottom:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; cursor:pointer;}
+.lm-item.correct{border-color:var(--green); background:var(--green-soft);}
+.lm-item.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.lm-hint{font-size:.85em; color:var(--ink-soft); margin-top:14px;}
+.lm-score{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft);}
+.lm-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.lm-feedback.correct{background:var(--green-soft); color:var(--green);}
+.lm-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.lm-check-btn{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.lm-check-btn:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.lm-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+@media (max-width:680px){ .lm-zones{grid-template-columns:1fr;} }
+.criteria-list{list-style:none; padding:0; margin:14px 0;}
+.criteria-list li{background:var(--paper-raised); border-radius:8px; padding:10px 14px; margin-bottom:8px; border-left:3px solid var(--purple);}
+.criteria-list .c-num{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--purple); margin-right:8px;}
+
+table.compare{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92em;}
+table.compare th{background:var(--blue-soft); color:var(--blue); padding:10px 12px; text-align:left; border:1px solid var(--rule);}
+table.compare td{padding:10px 12px; border:1px solid var(--rule); vertical-align:top;}
+table.compare tr:nth-child(even) td{background:var(--paper-raised);}
+
+footer{border-top:1px solid var(--rule); margin-top:60px; padding-top:20px; font-size:.85em; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+/* ---- generic widget shell ---- */
+.widget{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:20px 0;}
+.widget-title{font-weight:700; font-size:1.15em; margin-bottom:4px;}
+.widget-sub{font-size:.9em; color:var(--ink-soft); margin-bottom:18px;}
+.widget-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:16px 0 8px; font-family:"IBM Plex Mono",monospace;}
+.widget-label:first-of-type{margin-top:0;}
+
+/* ---- Attribute Closure Calculator ---- */
+.cc-fds{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 16px;}
+.cc-fd-pill{font-family:"IBM Plex Mono",monospace; font-size:12.5px; background:#fff; border:1px solid var(--rule); border-radius:6px; padding:4px 10px; color:var(--ink);}
+.cc-controls{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:6px;}
+.cc-start-label{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft);}
+.cc-steps{display:flex; flex-direction:column; gap:8px; margin:14px 0;}
+.cc-step{background:#fff; border:1px solid var(--rule); border-radius:8px; padding:10px 14px; font-size:13px; opacity:0; transform:translateY(6px); transition:opacity .3s ease, transform .3s ease;}
+.cc-step.show{opacity:1; transform:translateY(0);}
+.cc-step .cc-step-fd{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--blue);}
+.cc-step .cc-step-set{font-family:"IBM Plex Mono",monospace; margin-top:5px;}
+.cc-attr{display:inline-block; font-family:"IBM Plex Mono",monospace; font-weight:700; background:var(--paper-raised); border:1px solid var(--rule-strong); border-radius:5px; padding:2px 7px; margin:1px 2px;}
+.cc-attr.new{background:var(--amber-soft); border-color:var(--amber); color:var(--amber);}
+.cc-verdict{margin-top:8px; padding:12px 16px; border-radius:8px; font-size:.94em; display:none;}
+.cc-verdict.show{display:block;}
+.cc-verdict.key{background:var(--green-soft); color:var(--green);}
+.cc-verdict.notkey{background:var(--rust-soft); color:var(--rust);}
+.cc-placeholder{font-size:.85em; color:var(--ink-soft); font-style:italic;}
+
+/* ---- Attribute Closure Tester quiz (same visual language as prior playground quizzes) ---- */
+.act-quiz{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:22px 24px; margin:18px 0;}
+.act-quiz-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+.act-dots{display:inline-flex; gap:6px; align-items:center;}
+.act-dots .dot{width:9px; height:9px; border-radius:50%; background:var(--rule-strong); display:inline-block;}
+.act-dots .dot.current{background:var(--ink);}
+.act-dots .dot.correct{background:var(--green);}
+.act-dots .dot.incorrect{background:var(--rust);}
+.act-dots-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-right:8px;}
+.act-score{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink-soft);}
+.act-score b{color:var(--ink); font-size:1.1em;}
+.act-progressbar{height:3px; background:var(--rule); border-radius:2px; margin:10px 0 18px; overflow:hidden;}
+.act-progressbar-fill{height:100%; background:var(--blue); transition:width .2s ease;}
+.act-scenario-card{background:#fff; border:1px solid var(--rule); border-radius:12px; padding:22px 24px;}
+.act-scenario-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:10px;}
+.act-scenario-text{font-size:1.05em; margin-bottom:6px;}
+.act-scenario-text code{background:var(--paper-raised); padding:1px 5px; border-radius:4px;}
+.act-pick-label{font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:18px 0 10px;}
+.act-options-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+@media (max-width:600px){ .act-options-grid{grid-template-columns:1fr;} }
+.act-option-card{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+.act-option-card:hover{border-color:var(--blue);}
+.act-option-card.selected{border-color:var(--blue); background:var(--blue-soft);}
+.act-option-card.correct{border-color:var(--green); background:var(--green-soft);}
+.act-option-card.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+.act-option-card.disabled{cursor:default;}
+.act-option-title{font-weight:700; font-size:.98em; font-family:"IBM Plex Mono",monospace;}
+.act-option-hint{font-size:.8em; color:var(--ink-soft); margin-top:4px;}
+.act-check-btn{margin-top:18px; padding:10px 20px; border-radius:8px; border:none; background:var(--blue); color:#fff; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13px; cursor:pointer;}
+.act-check-btn:disabled{background:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+.act-feedback{margin-top:16px; padding:14px 16px; border-radius:8px; font-size:.94em;}
+.act-feedback.correct{background:var(--green-soft); color:var(--green);}
+.act-feedback.incorrect{background:var(--rust-soft); color:var(--rust);}
+.act-verify-btn{margin-top:12px;}
+.btn.secondary.act-verify-btn, .btn.secondary.act-restart-btn{background:transparent; color:var(--ink); border:1px solid var(--rule-strong);}
+.act-verify-output{margin-top:10px; display:none; background:var(--code-bg); color:var(--code-text); border-radius:8px; padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:pre-wrap;}
+.act-verify-output.show{display:block;}
+.act-next-btn{margin-top:14px;}
+.act-quiz-done{text-align:center; padding:24px;}
+.act-quiz-done .big-score{font-size:2.2em; font-weight:700; color:var(--blue); font-family:"IBM Plex Mono",monospace;}
+
+@media (max-width: 820px){
+  .layout{flex-direction:column;}
+  .sidebar{position:static; height:auto; width:auto; border-right:none; border-bottom:1px solid var(--rule);}
+  main{padding:24px 18px 80px;}
+}
+
+/* ===== Canonical shell: footer playground navigation ===== */
+footer .footer-meta{margin-bottom:10px;}
+footer nav.pgnav{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; border-top:1px dashed var(--rule); padding-top:12px;}
+footer nav.pgnav a{color:var(--blue); text-decoration:none; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+footer nav.pgnav a:hover{text-decoration:underline;}
+footer nav.pgnav .pgnav-pos{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--rule-strong); text-transform:uppercase; letter-spacing:.06em;}
+footer nav.pgnav .pgnav-disabled{color:var(--rule-strong); font-family:"IBM Plex Mono",monospace; font-size:12px;}
+
+/* ===== Canonical components (shared by every playground) ===== */
+.sidebar nav a.active{ background:var(--blue-soft); color:var(--blue); }
+section .kicker{ font-family:"IBM Plex Mono", monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:6px; }
+
+/* ===== Canonical interactive widgets (shared by every playground) ===== */
+[class*="-check-btn"],[class*="-verify-btn"],[class*="-next-btn"],[class*="-analyze-btn"]{background:var(--blue); color:#fff; border:1px solid var(--blue); padding:7px 15px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-check-btn"]:hover,[class*="-verify-btn"]:hover,[class*="-next-btn"]:hover,[class*="-analyze-btn"]:hover{opacity:.9;}
+[class*="-check-btn"]:disabled,[class*="-verify-btn"]:disabled,[class*="-next-btn"]:disabled,[class*="-analyze-btn"]:disabled{background:var(--rule-strong); border-color:var(--rule-strong); cursor:not-allowed; opacity:.7;}
+[class*="-restart-btn"],[class*="-reset-btn"],[class*="-retry-btn"]{background:transparent; color:var(--ink); border:1px solid var(--rule-strong); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; cursor:pointer;}
+[class*="-restart-btn"]:hover,[class*="-reset-btn"]:hover,[class*="-retry-btn"]:hover{border-color:var(--blue); color:var(--blue);}
+[class*="-delete-btn"]{background:transparent; color:var(--rust); border:1px solid var(--rust); padding:7px 14px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"],[class*="-mode-btn"],[class*="-action-btn"],.pill-btn,.scenario-tab,.erd-toggle button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:20px; padding:7px 15px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+[class*="-tab-btn"].active,[class*="-mode-btn"].active,[class*="-action-btn"].active,.pill-btn.active,.scenario-tab.active,.erd-toggle button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-picker button,.dos-picker button,[class*="-picker"] button,.refsim-action-picker button{background:var(--paper-raised); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:8px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-picker button.active,.dos-picker button.active,[class*="-picker"] button.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+.civ-yn button,.predict-row .pchoices button,.quiz-choices button{background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong); border-radius:6px; padding:7px 14px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; cursor:pointer;}
+.civ-yn button.correct,.predict-row .pchoices button.correct,.quiz-choices button.picked-correct{background:var(--green-soft); border-color:var(--green); color:var(--green);}
+.civ-yn button.incorrect,.predict-row .pchoices button.incorrect,.quiz-choices button.picked-wrong{background:var(--rust-soft); border-color:var(--rust); color:var(--rust);}
+[class*="-option-card"]{border:1.5px solid var(--rule); border-radius:10px; padding:14px 16px; cursor:pointer; background:var(--paper);}
+[class*="-option-card"]:hover{border-color:var(--blue);}
+[class*="-option-card"].selected{border-color:var(--blue); background:var(--blue-soft);}
+[class*="-option-card"].correct{border-color:var(--green); background:var(--green-soft);}
+[class*="-option-card"].incorrect{border-color:var(--rust); background:var(--rust-soft);}
+[class*="-option-card"].disabled{cursor:default;}
+.cq-option,.cvp-option{border:1.5px solid var(--rule); border-radius:10px; padding:12px 14px; cursor:pointer; background:var(--paper); font-family:"IBM Plex Mono",monospace;}
+.cq-option:hover,.cvp-option:hover{border-color:var(--blue);}
+.cq-option.correct,.cvp-option.correct{border-color:var(--green); background:var(--green-soft);}
+.cq-option.incorrect,.cvp-option.incorrect{border-color:var(--rust); background:var(--rust-soft);}
+
+/* ===== Canonical runnable cell (shared) ===== */
+.cell{background:var(--code-bg); border:1px solid var(--code-rule); border-radius:8px; margin:14px 0; overflow:hidden;}
+.cell .cell-head{display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:var(--code-bg-raised); border-bottom:1px solid var(--code-rule); font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--code-text);}
+.cell .cell-title{color:var(--code-text); font-size:12px; opacity:.75; font-family:"IBM Plex Mono",monospace;}
+.cell textarea{width:100%; min-height:0; resize:none; overflow:hidden; display:block; background:var(--code-bg); color:var(--code-text); border:none; padding:14px; font-family:"IBM Plex Mono",monospace; font-size:13.5px; line-height:1.55; outline:none; tab-size:2;}
+.cell textarea:focus{outline:2px solid var(--blue); outline-offset:-2px;}
+.cell .cell-actions{padding:8px 14px; display:flex; gap:8px; align-items:center; background:var(--code-bg-raised); border-top:1px solid var(--code-rule);}
+.cell .btn{background:var(--blue); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12.5px; cursor:pointer; font-weight:600; font-family:"IBM Plex Mono",monospace;}
+.cell .btn:hover{opacity:.9;}
+.cell .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
+.cell .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none; background:var(--code-bg);}
+.cell .cell-output.show{display:block;}
+.cell .cell-output.err{color:#F0A38A;}
+
+/* ===== Contrast fixes (WCAG AA) ===== */
+.sidebar nav .grp{color:var(--ink-soft);}
+footer nav.pgnav .pgnav-pos,footer nav.pgnav .pgnav-disabled{color:var(--ink-soft);}
+.btn.secondary{color:var(--ink); border:1px solid var(--rule-strong);}
+.cell .btn.secondary,.cell .cell-actions .btn.secondary{color:var(--code-text); border-color:var(--code-rule);}
+.lm-check-btn:disabled,[class*="-check-btn"]:disabled{background:var(--rule-strong); color:var(--ink);}
+.lm-answer-btn:disabled{color:var(--ink-soft); border-color:var(--rule-strong);}
+.qstep-next-btn:disabled,.qstep-restart-btn:disabled{color:var(--ink);}
+.badge.amber,.badge.pk{color:#7A560F;}
+.callout.amber strong,.callout.amber b{color:#7A560F;}
+.lm-zone.z-b .lm-zone-head{color:#7A560F;}
+.ai-steps .step-num{background:var(--ink-soft);}
+.required-chip,.required-col,#ajb-null-badge{color:#7A560F;}
+.rcv-line.anchor{color:#7A560F; background:var(--amber-soft);}
+code.inline{color:var(--ink);}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
+        <nav>
+      <div class="grp">Foundations</div>
+      <a href="#overview">The Core Concept: FDs</a>
+      <a href="#armstrongs-axioms">Armstrong's Axioms</a>
+      <a href="#attribute-closure">Computing Attribute Closure</a>
+      <a href="#candidate-keys">Finding Candidate Keys</a>
+      <a href="#minimal-cover">The Minimal Cover</a>
+      <div class="grp">Worked Examples</div>
+      <a href="#worked-closure-trace">Closure, Systematically</a>
+      <a href="#worked-candidate-keys">Finding All Candidate Keys</a>
+      <a href="#worked-minimal-cover">A Minimal Cover, Step by Step</a>
+      <div class="grp">Apply It</div>
+      <a href="#closure-tester">Attribute Closure Tester</a>
+      <a href="#attribute-closure-steps">Attribute Closure, Step by Step</a>
+      <a href="#practice">Practice Problems</a>
+      <a href="#interview">In the Interview</a>
+          <div class="grp">2026 Status</div>
+      <a href="#in-2026">In 2026: What Has Changed</a>
+</nav>
+  </aside>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">CS5200 · Database Theory and Applications</div>
+      <h1>Functional Dependencies and Keys</h1>
+      <div class="byline">Prepared by Dr. Gorkem Kar</div>
+      <p class="lede">Behind every well-designed schema is a small set of mathematical facts nobody thinks about until something breaks. "If I know a student ID, I know exactly one name." These are functional dependencies — the rules that say which attributes determine which. They look pedantic on paper. They are the reason normalization can be done by algorithm instead of by intuition. Once you can read them fluently, you can look at a schema and predict which updates will corrupt it, which queries will need redundant joins, and which tables should be split.</p>
+    </header>
+
+    <section id="overview">
+      <div class="kicker">Foundations</div>
+      <h2>The Core Concept: Functional Dependencies</h2>
+      <p>A functional dependency (FD) is a relationship between two sets of attributes in a database. If you have a set of attributes <code>X</code> and another set <code>Y</code>, we say that <code>X</code> functionally determines <code>Y</code> if every value of <code>X</code> is associated with exactly one value of <code>Y</code>. We write this as <code>X → Y</code>.</p>
+      <p>Think of a Social Security Number. If you know a person's SSN, you know their legal name — there is no scenario where one SSN maps to two different people. Therefore, <code>SSN → Name</code>. The opposite is not true: multiple people can be named "John Smith," so <code>Name → SSN</code> does not hold. In this relationship, <code>X</code> is the <strong>determinant</strong> — it's the piece of information that gives you the power to look up something else.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 660 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A functional dependency X determines Y: every row with the same X must carry the same Y, so one input can never map to two outputs." font-family="IBM Plex Mono, monospace">
+          <text x="165" y="26" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1E2A25">CORRECT FUNCTIONAL</text>
+          <text x="165" y="43" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1E2A25">DEPENDENCY</text>
+          <text x="165" y="63" text-anchor="middle" font-size="10" fill="#4A564F">ONE INPUT → ONE OUTPUT</text>
+          <text x="500" y="26" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1E2A25">INCORRECT MAPPING</text>
+          <text x="500" y="43" text-anchor="middle" font-size="14.5" font-weight="700" fill="#1E2A25">(CONTRADICTION)</text>
+          <text x="500" y="63" text-anchor="middle" font-size="10" fill="#4A564F">ONE INPUT → MULTIPLE OUTPUTS</text>
+
+          <g stroke="#1E2A25" stroke-width="1.5" fill="none">
+            <rect x="45" y="80" width="240" height="150" rx="4"/>
+            <line x1="45" y1="112" x2="285" y2="112"/>
+            <line x1="165" y1="80" x2="165" y2="230"/>
+          </g>
+          <text x="105" y="102" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">StudentID</text>
+          <text x="225" y="102" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">Name</text>
+          <g font-size="10.5" fill="#1E2A25">
+            <text x="70" y="132">S101</text><text x="200" y="132">Alice</text>
+            <text x="70" y="156">S102</text><text x="200" y="156">Bob</text>
+            <text x="70" y="180">S103</text><text x="200" y="180">Alice</text>
+            <text x="70" y="204">S104</text><text x="200" y="204">Dana</text>
+          </g>
+          <g stroke="#4A564F" stroke-width="1.2" fill="none" marker-end="url(#fdarrow)">
+            <path d="M100,128 Q147,122 194,128"/>
+            <path d="M100,152 Q147,146 194,152"/>
+            <path d="M100,176 Q147,170 194,176"/>
+            <path d="M100,200 Q147,194 194,200"/>
+          </g>
+          <text x="165" y="252" text-anchor="middle" font-size="10" fill="#3D6B4A">S101 always maps to Alice — no contradiction</text>
+
+          <defs>
+            <marker id="fdarrow" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto">
+              <path d="M0,0 L5,2.5 L0,5 Z" fill="#4A564F"/>
+            </marker>
+          </defs>
+
+          <g stroke="#1E2A25" stroke-width="1.5" fill="none">
+            <rect x="380" y="80" width="240" height="150" rx="4"/>
+            <line x1="380" y1="112" x2="620" y2="112"/>
+            <line x1="500" y1="80" x2="500" y2="230"/>
+          </g>
+          <text x="440" y="102" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">StudentID</text>
+          <text x="560" y="102" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">Name</text>
+          <g font-size="10.5" fill="#1E2A25">
+            <text x="405" y="140">S101</text><text x="535" y="132">Alice</text>
+            <text x="535" y="156">Charlie</text>
+            <text x="405" y="180">S102</text><text x="535" y="180">Alice</text>
+            <text x="405" y="204">S103</text><text x="535" y="204">Arsan</text>
+          </g>
+          <g stroke="#A1402A" stroke-width="1.3" fill="none" marker-end="url(#fdarrow2)">
+            <path d="M430,136 Q470,124 528,130"/>
+            <path d="M430,136 Q470,148 528,154"/>
+          </g>
+          <defs>
+            <marker id="fdarrow2" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto">
+              <path d="M0,0 L5,2.5 L0,5 Z" fill="#A1402A"/>
+            </marker>
+          </defs>
+          <rect x="392" y="112" width="216" height="48" rx="5" fill="none" stroke="#A1402A" stroke-width="1.4" stroke-dasharray="5,4"/>
+          <text x="500" y="252" text-anchor="middle" font-size="10" fill="#A1402A">S101 maps to Alice and Charlie — a contradiction</text>
+        </svg>
+        <figcaption>How functional dependencies prevent data contradictions by ensuring one input always leads to the same output.</figcaption>
+      </figure>
+
+      <p>The left panel above obeys <code>StudentID → Name</code>: S101 always maps to Alice, no matter how many rows reference S101. The right panel breaks it — S101 maps to both "Alice" and "Charlie" in different rows, which is a contradiction, not just messy data. Enforcing FDs (through primary keys, unique constraints, and correct table design) is precisely what makes that right-hand scenario structurally impossible rather than just unlikely.</p>
+          <div class="cell" data-cell="fd_violation">
+        <div class="cell-head"><span class="cell-title">fd_violation.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+    </section>
+
+    <section id="armstrongs-axioms">
+      <div class="kicker">Foundations</div>
+      <h2>Armstrong's Axioms: The Rules of Inference</h2>
+      <p>In 1974, William Armstrong defined a set of rules that let us discover new dependencies from the ones we already know. You only need three basic rules to derive every other possible dependency in a system.</p>
+
+      <h3>Reflexivity</h3>
+      <p>If <code>Y</code> is a subset of <code>X</code>, then <code>X → Y</code>. For example, if you know a person's name <em>and</em> their birthday, you obviously know their name. Written as <code>{Name, Birthday} → Name</code>. It seems obvious, but it's the logical foundation for everything else.</p>
+
+      <h3>Augmentation</h3>
+      <p>If <code>X → Y</code> is true, then adding another attribute <code>Z</code> to both sides remains true. If <code>SSN → Name</code>, then it's also true that <code>{SSN, ZipCode} → {Name, ZipCode}</code>. You haven't lost any information by adding more context.</p>
+
+      <h3>Transitivity</h3>
+      <p>This is the most useful rule for finding hidden relationships. If <code>X → Y</code> and <code>Y → Z</code>, then <code>X → Z</code>. If a student ID determines a major code (<code>ID → MajorCode</code>) and the major code determines the department head (<code>MajorCode → DeptHead</code>), then the student ID effectively determines the department head: <code>ID → DeptHead</code>.</p>
+
+      <h3>Derived rules</h3>
+      <p>Beyond these three, we often use derived rules to speed up our work:</p>
+      <ul>
+        <li><strong>Union.</strong> If <code>X → Y</code> and <code>X → Z</code>, then <code>X → YZ</code>.</li>
+        <li><strong>Decomposition.</strong> If <code>X → YZ</code>, then <code>X → Y</code> and <code>X → Z</code>.</li>
+        <li><strong>Pseudo-transitivity.</strong> If <code>X → Y</code> and <code>WY → Z</code>, then <code>WX → Z</code>.</li>
+      </ul>
+      <p class="small">Every one of these derived rules is provable from the three basic axioms alone — they're conveniences, not new assumptions. The <a href="#practice">Practice Problems</a> section below works through a full derivation using them.</p>
+    </section>
+
+    <section id="attribute-closure">
+      <div class="kicker">Foundations</div>
+      <h2>Computing Attribute Closure</h2>
+      <p>The closure of a set of attributes <code>X</code>, written <code>X⁺</code>, is every attribute you can derive from <code>X</code> using the functional dependencies you have. The algorithm treats it as a growing set: start with <code>X</code>, and repeatedly apply any FD whose left-hand side is already inside the set, adding whatever's on the right-hand side that isn't already there. Stop when nothing new can be added.</p>
+      <p>Given FDs <code>A → B</code>, <code>B → C</code>, <code>C → D</code>, here's <code>{A}⁺</code> step by step:</p>
+      <table class="compare">
+        <thead><tr><th>Step</th><th>Working set</th><th>FD applied</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>{A}</td><td>(start with input)</td><td>initial state</td></tr>
+          <tr><td>1</td><td>{A}</td><td>A → B — LHS is in the set</td><td>add B → {A, B}</td></tr>
+          <tr><td>2</td><td>{A, B}</td><td>B → C — LHS is in the set</td><td>add C → {A, B, C}</td></tr>
+          <tr><td>3</td><td>{A, B, C}</td><td>C → D — LHS is in the set</td><td>add D → {A, B, C, D}</td></tr>
+          <tr><td>4</td><td>{A, B, C, D}</td><td>(no unused FD applies)</td><td>STOP</td></tr>
+        </tbody>
+      </table>
+      <p>Conclusion: <code>{A}⁺ = {A, B, C, D}</code> — since the closure equals every attribute of the relation, A alone is a superkey. The algorithm always terminates: each step either grows the set by at least one attribute or stops, so in the worst case it terminates in <code>|attributes|</code> steps. Try it below — this runs the real algorithm, not a scripted replay.</p>
+
+      <div class="widget" id="cc1">
+        <div class="widget-title">Attribute Closure Calculator</div>
+        <div class="widget-sub">R(A, B, C, D) — the exact example above.</div>
+        <div class="cc-fds" id="cc1-fds"></div>
+        <div class="cc-controls">
+          <span class="cc-start-label">Start: <b id="cc1-start-label"></b></span>
+          <button class="btn" id="cc1-run">▶ Compute closure</button>
+          <button class="btn secondary" id="cc1-reset">↺ Reset</button>
+        </div>
+        <div class="cc-steps" id="cc1-steps">
+          <p class="cc-placeholder">Click "Compute closure" to watch the set grow one FD at a time.</p>
+        </div>
+        <div class="cc-verdict" id="cc1-verdict"></div>
+      </div>
+    </section>
+
+    <section id="candidate-keys">
+      <div class="kicker">Foundations</div>
+      <h2>Finding Candidate Keys</h2>
+      <p>A candidate key is a minimal set of attributes that can uniquely identify every row in a table. Formally, a set of attributes <code>K</code> is a candidate key if two things are true:</p>
+      <ul>
+        <li>The closure of <code>K</code> includes every attribute in the table.</li>
+        <li>No subset of <code>K</code> can do the same thing.</li>
+      </ul>
+      <p>To find candidate keys, look for attributes that never appear on the right side of any functional dependency. These attributes must be part of your key, because nothing else can "create" them. If the closure of these must-have attributes doesn't cover the whole table, you start adding other attributes one by one until you reach a full closure.</p>
+      <p>If you find that <code>{A, B}⁺</code> covers the whole table, but <code>{A}⁺</code> and <code>{B}⁺</code> do not, then <code>{A, B}</code> is a candidate key. If you could remove B and still get everything, <code>{A, B}</code> would be a superkey, but not a candidate key. Candidate keys must be lean.</p>
+          <p>The point isn't that <code>email</code> happens to be unique in your sample — it's that nothing in the schema said so. A candidate key you have <em>discovered</em> is worth nothing until the engine enforces it.</p>
+          <div class="cell" data-cell="key_enforcement">
+        <div class="cell-head"><span class="cell-title">key_enforcement.sql — edit and run</span></div>
+        <textarea spellcheck="false"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
+        <div class="cell-output"></div>
+      </div>
+
+    </section>
+
+    <section id="minimal-cover">
+      <div class="kicker">Foundations</div>
+      <h2>The Minimal Cover</h2>
+      <p>A set of functional dependencies can often be messy — redundant rules, or rules with extra attributes that don't need to be there. A minimal cover is the most stripped-down, efficient version of your rule set that still describes exactly the same relationships.</p>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Minimal cover: the steps that reduce a set of functional dependencies to its simplest equivalent form." font-family="IBM Plex Mono, monospace">
+          <text x="340" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2A25">STEPS TO A MINIMAL COVER</text>
+
+          <defs>
+            <marker id="mcarrow" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto">
+              <path d="M0,0 L5,2.5 L0,5 Z" fill="#1E2A25"/>
+            </marker>
+          </defs>
+
+          <g stroke="#1E2A25" stroke-width="1.5" fill="none">
+            <rect x="30" y="52" width="190" height="96" rx="8"/>
+            <rect x="245" y="52" width="190" height="96" rx="8"/>
+            <rect x="460" y="52" width="190" height="96" rx="8"/>
+          </g>
+
+          <text x="125" y="74" text-anchor="middle" font-size="9.5" font-weight="700" fill="#2F5D8A">STEP 1</text>
+          <text x="125" y="92" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">Singleton right sides</text>
+          <text x="125" y="116" text-anchor="middle" font-size="10.5" fill="#1E2A25">A → BC</text>
+          <text x="125" y="132" text-anchor="middle" font-size="10.5" fill="#1E2A25">becomes  A → B, A → C</text>
+
+          <text x="340" y="74" text-anchor="middle" font-size="9.5" font-weight="700" fill="#2F5D8A">STEP 2</text>
+          <text x="340" y="92" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">Remove extraneous</text>
+          <text x="340" y="108" text-anchor="middle" font-size="10.5" fill="#1E2A25">left-side attributes</text>
+          <text x="340" y="130" text-anchor="middle" font-size="10.5" fill="#1E2A25">AB → C  ⇒  A → C</text>
+
+          <text x="555" y="74" text-anchor="middle" font-size="9.5" font-weight="700" fill="#2F5D8A">STEP 3</text>
+          <text x="555" y="92" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2A25">Remove redundant</text>
+          <text x="555" y="108" text-anchor="middle" font-size="10.5" fill="#1E2A25">dependencies</text>
+          <text x="555" y="130" text-anchor="middle" font-size="10.5" fill="#1E2A25">drop derivable FDs</text>
+
+          <g stroke="#1E2A25" stroke-width="1.6" fill="none" marker-end="url(#mcarrow)">
+            <line x1="221" y1="100" x2="243" y2="100"/>
+            <line x1="436" y1="100" x2="458" y2="100"/>
+          </g>
+
+          <text x="340" y="178" text-anchor="middle" font-size="10" fill="#3D6B4A">Result: the smallest rule set that implies exactly the same FDs as the original</text>
+        </svg>
+        <figcaption>The systematic process for simplifying a set of functional dependencies into its most basic form.</figcaption>
+      </figure>
+
+      <p>Finding the minimal cover is three specific steps:</p>
+      <p><strong>First</strong>, ensure every dependency has only one attribute on the right side. <code>A → BC</code> becomes <code>A → B</code> and <code>A → C</code>. This makes the rules easier to inspect.</p>
+      <p><strong>Second</strong>, remove extraneous attributes from the left side. If you have <code>AB → C</code>, check whether <code>A → C</code> is already true on its own, using the other rules. If it is, <code>B</code> is extraneous and can be deleted — the rule simplifies to <code>A → C</code>.</p>
+      <p><strong>Third</strong>, remove redundant dependencies. For each rule, ask: "if I deleted this rule, could I still figure it out using the other rules?" If you have <code>A → B</code>, <code>B → C</code>, and <code>A → C</code>, the rule <code>A → C</code> is redundant because transitivity already covers it.</p>
+    </section>
+
+    <section id="worked-closure-trace">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Computing Attribute Closure Systematically</h2>
+      <p>Given the relation <code>R(A, B, C, D, E)</code> with functional dependencies:</p>
+      <ul>
+        <li><code>A → BC</code></li>
+        <li><code>B → D</code></li>
+        <li><code>CD → E</code></li>
+        <li><code>E → A</code></li>
+      </ul>
+      <p>Compute <code>A⁺</code> step by step. <strong>Iteration 0:</strong> start with {A}. <strong>Iteration 1:</strong> which FDs have their entire left-hand side inside {A}? <code>A → BC</code> — yes. Add B and C. Set = {A, B, C}. <strong>Iteration 2:</strong> which FDs have LHS inside {A, B, C}? <code>B → D</code> — yes, add D → {A, B, C, D}. <code>CD → E</code> — LHS {C, D} both present, add E → {A, B, C, D, E}. <strong>Iteration 3:</strong> set is the full relation. Stop. <code>A⁺ = {A, B, C, D, E}</code>.</p>
+      <p>Because <code>A⁺</code> covers every attribute in R, {A} is a superkey. It's also minimal (a single attribute — you can't remove anything). Therefore {A} is a candidate key. Now compute <code>E⁺</code>: {E} → <code>E → A</code> applies → {E, A} → now that A is in the set, <code>A → BC</code> applies → {E, A, B, C} → <code>B → D</code> applies → {E, A, B, C, D}. Full. So {E} is also a candidate key.</p>
+
+      <div class="callout blue">
+        <strong>What about {B, C}?</strong> Continuing this way: is <code>{B, C}</code> a candidate key? Compute <code>{B, C}⁺</code> below and see for yourself, then check the two single-attribute subsets. The short answer: <code>{B, C}⁺</code> genuinely does close over everything (via <code>B → D</code>, then <code>CD → E</code>, then <code>E → A</code>) — and since neither {B} alone nor {C} alone gets there, {B, C} is minimal. <strong>{B, C} is a candidate key.</strong> (This schema turns out to have three candidate keys total: {A}, {E}, and {B, C}.)
+      </div>
+
+      <div class="widget" id="cc2">
+        <div class="widget-title">Attribute Closure Calculator</div>
+        <div class="widget-sub">R(A, B, C, D, E) — testing {B, C}⁺.</div>
+        <div class="cc-fds" id="cc2-fds"></div>
+        <div class="cc-controls">
+          <span class="cc-start-label">Start: <b id="cc2-start-label"></b></span>
+          <button class="btn" id="cc2-run">▶ Compute closure</button>
+          <button class="btn secondary" id="cc2-reset">↺ Reset</button>
+        </div>
+        <div class="cc-steps" id="cc2-steps">
+          <p class="cc-placeholder">Click "Compute closure" to watch the set grow one FD at a time.</p>
+        </div>
+        <div class="cc-verdict" id="cc2-verdict"></div>
+      </div>
+      <p class="small">The point stands either way: attribute closure is the workhorse of key discovery. Compute it mechanically, one FD at a time, until the set stops growing — then check minimality by testing every proper subset.</p>
+    </section>
+
+    <section id="worked-candidate-keys">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Finding All Candidate Keys</h2>
+      <p>Given <code>R(A, B, C, D, E, F)</code> with FDs <code>AB → C</code>, <code>C → D</code>, <code>D → E</code>, <code>AF → B</code>:</p>
+      <p><strong>Step 1</strong> — identify attributes that appear ONLY on the LHS (never on the RHS of any FD). Those must be in every candidate key. Scanning: A appears only on LHS. F appears only on LHS. B, C, D, E each appear on both sides. So A and F must be in every candidate key.</p>
+      <p><strong>Step 2</strong> — compute <code>{A, F}⁺</code>: start {A, F} → <code>AF → B</code> applies, add B → {A, F, B} → now <code>AB → C</code> applies (both present), add C → {A, F, B, C} → <code>C → D</code> applies, add D → {A, F, B, C, D} → <code>D → E</code> applies, add E → {A, F, B, C, D, E}. Full.</p>
+      <p>So {A, F} covers everything, and it's minimal — dropping either A or F would exclude an attribute nothing else on the RHS can produce. {A, F} is the unique candidate key. There are no others: any candidate key must contain {A, F}, and {A, F} alone already closes the relation.</p>
+
+      <div class="widget" id="cc3">
+        <div class="widget-title">Attribute Closure Calculator</div>
+        <div class="widget-sub">R(A, B, C, D, E, F) — the exact example above.</div>
+        <div class="cc-fds" id="cc3-fds"></div>
+        <div class="cc-controls">
+          <span class="cc-start-label">Start: <b id="cc3-start-label"></b></span>
+          <button class="btn" id="cc3-run">▶ Compute closure</button>
+          <button class="btn secondary" id="cc3-reset">↺ Reset</button>
+        </div>
+        <div class="cc-steps" id="cc3-steps">
+          <p class="cc-placeholder">Click "Compute closure" to watch the set grow one FD at a time.</p>
+        </div>
+        <div class="cc-verdict" id="cc3-verdict"></div>
+      </div>
+      <p class="small">Lesson: the "must-be-in-every-key" attributes are your anchor. Start from them, compute closure, and grow only if you need to. This turns "find all candidate keys" from guesswork into a deterministic procedure.</p>
+    </section>
+
+    <section id="worked-minimal-cover">
+      <div class="kicker">Worked Examples</div>
+      <h2>Worked Example: Computing a Minimal Cover Step by Step</h2>
+      <p>Given FDs on <code>R(A, B, C, D)</code>: <code>A → B</code>, <code>AB → C</code>, <code>D → AC</code>, <code>C → D</code>.</p>
+      <p><strong>Step 1 — Singleton RHS.</strong> Decompose <code>D → AC</code> into <code>D → A</code> and <code>D → C</code>. Now F is: <code>A → B</code>, <code>AB → C</code>, <code>D → A</code>, <code>D → C</code>, <code>C → D</code>.</p>
+      <p><strong>Step 2 — Remove extraneous LHS attributes.</strong> Consider <code>AB → C</code>. Is B extraneous? Compute <code>A⁺</code> under the <em>original</em> F: <code>A → B</code> gives B for free, and then <code>AB → C</code> applies (both A and B present), giving C too — so <code>A⁺</code> already includes C without needing B on the left. B is extraneous. Rewrite as <code>A → C</code>. F now: <code>A → B</code>, <code>A → C</code>, <code>D → A</code>, <code>D → C</code>, <code>C → D</code>.</p>
+      <p><strong>Step 3 — Remove redundant FDs.</strong> For each FD, temporarily remove it and check whether it still follows from the rest:</p>
+      <ul>
+        <li>Remove <code>A → B</code>: closure of A under the remaining set = {A, C, D} (via A→C→D). Doesn't include B. <strong>Essential.</strong></li>
+        <li>Remove <code>A → C</code>: closure of A = {A, B}. No C. <strong>Essential.</strong></li>
+        <li>Remove <code>D → A</code>: closure of D under {A→B, A→C, D→C, C→D} = {D, C}. No A. <strong>Essential.</strong></li>
+        <li>Remove <code>D → C</code>: closure of D under the remaining = {D, A, B, C} (via D→A→C). <strong>Redundant — remove it.</strong></li>
+        <li>Remove <code>C → D</code>: closure of C = {C}. Nothing else. <strong>Essential.</strong></li>
+      </ul>
+      <p>Minimal cover = <code>{ A → B, A → C, D → A, C → D }</code>.</p>
+
+      <div class="widget" id="cc4">
+        <div class="widget-title">Attribute Closure Calculator</div>
+        <div class="widget-sub">Testing whether D → C is redundant: compute D⁺ WITHOUT D → C in the set.</div>
+        <div class="cc-fds" id="cc4-fds"></div>
+        <div class="cc-controls">
+          <span class="cc-start-label">Start: <b id="cc4-start-label"></b></span>
+          <button class="btn" id="cc4-run">▶ Compute closure</button>
+          <button class="btn secondary" id="cc4-reset">↺ Reset</button>
+        </div>
+        <div class="cc-steps" id="cc4-steps">
+          <p class="cc-placeholder">Click "Compute closure" to watch the set grow one FD at a time.</p>
+        </div>
+        <div class="cc-verdict" id="cc4-verdict"></div>
+      </div>
+
+      <p class="small">Notice the process is deterministic if you follow it in order (RHS split → LHS shrink → dependency prune), but not order-independent for steps 2/3 — different orderings can produce different valid minimal covers. All valid minimal covers are equivalent in what they entail; the count and specific FDs can differ.</p>
+    </section>
+
+    <section id="closure-tester">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Attribute Closure Tester</h2>
+      <p>Ten scenarios. Compute attribute closures, identify candidate keys, and apply Armstrong's axioms.</p>
+      <div id="act-quiz-mount"></div>
+    </section>
+
+    <section id="attribute-closure-steps">
+      <div class="kicker">Apply It</div>
+      <h2>Try It Yourself: Attribute Closure, Step by Step</h2>
+      <p>Closure looks like a loop you have to memorise. It isn't — it is a fixpoint with three rules, and once you can run it by hand you can compute any candidate key without guessing.</p>
+
+      <div class="widget">
+        <div class="widget-title">Computing an Attribute Closure</div>
+        <div class="widget-sub">R(A,B,C,D,E) · F = { A→BC, B→D, CD→E, E→A } · find A⁺</div>
+        <div class="qstep-rail" id="clostep-rail"></div>
+        <div class="qstep-body" id="clostep-body"></div>
+        <div class="qstep-controls">
+          <button class="qstep-restart-btn" id="clostep-back">◀ Back</button>
+          <button class="qstep-next-btn" id="clostep-next">Next pass ▶</button>
+          <button class="qstep-restart-btn" id="clostep-restart">↺ Restart</button>
+          <span class="qstep-count" id="clostep-count"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="practice">
+      <div class="kicker">Apply It</div>
+      <h2>Practice Problems</h2>
+
+      <div class="problem">
+        <h4>1. Compute B⁺ and test candidacy</h4>
+        <p>Given <code>R(A, B, C, D)</code> with FDs <code>{ A → B, B → C, C → D, D → A }</code>, compute <code>B⁺</code> and determine whether B is a candidate key.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p><code>B⁺</code>: Start {B}. B → C → add C. {B, C}. C → D → add D. {B, C, D}. D → A → add A. {B, C, D, A}. Full.</p>
+            <p><code>B⁺</code> covers all attributes, so B is a superkey. Since it's a single attribute (minimal), it's a candidate key.</p>
+            <p>By the same argument, {A}, {C}, and {D} are all candidate keys too — the FDs form a cycle A→B→C→D→A. This schema has <strong>four</strong> single-attribute candidate keys, an unusual property that makes it BCNF-compliant automatically (every FD's LHS is a superkey).</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>2. Superkey vs. candidate key</h4>
+        <p>Given <code>R(A, B, C)</code> with FDs <code>{ AB → C, A → B }</code>, are {A, B} and {A} both candidate keys? Justify.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>Compute <code>A⁺</code>: start {A}. A → B applies, add B: {A, B}. AB → C applies (both present), add C: {A, B, C}. Full. So <code>A⁺ = {A, B, C}</code> — A alone is a superkey, and minimal, so A is a candidate key.</p>
+            <p><code>{A, B}⁺</code> closes over everything too, but it's not minimal — we can drop B (since A alone works). So {A, B} is a superkey, but <strong>not</strong> a candidate key.</p>
+            <p>The rule: a candidate key must be minimal. Any superset of a candidate key is a superkey but not a candidate key.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>3. Prove AD → BCEF with Armstrong's derived rules</h4>
+        <p>Given FDs <code>{ A → BC, D → E, AD → F }</code>, apply Armstrong's derived rules to prove <code>AD → BCEF</code>.</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <ol>
+              <li><code>A → BC</code>. (given)</li>
+              <li><code>AD → BCD</code> (augmentation of #1 with D on both sides).</li>
+              <li><code>AD → BC</code> (decomposition of #2 — we don't need D on the RHS).</li>
+              <li><code>D → E</code>. (given)</li>
+              <li><code>AD → AE</code> (augmentation of #4 with A on both sides), then by decomposition, <code>AD → E</code>.</li>
+              <li><code>AD → F</code>. (given)</li>
+              <li>Combine using the union rule: <code>AD → BC</code> (step 3), <code>AD → E</code> (step 5), <code>AD → F</code> (step 6) → <code>AD → BCEF</code>.</li>
+            </ol>
+            <p>The union rule (<code>X → Y</code> and <code>X → Z</code> ⟹ <code>X → YZ</code>) is a shortcut for what would otherwise be several augmentation + decomposition steps. Verified directly too: computing <code>{A, D}⁺</code> from these three FDs closes to {A, B, C, D, E, F} in one pass — matching the derivation.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>4. Is AC → E redundant?</h4>
+        <p>Given <code>R(A, B, C, D, E)</code> with FDs <code>{ A → B, BC → D, D → E, AC → E }</code>, is <code>AC → E</code> redundant?</p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <p>Test: can we derive <code>AC → E</code> from the other three FDs alone? Compute <code>{A, C}⁺</code> using only <code>{ A → B, BC → D, D → E }</code>: start {A, C}. A → B applies, add B: {A, C, B}. BC → D applies (both B and C in the set), add D: {A, C, B, D}. D → E applies, add E: {A, C, B, D, E}. Full.</p>
+            <p>Since <code>{A, C}⁺</code> under the reduced set already includes E, we can derive <code>AC → E</code> from the others. <code>AC → E</code> is redundant and can be removed from a minimal cover.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="problem">
+        <h4>5. Does this minimal cover entail these FDs?</h4>
+        <p>You're told <code>R(A, B, C, D)</code> has minimal cover <code>{ A → B, B → C, C → D }</code>. Are the following FDs entailed by this cover?</p>
+        <p>(a) <code>A → D</code> &nbsp; (b) <code>B → A</code> &nbsp; (c) <code>D → A</code> &nbsp; (d) <code>AD → BC</code> &nbsp; (e) <code>B → BD</code></p>
+        <details class="answer">
+          <summary>▸ Reveal answer</summary>
+          <div class="answer-body">
+            <ul>
+              <li><strong>(a) Yes.</strong> A → B → C → D by transitivity.</li>
+              <li><strong>(b) No.</strong> <code>B⁺ = {B, C, D}</code> under this cover — doesn't include A. B does not determine A.</li>
+              <li><strong>(c) No.</strong> <code>D⁺ = {D}</code>. D doesn't determine anything else.</li>
+              <li><strong>(d) Yes.</strong> <code>{A, D}⁺ ⊇ A⁺ = {A, B, C, D}</code> (A alone already closes over everything via the transitivity chain). AD → BC follows.</li>
+              <li><strong>(e) Yes.</strong> B → C (given), C → D (given), so by transitivity B → D. Combined with the trivial B → B (reflexivity), we get B → BD by the union rule.</li>
+            </ul>
+            <p>Practice tip: any "does F entail X → Y?" question reduces to computing <code>X⁺</code> under F and checking whether Y is a subset.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="interview">
+      <div class="kicker">Apply It</div>
+      <h2>In the Interview</h2>
+      <div class="interview-box">
+        <p class="interview-lede">FD theory shows up wherever an interviewer wants to test whether you can reason about a schema, not just build one.</p>
+
+        <p><strong>"How do you find the primary key of a table you've never seen?"</strong> A weak candidate says "look at the column named <code>id</code>." A stronger answer: identify attributes that never appear on the right side of any FD (must be in every key), compute the closure of that set, and grow only if needed. When the closure covers all attributes, you have a superkey; trim it to minimality and you have a candidate key. This is the exact algorithm a schema-linter or SQL query optimizer uses under the hood.</p>
+
+        <p><strong>The subtle question.</strong> "Given <code>R(A, B, C, D)</code> with FDs <code>AB → C</code>, <code>C → D</code>, <code>D → A</code>, is this table well-designed?" First identify the candidate keys (there's more than one), then check whether every non-trivial FD has a superkey on its left — the BCNF test. This exact exercise appears on graduate exams and FAANG interviews with regularity. The trick that catches people: when candidate keys overlap, a deceptive FD like <code>D → A</code> can look benign but violate BCNF. Being fluent with closure calculations makes this a 60-second answer, not a 20-minute struggle.</p>
+
+        <p><strong>"Should I trust an auto-generated schema from an AI tool?"</strong> Increasingly common. The answer: run the closure test on every FD implied by the schema. If any left-hand side is not a superkey and the RHS is non-prime, you have anomaly bait. AI-generated schemas frequently over-normalize or under-normalize because they don't reason about FDs directly; verifying them by hand is the review skill.</p>
+
+        <p><strong>Rule of thumb.</strong></p>
+        <ul class="criteria-list">
+          <li><span class="c-num">•</span>Every schema-review conversation contains a hidden question: which FDs govern this table, and does every one of them have a superkey on the left?</li>
+          <li><span class="c-num">•</span>Finding a key is a closure computation, not a guess — start from the "never on the right" attributes.</li>
+          <li><span class="c-num">•</span>A minimal cover is the atomic rule set — normalization decisions are only as good as the closures they're built on.</li>
+        </ul>
+        <p>If you can hold "which FDs govern this table, and does every one have a superkey on the left?" in your head while reading someone else's DDL, you're doing what a senior database engineer does.</p>
+      </div>
+    </section>
+
+    <section id="in-2026">
+      <div class="kicker">2026 Status</div>
+      <h2>In 2026: What Has Changed</h2>
+      <p>Functional dependencies are the theory behind a question every 2026 engineer asks: what actually enforces this key?</p>
+      <ul>
+        <li><strong>Candidate keys are discovered, not declared</strong> — by probing uniqueness, reading index statistics, and testing dependencies against real data.</li>
+        <li><strong>Keys are enforced by constraints and indexes</strong>, never by documentation. A functional dependency with no UNIQUE index behind it is a hope.</li>
+        <li><strong>Surrogate versus natural keys</strong> is an engineering trade-off (join width and stability against meaning), not a purity test.</li>
+        <li><strong>FDs are what the optimizer uses</strong> to eliminate redundant joins and to prove that a GROUP BY cannot change the answer.</li>
+      </ul>
+      <p class="small">Every table has at least one candidate key. If nobody wrote it down, the database is enforcing something different from what the team believes.</p>
+    </section>
+
+    <footer>
+      <div class="footer-meta">Prepared by Dr. Gorkem Kar for CS5200: Database Theory and Applications.</div>
+      <nav class="pgnav" aria-label="Playground sequence">
+        <a class="pgnav-prev" href="13_window_functions_and_views_playground.html">← 13. Window Functions & Views</a>
+        <a class="pgnav-pos" href="index.html">Playground 14 of 15</a>
+        <a class="pgnav-next" href="15_normal_forms_playground.html">15. Normal Forms →</a>
+      </nav>
+    </footer>
+
+</main>
+</div>
+
+<script>
+/* ============ Real closure algorithm -- shared by every widget and the quiz's Verify button ============ */
+function fd(lhsStr, rhsStr){ return { lhs: lhsStr.split(''), rhs: rhsStr.split('') }; }
+
+function computeClosureSteps(startAttrs, fds){
+  let set = new Set(startAttrs);
+  const steps = [{ fd: null, added: [], set: [...set].sort() }];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const f of fds) {
+      if (f.lhs.every(a => set.has(a))) {
+        const added = f.rhs.filter(a => !set.has(a));
+        if (added.length) {
+          added.forEach(a => set.add(a));
+          steps.push({ fd: f, added, set: [...set].sort() });
+          changed = true;
+        }
+      }
+    }
+  }
+  return steps;
+}
+
+function fdLabel(f){ return f.lhs.join('') + ' → ' + f.rhs.join(''); }
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ============ Attribute Closure Calculator widget ============ */
+function attrPillsHtml(attrs, newAttrs){
+  return attrs.map(a => `<span class="cc-attr${newAttrs && newAttrs.includes(a) ? ' new' : ''}">${a}</span>`).join('');
+}
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+function mountClosureCalc(cfg){
+  // cfg: {id, fds:[{lhs,rhs}], start:[...], allAttrs:[...], verdictFn(finalSet, allAttrs) -> {cls, html}}
+  const fdsEl = document.getElementById(cfg.id + '-fds');
+  const startLabelEl = document.getElementById(cfg.id + '-start-label');
+  const stepsEl = document.getElementById(cfg.id + '-steps');
+  const verdictEl = document.getElementById(cfg.id + '-verdict');
+  const runBtn = document.getElementById(cfg.id + '-run');
+  const resetBtn = document.getElementById(cfg.id + '-reset');
+
+  fdsEl.innerHTML = cfg.fds.map(f => `<span class="cc-fd-pill">${fdLabel(f)}</span>`).join('');
+  startLabelEl.innerHTML = `{${cfg.start.join(', ')}}`;
+
+  function reset(){
+    stepsEl.innerHTML = `<p class="cc-placeholder">Click "Compute closure" to watch the set grow one FD at a time.</p>`;
+    verdictEl.className = 'cc-verdict';
+    verdictEl.innerHTML = '';
+    runBtn.disabled = false;
+  }
+
+  async function run(){
+    runBtn.disabled = true;
+    const steps = computeClosureSteps(cfg.start, cfg.fds);
+    stepsEl.innerHTML = '';
+    for (let i = 0; i < steps.length; i++) {
+      const s = steps[i];
+      const div = document.createElement('div');
+      div.className = 'cc-step';
+      if (i === 0) {
+        div.innerHTML = `<div class="cc-step-fd">Start</div><div class="cc-step-set">${attrPillsHtml(s.set)}</div>`;
+      } else {
+        div.innerHTML = `<div class="cc-step-fd">${fdLabel(s.fd)} applies → add ${s.added.join(', ')}</div><div class="cc-step-set">${attrPillsHtml(s.set, s.added)}</div>`;
+      }
+      stepsEl.appendChild(div);
+      await sleep(30);
+      div.classList.add('show');
+      await sleep(350);
+    }
+    const finalSet = steps[steps.length - 1].set;
+    const v = cfg.verdictFn(finalSet, cfg.allAttrs);
+    verdictEl.className = 'cc-verdict show ' + v.cls;
+    verdictEl.innerHTML = v.html;
+    runBtn.disabled = false;
+  }
+
+  runBtn.addEventListener('click', run);
+  resetBtn.addEventListener('click', reset);
+  reset();
+}
+
+function defaultVerdict(finalSet, allAttrs){
+  const covers = allAttrs.every(a => finalSet.includes(a));
+  if (covers) {
+    return { cls: 'key', html: `<strong>Closure = {${finalSet.join(', ')}}</strong> — covers all ${allAttrs.length} attributes of R → this set is a <strong>superkey</strong>.` };
+  }
+  return { cls: 'notkey', html: `<strong>Closure = {${finalSet.join(', ')}}</strong> — does NOT cover all ${allAttrs.length} attributes of R → this set is <strong>not</strong> a superkey.` };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  mountClosureCalc({
+    id: 'cc1',
+    fds: [fd('A','B'), fd('B','C'), fd('C','D')],
+    start: ['A'],
+    allAttrs: ['A','B','C','D'],
+    verdictFn: defaultVerdict,
+  });
+
+  mountClosureCalc({
+    id: 'cc2',
+    fds: [fd('A','BC'), fd('B','D'), fd('CD','E'), fd('E','A')],
+    start: ['B','C'],
+    allAttrs: ['A','B','C','D','E'],
+    verdictFn: (finalSet, allAttrs) => {
+      const covers = allAttrs.every(a => finalSet.includes(a));
+      if (!covers) return defaultVerdict(finalSet, allAttrs);
+      return { cls: 'key', html: `<strong>Closure = {${finalSet.join(', ')}}</strong> — covers all 5 attributes. Since {B} alone closes only to {B, D} and {C} alone closes only to {C}, neither single attribute is enough — {B, C} is minimal. <strong>{B, C} is a candidate key.</strong>` };
+    },
+  });
+
+  mountClosureCalc({
+    id: 'cc3',
+    fds: [fd('AB','C'), fd('C','D'), fd('D','E'), fd('AF','B')],
+    start: ['A','F'],
+    allAttrs: ['A','B','C','D','E','F'],
+    verdictFn: (finalSet, allAttrs) => {
+      const covers = allAttrs.every(a => finalSet.includes(a));
+      if (!covers) return defaultVerdict(finalSet, allAttrs);
+      return { cls: 'key', html: `<strong>Closure = {${finalSet.join(', ')}}</strong> — covers all 6 attributes. A and F each appear only on the left of every FD, so both must be in any key; since {A, F} together already close over everything, {A, F} is the unique <strong>candidate key</strong>.` };
+    },
+  });
+
+  mountClosureCalc({
+    id: 'cc4',
+    fds: [fd('A','B'), fd('A','C'), fd('D','A'), fd('C','D')],
+    start: ['D'],
+    allAttrs: ['A','B','C','D'],
+    verdictFn: (finalSet) => {
+      return { cls: 'key', html: `<strong>D⁺ = {${finalSet.join(', ')}}</strong> even without D → C in the FD set — D still reaches C via D → A → C. That means D → C adds no new information beyond what the other three FDs already give you: it's <strong>redundant</strong> and gets dropped from the minimal cover.` };
+    },
+  });
+});
+
+/* ============ Attribute Closure Tester quiz ============ */
+const ACT_QUESTIONS = [
+  {
+    scenario: "Given R(A, B, C, D) with FDs {A → B, B → C, C → D}, what is {A}+ (the closure of A)?",
+    options: [
+      { title: "{A}", correct: false },
+      { title: "{A, B}", correct: false },
+      { title: "{A, B, C}", correct: false },
+      { title: "{A, B, C, D}", correct: true },
+    ],
+    feedback: "A → B → C → D chains all the way through by transitivity, so {A}+ picks up every attribute: {A, B, C, D}.",
+    verify: { start: ['A'], fds: [fd('A','B'), fd('B','C'), fd('C','D')], allAttrs: ['A','B','C','D'] },
+  },
+  {
+    scenario: "Given R(A, B, C, D) with FDs {AB → C, C → D}, is {A, B} a superkey?",
+    options: [
+      { title: "Yes — {A,B}+ covers everything", correct: true },
+      { title: "No — B is redundant", correct: false },
+      { title: "No — {A,B}+ doesn't cover D", correct: false },
+      { title: "Depends on the DBMS", correct: false },
+    ],
+    feedback: "{A,B}+ : AB → C adds C, then C → D adds D — {A, B, C, D}, the full relation. {A,B} is a superkey (whether it's also a CANDIDATE key is a separate question about minimality, not asked here).",
+    verify: { start: ['A','B'], fds: [fd('AB','C'), fd('C','D')], allAttrs: ['A','B','C','D'] },
+  },
+  {
+    scenario: "Given R(A, B, C) with FDs {A → B, A → C}, what are ALL the candidate keys?",
+    options: [
+      { title: "{A}", correct: true },
+      { title: "{A}, {B}, {C}", correct: false },
+      { title: "{A, B, C}", correct: false },
+      { title: "{A} and {A, B}", correct: false },
+    ],
+    feedback: "A+ = {A, B, C} directly (both FDs fire off of A alone) — A is a candidate key. But B+ = {B} and C+ = {C}: neither determines anything else, so they're not keys at all, and {A, B, C} isn't minimal. {A} is the only candidate key.",
+    verify: { start: ['A'], fds: [fd('A','B'), fd('A','C')], allAttrs: ['A','B','C'] },
+  },
+  {
+    scenario: "Given R(A, B, C) with FDs {A → B, B → A, B → C}, what are the candidate keys?",
+    options: [
+      { title: "{A}", correct: false },
+      { title: "{B}", correct: false },
+      { title: "{A} and {B}", hint: "Two candidate keys", correct: true },
+      { title: "{A, B}", correct: false },
+    ],
+    feedback: "A+ = {A, B, C} (A → B, then B → C) and separately B+ = {A, B, C} (B → A, then B → C, or A → ... either way it closes). Both single attributes independently close over everything, so this schema has two separate candidate keys: {A} and {B}.",
+    verify: { start: ['A'], fds: [fd('A','B'), fd('B','A'), fd('B','C')], allAttrs: ['A','B','C'] },
+  },
+  {
+    scenario: "Given FDs {A → B, B → C}, which of these can you derive?",
+    options: [
+      { title: "Only A → B (given directly)", correct: false },
+      { title: "A → C (via transitivity)", correct: true },
+      { title: "C → A", correct: false },
+      { title: "B → A", correct: false },
+    ],
+    feedback: "Transitivity: A → B and B → C together give A → C. Nothing here runs the other direction — C → A and B → A aren't implied by anything given.",
+    verify: { start: ['A'], fds: [fd('A','B'), fd('B','C')], allAttrs: ['A','B','C'] },
+  },
+  {
+    scenario: "A schema linter finds an FD AB → C where the actual data shows that A → C alone (without B). What does this mean about AB → C?",
+    options: [
+      { title: "AB → C is invalid", correct: false },
+      { title: "B is extraneous — the FD simplifies to A → C", correct: true },
+      { title: "A is extraneous", correct: false },
+      { title: "AB → C is still valid; A → C is a separate FD", correct: false },
+    ],
+    feedback: "This is exactly the minimal-cover \"remove extraneous LHS attributes\" test: if A alone already determines C, then B was never contributing anything to the left-hand side. AB → C simplifies to A → C, and keeping B on the left just makes the FD set harder to read for no benefit.",
+    verify: { start: ['A'], fds: [fd('A','C')], allAttrs: ['A','C'] },
+  },
+  {
+    scenario: "R(A, B, C, D) with FDs {A → B, A → C}. What is {A}⁺?",
+    options: [
+      { title: "{A}", correct: false },
+      { title: "{A, B}", correct: false },
+      { title: "{A, B, C}", correct: true },
+      { title: "{A, B, C, D}", correct: false },
+    ],
+    feedback: "A determines B and C directly, so starting from {A} you add B then C — and nothing determines D, so the closure stops at {A, B, C}. Because the closure is missing D, {A} is not a superkey of R: it cannot identify a whole row.",
+    verify: { start: ['A'], fds: [fd('A','B'), fd('A','C')], allAttrs: ['A','B','C','D'] },
+  },
+  {
+    scenario: "R(A, B, C) with FDs {A → B, B → C}. Which single attribute is a candidate key?",
+    options: [
+      { title: "A", correct: true },
+      { title: "B", correct: false },
+      { title: "C", correct: false },
+      { title: "None — the key must be composite", correct: false },
+    ],
+    feedback: "{A}⁺ = {A, B, C} — it reaches every attribute, so A is a superkey, and since it is a single attribute it is trivially minimal, making it a candidate key. {B}⁺ = {B, C} misses A, and {C}⁺ = {C}. The giveaway in advance: A never appears on any right-hand side, so nothing can derive it — it must be in every key.",
+    verify: { start: ['A'], fds: [fd('A','B'), fd('B','C')], allAttrs: ['A','B','C'] },
+  },
+  {
+    scenario: "A student asks whether the functional dependency A → A is a real FD.",
+    options: [
+      { title: "Yes — but it is trivial, and trivial FDs are normally left out of the set", correct: true },
+      { title: "No — it is invalid by definition", correct: false },
+      { title: "Only if A is a key", correct: false },
+      { title: "Only in BCNF relations", correct: false },
+    ],
+    feedback: "Every attribute determines itself, so A → A always holds — it is called a <em>trivial</em> FD because the right side is already contained in the left. Trivial FDs carry no information about the data, which is why we exclude them when listing the dependencies that matter.",
+    verify: { start: ['A'], fds: [fd('A','B')], allAttrs: ['A','B'] },
+  },
+  {
+    scenario: "You compute {A}⁺ and it comes out equal to every attribute of R. What have you learned about A?",
+    options: [
+      { title: "A is a superkey — and a candidate key if no proper subset of A is also a superkey", correct: true },
+      { title: "A is a foreign key", correct: false },
+      { title: "A must be the primary key", correct: false },
+      { title: "A is a multivalued attribute", correct: false },
+    ],
+    feedback: "A closure that covers all of R is the definition of a superkey. Minimality is a separate test: check every proper subset and, if none of them also covers R, then A is a candidate key. \"Superkey\" is the reach; \"candidate key\" is the reach with no redundancy.",
+    verify: { start: ['A'], fds: [fd('A','B'), fd('A','C'), fd('A','D')], allAttrs: ['A','B','C','D'] },
+  },
+];
+
+let actQuizState = { idx: 0, score: 0, selected: null, answered: false, history: [] };
+
+function actDotsHtml(){
+  let html = '';
+  for (let i = 0; i < ACT_QUESTIONS.length; i++) {
+    let cls = '';
+    if (i < actQuizState.history.length) cls = actQuizState.history[i] ? 'correct' : 'incorrect';
+    else if (i === actQuizState.idx) cls = 'current';
+    html += `<span class="dot ${cls}"></span>`;
+  }
+  return html;
+}
+
+function actQuestionHtml(){
+  const total = ACT_QUESTIONS.length;
+  const q = ACT_QUESTIONS[actQuizState.idx];
+  let html = `<div class="act-quiz-head">
+    <div><span class="act-dots-label">Scenario</span><span class="act-dots">${actDotsHtml()}</span></div>
+    <div class="act-score">Score: <b>${actQuizState.score}</b> / ${total}</div>
+  </div>
+  <div class="act-progressbar"><div class="act-progressbar-fill" style="width:${(actQuizState.idx/total)*100}%"></div></div>
+  <div class="act-scenario-card">
+    <div class="act-scenario-label">Scenario</div>
+    <div class="act-scenario-text">${escapeHtml(q.scenario)}</div>
+    <div class="act-pick-label">Pick the best answer</div>
+    <div class="act-options-grid">`;
+  q.options.forEach((opt, i) => {
+    html += `<div class="act-option-card" data-idx="${i}">
+      <div class="act-option-title">${escapeHtml(opt.title)}</div>
+      ${opt.hint ? `<div class="act-option-hint">${escapeHtml(opt.hint)}</div>` : ''}
+    </div>`;
+  });
+  html += `</div>
+    <button class="act-check-btn" id="act-check-btn" disabled>Check answer</button>
+    <div id="act-feedback-slot"></div>
+    <button class="btn secondary act-verify-btn" id="act-verify-btn" style="display:none;">▶ Compute the real closure</button>
+    <div class="act-verify-output" id="act-verify-output"></div>
+  </div>`;
+  return html;
+}
+
+function actDoneHtml(){
+  const total = ACT_QUESTIONS.length;
+  return `<div class="act-quiz-done">
+    <div class="big-score">${actQuizState.score} / ${total}</div>
+    <p>${actQuizState.score === total ? "Perfect score." : "Review the ones you missed above, then try again."}</p>
+    <button class="btn secondary act-restart-btn" id="act-restart-btn">↺ Restart quiz</button>
+  </div>`;
+}
+
+function actRenderQuiz(){
+  const mount = document.getElementById('act-quiz-mount');
+  if (actQuizState.idx >= ACT_QUESTIONS.length) {
+    mount.innerHTML = `<div class="act-quiz">${actDoneHtml()}</div>`;
+    document.getElementById('act-restart-btn').addEventListener('click', actInitQuiz);
+    return;
+  }
+  mount.innerHTML = `<div class="act-quiz">${actQuestionHtml()}</div>`;
+  mount.querySelectorAll('.act-option-card').forEach(card => {
+    card.addEventListener('click', () => actSelectOption(parseInt(card.getAttribute('data-idx'), 10)));
+  });
+  document.getElementById('act-check-btn').addEventListener('click', actCheckAnswer);
+}
+
+function actSelectOption(idx){
+  if (actQuizState.answered) return;
+  actQuizState.selected = idx;
+  document.querySelectorAll('.act-option-card').forEach((card, i) => {
+    card.classList.toggle('selected', i === idx);
+  });
+  document.getElementById('act-check-btn').disabled = false;
+}
+
+function actCheckAnswer(){
+  if (actQuizState.answered || actQuizState.selected === null) return;
+  actQuizState.answered = true;
+  const q = ACT_QUESTIONS[actQuizState.idx];
+  const chosen = q.options[actQuizState.selected];
+  const cards = document.querySelectorAll('.act-option-card');
+  cards.forEach((card, i) => {
+    card.classList.add('disabled');
+    card.classList.remove('selected');
+    if (q.options[i].correct) card.classList.add('correct');
+    else if (i === actQuizState.selected) card.classList.add('incorrect');
+  });
+  document.getElementById('act-check-btn').style.display = 'none';
+  const isCorrect = chosen.correct;
+  if (isCorrect) actQuizState.score++;
+  actQuizState.history.push(isCorrect);
+  document.querySelector('.act-dots').innerHTML = actDotsHtml();
+  document.querySelector('.act-score b').textContent = actQuizState.score;
+
+  const slot = document.getElementById('act-feedback-slot');
+  slot.innerHTML = `<div class="act-feedback ${isCorrect ? 'correct' : 'incorrect'}">${isCorrect ? '✓ Correct.' : '✖ Not quite.'} ${escapeHtml(q.feedback)}</div>
+    <button class="btn act-next-btn" id="act-next-btn">${actQuizState.idx === ACT_QUESTIONS.length - 1 ? 'See score →' : 'Next →'}</button>`;
+  document.getElementById('act-next-btn').addEventListener('click', actNext);
+
+  const verifyBtn = document.getElementById('act-verify-btn');
+  verifyBtn.style.display = 'inline-block';
+  verifyBtn.onclick = () => {
+    const out = document.getElementById('act-verify-output');
+    out.classList.add('show');
+    const v = q.verify;
+    const steps = computeClosureSteps(v.start, v.fds);
+    let text = `Start: {${v.start.join(', ')}}\n`;
+    for (let i = 1; i < steps.length; i++) {
+      const s = steps[i];
+      text += `${fdLabel(s.fd)} applies -> add ${s.added.join(', ')} -> {${s.set.join(', ')}}\n`;
+    }
+    const finalSet = steps[steps.length - 1].set;
+    const covers = v.allAttrs.every(a => finalSet.includes(a));
+    text += `\nClosure = {${finalSet.join(', ')}} -- ${covers ? `covers all ${v.allAttrs.length} attributes -> SUPERKEY` : `does not cover all ${v.allAttrs.length} attributes -> not a superkey`}`;
+    out.textContent = text;
+  };
+}
+
+function actNext(){
+  actQuizState.idx++;
+  actQuizState.selected = null;
+  actQuizState.answered = false;
+  actRenderQuiz();
+}
+
+function actInitQuiz(){
+  actQuizState = { idx: 0, score: 0, selected: null, answered: false, history: [] };
+  actRenderQuiz();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  actInitQuiz();
+});
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script>
+/* ===== Canonical runnable-cell engine (shared by every playground) ===== */
+const CELLS = {
+  key_enforcement: {
+    setup: ``,
+    starter: `-- A candidate key is a claim about the data. This table claims email -> user_id...
+-- ...but nothing below enforces it yet.
+CREATE TABLE Users (user_id INTEGER PRIMARY KEY, email TEXT, name TEXT);
+
+-- Uncomment the next line to turn the claim into a rule, then Run:
+-- CREATE UNIQUE INDEX ux_users_email ON Users(email);
+
+INSERT INTO Users VALUES
+  (1,'ada@uni.edu','Ada Lovelace'),
+  (2,'grace@uni.edu','Grace Hopper');
+
+-- Nothing declares email unique, so the engine accepts this without complaint:
+INSERT INTO Users VALUES (3,'ada@uni.edu','A. Lovelace');
+
+SELECT * FROM Users;
+SELECT COUNT(*) AS rows_now, COUNT(DISTINCT email) AS distinct_emails FROM Users;
+-- Two different people now share one email. The candidate key was assumed, not enforced.
+
+-- Now Reset, uncomment CREATE UNIQUE INDEX above, and Run again: the same INSERT
+-- is refused. That is the difference between an FD you document and one you own.`
+  },
+  fd_violation: {
+    setup: `CREATE TABLE Enrollment (student_id TEXT, student_name TEXT, course_id TEXT);
+INSERT INTO Enrollment VALUES
+  ('S1','Aiko Tanaka','CS101'),
+  ('S1','Aiko Tanaka','CS202'),
+  ('S2','Liam Osei','CS101'),
+  ('S1','A. Tanaka','CS303');   -- same student_id, different name -> breaks {student_id} -> student_name`,
+    starter: `-- Does the claimed dependency {student_id} -> student_name hold?
+-- It holds only if EVERY student_id maps to exactly ONE name:
+SELECT student_id,
+       COUNT(DISTINCT student_name) AS distinct_names,
+       GROUP_CONCAT(DISTINCT student_name) AS names
+FROM Enrollment
+GROUP BY student_id
+HAVING COUNT(DISTINCT student_name) > 1;
+
+-- Every row returned above is a proof that the FD is violated in this instance.
+-- Removing the redundancy (one name per student, in its own table) is what normalization does.` } };
+let SQL = null;
+async function pgModule(){
+  if (SQL) return SQL;
+  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  return SQL;
+}
+function pgEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pgTable(cols, rows){
+  let html = '<table class="dbtable"><thead><tr>';
+  for (const c of cols) html += `<th>${pgEsc(c)}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const r of rows){ html += '<tr>'; for (const v of r) html += `<td>${v === null ? '<em>NULL</em>' : pgEsc(v)}</td>`; html += '</tr>'; }
+  return html + '</tbody></table>';
+}
+function pgHint(m){
+  m = String(m).toLowerCase();
+  if (m.includes('unique constraint') || m.includes('primary key')) return 'A uniqueness rule rejected this — the value already exists in the table.';
+  if (m.includes('already exists')) return 'That table or view already exists — Reset first, or edit the script.';
+  if (m.includes('not null')) return 'A required column was left empty.';
+  return null;
+}
+async function pgRun(setup, main, out){
+  out.innerHTML = ''; out.classList.remove('err'); out.classList.add('show');
+  try{
+    const M = await pgModule();
+    const db = new M.Database();
+    db.run('PRAGMA foreign_keys = ON;');
+    if (setup && setup.trim()) db.run(setup);
+    let html = '', had = false;
+    for (const stmt of db.iterateStatements(main)){
+      const cols = stmt.getColumnNames(); const rows = [];
+      while (stmt.step()) rows.push(stmt.get());
+      if (cols.length){ html += `<div style="opacity:.6; margin:6px 0 2px;">${rows.length} row${rows.length === 1 ? '' : 's'}</div>` + pgTable(cols, rows); had = true; }
+    }
+    if (!had) html = '<span style="opacity:.7">✓ Ran successfully. (No result rows to display.)</span>';
+    out.innerHTML = html; db.close();
+  } catch(e){
+    const h = pgHint(e.message);
+    out.innerHTML = `<div style="color:#F0A38A;">✖ ${pgEsc(e.message)}${h ? `<br><span style="opacity:.85">${pgEsc(h)}</span>` : ''}</div>`;
+    out.classList.add('err');
+  }
+}
+function pgGrow(ta){ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+function pgWire(cellEl){
+  const spec = CELLS[cellEl.getAttribute('data-cell')]; if (!spec) return;
+  const ta = cellEl.querySelector('textarea');
+  const out = cellEl.querySelector('.cell-output');
+  const run = cellEl.querySelector('.run-btn');
+  const reset = cellEl.querySelector('.reset-btn');
+  ta.value = spec.starter; pgGrow(ta);
+  ta.addEventListener('input', () => pgGrow(ta));
+  ta.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){ e.preventDefault(); pgRun(spec.setup, ta.value, out); } });
+  run.addEventListener('click', () => pgRun(spec.setup, ta.value, out));
+  reset.addEventListener('click', () => { ta.value = spec.starter; pgGrow(ta); out.classList.remove('show', 'err'); out.innerHTML = ''; });
+}
+function pgInit(){ document.querySelectorAll('.cell[data-cell]').forEach(pgWire); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pgInit); else pgInit();
+</script>
+
+<script>
+/* ===== Play-and-learn widget kit: Attribute closure, step by step ===== */
+(function () {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const byId = id => document.getElementById(id);
+  const STEPS = [
+    { name: '1 · Start with the attribute', tag: 'X⁺ := {X}',
+      action: 'Closure begins with the attribute set you are testing, and nothing else. Write it down before you look at the FDs — every later step can only add to this set, never remove from it.',
+      artLabel: 'Artifact · the seed set',
+      art: 'R( A, B, C, D, E )\nF = { A->BC, B->D, CD->E, E->A }\n\nX = { A }        A⁺ := { A }' },
+    { name: '2 · Apply FDs whose LHS is inside', tag: 'one pass',
+      action: 'Scan the FD set and apply every dependency whose entire left-hand side is already contained in the closure. Add its right-hand side. The left-hand side must be fully present — part of it is not enough.',
+      artLabel: 'Artifact · pass 1',
+      art: 'A  -> BC   LHS {A}    inside {A}       APPLY  + B, C\nB  -> D    LHS {B}    not inside        skip\nCD -> E    LHS {C,D}  not inside        skip\nE  -> A    LHS {E}    not inside        skip\n\nA⁺ = { A, B, C }' },
+    { name: '3 · Repeat until nothing changes', tag: 'fixpoint',
+      action: 'A single pass is never enough: an attribute you just added can unlock an FD that was skipped a moment ago. Keep re-scanning until a full pass adds nothing — that is the fixpoint.',
+      artLabel: 'Artifact · the passes',
+      art: 'pass 1: { A }        ->  { A, B, C }\npass 2: { A, B, C }  ->  { A, B, C, D }       (B->D)\npass 3: { A..D }     ->  { A, B, C, D, E }    (CD->E)\npass 4: no change    ->  STOP' },
+    { name: '4 · Read the answer', tag: 'X⁺ = all five',
+      action: 'The set only ever grows, so the loop is guaranteed to terminate — and it terminates at exactly one answer. Here the closure swallows the whole relation: A⁺ = {A, B, C, D, E}.',
+      artLabel: 'Artifact · the closure',
+      art: 'A⁺ = { A, B, C, D, E }\n\n  every attribute of R is present\n  (the process is monotone -> it cannot loop forever)' },
+    { name: '5 · Is it a key?', tag: 'superkey test',
+      action: 'If X⁺ contains every attribute of R, then X is a superkey. A⁺ covers R, so {A} is a superkey — and since a single attribute cannot be reduced, {A} is also a candidate key.',
+      artLabel: 'Artifact · the key test',
+      art: 'A⁺ ⊇ R          ->  {A} is a SUPERKEY\n{A} is 1 attribute ->  minimal\n  => {A} is a CANDIDATE KEY\n\nE⁺ = {E,A,B,C,D} = R  ->  a second candidate key' },
+    { name: '6 · Prove an implied FD', tag: 'derived dependencies',
+      action: 'Closure also answers "is X → Y implied by F?": compute X⁺ and check whether Y is inside it. That single test replaces guessing — it is Armstrong soundness and completeness, made mechanical.',
+      artLabel: 'Artifact · the membership test',
+      art: 'Does F ⊨ A -> D ?\n\n  A⁺ = { A, B, C, D, E }\n  D ∈ A⁺        ->  YES, A -> D is implied by F\n\n  (no derivation needed — closure decides it)' },
+  ];
+  let i = 0;
+  const rail = byId('clostep-rail'), body = byId('clostep-body');
+  if (!body) return;
+  function railRender(){
+    rail.innerHTML = STEPS.map((s, k) =>
+      `<div class="qstep-node${k === i ? ' active' : (k < i ? ' done' : '')}" data-i="${k}"><span class="qstep-idx">${k + 1}</span>${esc(s.name)}</div>`).join('');
+    rail.querySelectorAll('.qstep-node').forEach(n => n.addEventListener('click', () => { i = +n.dataset.i; render(); }));
+  }
+  function render(){
+    const s = STEPS[i];
+    body.innerHTML =
+      `<div class="qstep-head"><div class="qstep-name">${esc(s.name)}</div><div class="qstep-layer">${esc(s.tag)}</div></div>` +
+      `<div class="qstep-action">${esc(s.action)}</div>` +
+      `<div class="qstep-art"><span class="art-label">${esc(s.artLabel)}</span>${esc(s.art)}</div>`;
+    railRender();
+    byId('clostep-count').textContent = `Step ${i + 1} of ${STEPS.length}`;
+    byId('clostep-back').disabled = i === 0;
+    byId('clostep-next').disabled = i === STEPS.length - 1;
+  }
+  byId('clostep-back').addEventListener('click', () => { if (i > 0) { i--; render(); } });
+  byId('clostep-next').addEventListener('click', () => { if (i < STEPS.length - 1) { i++; render(); } });
+  byId('clostep-restart').addEventListener('click', () => { i = 0; render(); });
+  render();
+})();
+</script>
+
+<script>
+/* ===== Canonical figure reveal ===== */
+(function () {
+  function revealFigures() {
+    var figs = document.querySelectorAll('.diagram');
+    if (!figs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      figs.forEach(function (f) { f.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    figs.forEach(function (f) { io.observe(f); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealFigures);
+  else revealFigures();
+})();
+</script>
+</body>
+</html>

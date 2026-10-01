@@ -1,0 +1,30 @@
+# Netlify configuration for the CS5200 / CS4600 database playgrounds.
+#
+# The site is plain static HTML with no build step, so Netlify serves the
+# repository root exactly as committed.
+
+[build]
+  # Nothing to run — the HTML files are already the finished site.
+  command = ""
+  publish = "."
+
+# The playground pages depend on their exact markup (inline scripts bind to
+# specific element ids and data attributes), so leave all post-processing off.
+[build.processing]
+  skip_processing = true
+
+# Always revalidate the pages so students never see a stale reader after a
+# content update. The pages are small; conditional requests are cheap.
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

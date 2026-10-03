@@ -1003,27 +1003,6 @@ const SECTIONS = [
 },
 
 {
-  id: 'interview', title: 'In the Interview', kicker: 'Apply It',
-  html: `
-  <p>Inheritance and specialization show up whenever an interviewer asks about polymorphic data.</p>
-  <div class="interview-box">
-    <h3>The "user types" question</h3>
-    <p>"Our app has Riders and Drivers. Both are Users but with different attributes. How do you model this?" Every interviewer knows there are three answers and wants to hear you name them — and weigh each against the system's actual constraints:</p>
-    <ul>
-      <li><strong>Table-per-subclass</strong> wins when subclasses have very different attributes (drivers have vehicles, licenses, background checks; riders don't) — cleaner <code class="inline">NOT NULL</code> constraints, no wasted columns.</li>
-      <li><strong>Single-table-with-discriminator</strong> wins when subclasses are lightweight and most queries hit the parent ("list all users regardless of type") — avoids joins on the hot path.</li>
-      <li><strong>Table-per-concrete-class</strong> wins when subclasses are truly disjoint and never queried uniformly — but it's the rarest choice in practice.</li>
-    </ul>
-    <p>Articulating the <em>criteria</em>, not just reciting the three names, is what separates candidates.</p>
-    <h3>The GraphQL / ORM tie-in</h3>
-    <p>"Your GraphQL schema has a <code class="inline">User</code> interface with <code class="inline">Rider</code> and <code class="inline">Driver</code> implementations — what's the SQL side look like?" Recognizing that a GraphQL interface and an EER specialization hierarchy are the same idea at different layers of the stack is a promotion-worthy insight.</p>
-    <h3>The aggregation question</h3>
-    <p>"A Booking involves a Rider, a Driver, and a Car. Every booking also gets rated. How do you model the rating?" This is aggregation territory: box the Rider–Books–Driver–Car unit as an associative entity, then Rating → Booking becomes a clean 1:1 or 1:N. Getting there without being led is a strong signal.</p>
-  </div>
-  <p><strong>Rule of thumb:</strong> any time an interviewer says "this thing has different kinds," they're inviting the three-inheritance-strategies discussion. Naming all three and picking one for a specific, stated reason is the winning move.</p>`
-},
-
-{
   id: 'quiz', title: 'Try It Yourself: Specialization Constraint Picker', kicker: 'Apply It',
   html: `
   <p>Ten scenarios covering disjoint/overlapping × total/partial specialization modes, plus questions on choosing the right construct and mapping strategy.</p>
@@ -1088,6 +1067,27 @@ const SECTIONS = [
     </div></details>
   </div>`
 },
+{
+  id: 'interview', title: 'In the Interview', kicker: 'Apply It',
+  html: `
+  <p>Inheritance and specialization show up whenever an interviewer asks about polymorphic data.</p>
+  <div class="interview-box">
+    <h3>The "user types" question</h3>
+    <p>"Our app has Riders and Drivers. Both are Users but with different attributes. How do you model this?" Every interviewer knows there are three answers and wants to hear you name them — and weigh each against the system's actual constraints:</p>
+    <ul>
+      <li><strong>Table-per-subclass</strong> wins when subclasses have very different attributes (drivers have vehicles, licenses, background checks; riders don't) — cleaner <code class="inline">NOT NULL</code> constraints, no wasted columns.</li>
+      <li><strong>Single-table-with-discriminator</strong> wins when subclasses are lightweight and most queries hit the parent ("list all users regardless of type") — avoids joins on the hot path.</li>
+      <li><strong>Table-per-concrete-class</strong> wins when subclasses are truly disjoint and never queried uniformly — but it's the rarest choice in practice.</li>
+    </ul>
+    <p>Articulating the <em>criteria</em>, not just reciting the three names, is what separates candidates.</p>
+    <h3>The GraphQL / ORM tie-in</h3>
+    <p>"Your GraphQL schema has a <code class="inline">User</code> interface with <code class="inline">Rider</code> and <code class="inline">Driver</code> implementations — what's the SQL side look like?" Recognizing that a GraphQL interface and an EER specialization hierarchy are the same idea at different layers of the stack is a promotion-worthy insight.</p>
+    <h3>The aggregation question</h3>
+    <p>"A Booking involves a Rider, a Driver, and a Car. Every booking also gets rated. How do you model the rating?" This is aggregation territory: box the Rider–Books–Driver–Car unit as an associative entity, then Rating → Booking becomes a clean 1:1 or 1:N. Getting there without being led is a strong signal.</p>
+  </div>
+  <p><strong>Rule of thumb:</strong> any time an interviewer says "this thing has different kinds," they're inviting the three-inheritance-strategies discussion. Naming all three and picking one for a specific, stated reason is the winning move.</p>`
+},
+
   {
     id: 'in-2026', title: "In 2026: What Has Changed", kicker: '2026 Status',
     html: `

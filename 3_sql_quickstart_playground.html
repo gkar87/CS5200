@@ -1401,6 +1401,76 @@ const SECTIONS = [
 },
 
 {
+  id: 'select-execution-order', title: 'How a SELECT Really Runs', kicker: 'Foundations',
+  html: `
+  <p>You <em>write</em> a query in one order; the database <em>evaluates</em> it in another. That mismatch explains almost every confusing SQL error — why an alias fails inside <code class="inline">WHERE</code>, why <code class="inline">HAVING</code> can see aggregates and <code class="inline">WHERE</code> cannot, and why <code class="inline">SELECT DISTINCT</code> sometimes surprises you. Step through the real pipeline.</p>
+  <figure class="diagram">
+    <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The five stages of a SELECT in the order the database runs them: FROM and JOIN assemble five rows, WHERE filters them to three, SELECT projects the name column, ORDER BY sorts them, and LIMIT keeps the first two. This execution order differs from the order you write the clauses in." font-family="IBM Plex Mono, monospace">
+        <defs>
+          <marker id="l3p-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 Z" fill="#2F5D8A"/>
+          </marker>
+        </defs>
+        <text x="380" y="30" text-anchor="middle" font-size="16" font-weight="700" fill="#1E2A25">What actually runs, and in what order</text>
+        <text x="380" y="50" text-anchor="middle" font-size="11" fill="#4A564F">You write SELECT first — the database starts at FROM.</text>
+
+        <g data-beat="1">
+          <rect x="10" y="96" width="124" height="78" rx="8" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <text x="72" y="122" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E2A25">1 · FROM</text>
+          <text x="72" y="142" text-anchor="middle" font-size="10.5" fill="#4A564F">join tables</text>
+          <text x="72" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#2F5D8A">5 rows</text>
+        </g>
+        <line x1="134" y1="135" x2="162" y2="135" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#l3p-arrow)"/>
+
+        <g data-beat="2">
+          <rect x="164" y="96" width="124" height="78" rx="8" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <text x="226" y="122" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E2A25">2 · WHERE</text>
+          <text x="226" y="142" text-anchor="middle" font-size="10.5" fill="#4A564F">grade = 'A'</text>
+          <text x="226" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#2F5D8A">3 rows</text>
+        </g>
+        <line x1="288" y1="135" x2="316" y2="135" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#l3p-arrow)"/>
+
+        <g data-beat="3">
+          <rect x="318" y="96" width="124" height="78" rx="8" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <text x="380" y="122" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E2A25">3 · SELECT</text>
+          <text x="380" y="142" text-anchor="middle" font-size="10.5" fill="#4A564F">project s.name</text>
+          <text x="380" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#2F5D8A">1 column</text>
+        </g>
+        <line x1="442" y1="135" x2="470" y2="135" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#l3p-arrow)"/>
+
+        <g data-beat="4">
+          <rect x="472" y="96" width="124" height="78" rx="8" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+          <text x="534" y="122" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E2A25">4 · ORDER BY</text>
+          <text x="534" y="142" text-anchor="middle" font-size="10.5" fill="#4A564F">sort by name</text>
+          <text x="534" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#2F5D8A">sorted</text>
+        </g>
+      <line x1="596" y1="135" x2="624" y2="135" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#l3p-arrow)"/>
+      <g data-beat="4">
+        <rect x="626" y="96" width="124" height="78" rx="8" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
+        <text x="688" y="122" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E2A25">5 · LIMIT</text>
+        <text x="688" y="142" text-anchor="middle" font-size="10.5" fill="#4A564F">first two</text>
+        <text x="688" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#2F5D8A">2 rows</text>
+      </g>
+      <text x="380" y="216" text-anchor="middle" font-size="10.5" fill="#4A564F">Written order:  SELECT … FROM … WHERE … ORDER BY … LIMIT</text>
+    </svg>
+    <figcaption>Because WHERE runs before SELECT, it cannot see a column alias you defined in the SELECT list — that single fact explains most "no such column" errors.</figcaption>
+  </figure>
+  ${peek('roster', 'students, courses, enrollments — the same roster the labs use.')}
+  <div class="widget">
+    <div class="widget-title">How a SELECT Is Executed</div>
+    <div class="widget-sub">SELECT … FROM … JOIN … WHERE … GROUP BY … HAVING … ORDER BY … LIMIT</div>
+    <div class="qstep-rail" id="selstep-rail"></div>
+    <div class="qstep-body" id="selstep-body"></div>
+    <div class="qstep-controls">
+      <button class="qstep-restart-btn" id="selstep-back">◀ Back</button>
+      <button class="qstep-next-btn" id="selstep-next">Next step ▶</button>
+      <button class="qstep-restart-btn" id="selstep-restart">↺ Restart</button>
+      <span class="qstep-count" id="selstep-count"></span>
+    </div>
+  </div>`
+},
+
+{
   id: 'join', title: 'Joining Two Tables', kicker: 'Querying',
   html: `
   ${peek('roster', 'the roster (same dataset as the SELECT section above).')}
@@ -1563,76 +1633,6 @@ const SECTIONS = [
 
   <p>Ten scenarios below. Predict each one, then check yourself against a real database — every explanation quotes the exact error SQLite actually raises, verified before being written down.</p>
   ${cvpWidgetHtml()}`
-},
-
-{
-  id: 'select-execution-order', title: 'How a SELECT Really Runs', kicker: 'Foundations',
-  html: `
-  <p>You <em>write</em> a query in one order; the database <em>evaluates</em> it in another. That mismatch explains almost every confusing SQL error — why an alias fails inside <code class="inline">WHERE</code>, why <code class="inline">HAVING</code> can see aggregates and <code class="inline">WHERE</code> cannot, and why <code class="inline">SELECT DISTINCT</code> sometimes surprises you. Step through the real pipeline.</p>
-  <figure class="diagram">
-    <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The five stages of a SELECT in the order the database runs them: FROM and JOIN assemble five rows, WHERE filters them to three, SELECT projects the name column, ORDER BY sorts them, and LIMIT keeps the first two. This execution order differs from the order you write the clauses in." font-family="IBM Plex Mono, monospace">
-        <defs>
-          <marker id="l3p-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-            <path d="M0,0 L10,5 L0,10 Z" fill="#2F5D8A"/>
-          </marker>
-        </defs>
-        <text x="380" y="30" text-anchor="middle" font-size="16" font-weight="700" fill="#1E2A25">What actually runs, and in what order</text>
-        <text x="380" y="50" text-anchor="middle" font-size="11" fill="#4A564F">You write SELECT first — the database starts at FROM.</text>
-
-        <g data-beat="1">
-          <rect x="10" y="96" width="124" height="78" rx="8" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
-          <text x="72" y="122" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E2A25">1 · FROM</text>
-          <text x="72" y="142" text-anchor="middle" font-size="10.5" fill="#4A564F">join tables</text>
-          <text x="72" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#2F5D8A">5 rows</text>
-        </g>
-        <line x1="134" y1="135" x2="162" y2="135" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#l3p-arrow)"/>
-
-        <g data-beat="2">
-          <rect x="164" y="96" width="124" height="78" rx="8" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
-          <text x="226" y="122" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E2A25">2 · WHERE</text>
-          <text x="226" y="142" text-anchor="middle" font-size="10.5" fill="#4A564F">grade = 'A'</text>
-          <text x="226" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#2F5D8A">3 rows</text>
-        </g>
-        <line x1="288" y1="135" x2="316" y2="135" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#l3p-arrow)"/>
-
-        <g data-beat="3">
-          <rect x="318" y="96" width="124" height="78" rx="8" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
-          <text x="380" y="122" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E2A25">3 · SELECT</text>
-          <text x="380" y="142" text-anchor="middle" font-size="10.5" fill="#4A564F">project s.name</text>
-          <text x="380" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#2F5D8A">1 column</text>
-        </g>
-        <line x1="442" y1="135" x2="470" y2="135" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#l3p-arrow)"/>
-
-        <g data-beat="4">
-          <rect x="472" y="96" width="124" height="78" rx="8" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
-          <text x="534" y="122" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E2A25">4 · ORDER BY</text>
-          <text x="534" y="142" text-anchor="middle" font-size="10.5" fill="#4A564F">sort by name</text>
-          <text x="534" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#2F5D8A">sorted</text>
-        </g>
-      <line x1="596" y1="135" x2="624" y2="135" stroke="#2F5D8A" stroke-width="2.4" marker-end="url(#l3p-arrow)"/>
-      <g data-beat="4">
-        <rect x="626" y="96" width="124" height="78" rx="8" fill="#D2E1EF" stroke="#2F5D8A" stroke-width="1.6"/>
-        <text x="688" y="122" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E2A25">5 · LIMIT</text>
-        <text x="688" y="142" text-anchor="middle" font-size="10.5" fill="#4A564F">first two</text>
-        <text x="688" y="162" text-anchor="middle" font-size="11" font-weight="700" fill="#2F5D8A">2 rows</text>
-      </g>
-      <text x="380" y="216" text-anchor="middle" font-size="10.5" fill="#4A564F">Written order:  SELECT … FROM … WHERE … ORDER BY … LIMIT</text>
-    </svg>
-    <figcaption>Because WHERE runs before SELECT, it cannot see a column alias you defined in the SELECT list — that single fact explains most "no such column" errors.</figcaption>
-  </figure>
-  ${peek('roster', 'students, courses, enrollments — the same roster the labs use.')}
-  <div class="widget">
-    <div class="widget-title">How a SELECT Is Executed</div>
-    <div class="widget-sub">SELECT … FROM … JOIN … WHERE … GROUP BY … HAVING … ORDER BY … LIMIT</div>
-    <div class="qstep-rail" id="selstep-rail"></div>
-    <div class="qstep-body" id="selstep-body"></div>
-    <div class="qstep-controls">
-      <button class="qstep-restart-btn" id="selstep-back">◀ Back</button>
-      <button class="qstep-next-btn" id="selstep-next">Next step ▶</button>
-      <button class="qstep-restart-btn" id="selstep-restart">↺ Restart</button>
-      <span class="qstep-count" id="selstep-count"></span>
-    </div>
-  </div>`
 },
 
 {
@@ -1964,7 +1964,7 @@ INSERT INTO students VALUES (1, 'Ada');`,
 
 let SQL = null;
 
-const NAV_GROUPS = [{label:'Foundations', ids:['overview','ddl','keys','insert','select','select-execution-order']},{label:'Querying', ids:['join','aggregation','setdiff']},{label:'Referential Actions', ids:['refaction','delete-actions']},{label:'Worked Examples', ids:['worked','multitable']},{label:'Apply It', ids:['practice','interview','quiz']},{label:'2026 Status', ids:['in-2026']}];
+const NAV_GROUPS = [{label:'Foundations', ids:['overview','ddl','keys','insert','select','select-execution-order']},{label:'Querying', ids:['join','aggregation','setdiff']},{label:'Worked Examples', ids:['worked','multitable']},{label:'Referential Actions', ids:['refaction','delete-actions']},{label:'Apply It', ids:['practice','interview','quiz']},{label:'2026 Status', ids:['in-2026']}];
 
 function renderNav(){
   const nav = document.getElementById('playgroundNav');

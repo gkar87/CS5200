@@ -1,0 +1,11 @@
+# Authoring, tooling and grading files — NOT part of the published playground site.
+# The deployed site is: index.html, README.md, netlify.toml, .nojekyll and the
+# fifteen *_playground.html pages. Everything below stays local.
+.DS_Store
+CONTENT_*.md
+labgen/
+labs/
+pgaudit.js
+pgdump.js
+pgrun.js
+probe-selftest.js

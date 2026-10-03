@@ -638,6 +638,59 @@ function diagNotationCompare(){
   </figure>`;
 }
 
+/* ===================== Diagram 4b: cardinality taxonomy (1:1 / 1:N / M:N) ===================== */
+/* Crow's-foot end markers. `toward` is the direction the entity sits from the
+   line end: -1 = entity to the left, +1 = entity to the right. The fork/hooks
+   splay TOWARD the entity (conventional crow's foot); the bar/circle sits just
+   beyond it and encodes the MINIMUM participation. */
+function cfMany(edgeX, y, toward){
+  const apex = edgeX - 12*toward;
+  return `<line x1="${apex}" y1="${y}" x2="${edgeX}" y2="${y-7}" stroke="${PAL.ink}" stroke-width="1.5"/>` +
+         `<line x1="${apex}" y1="${y}" x2="${edgeX}" y2="${y}"   stroke="${PAL.ink}" stroke-width="1.5"/>` +
+         `<line x1="${apex}" y1="${y}" x2="${edgeX}" y2="${y+7}" stroke="${PAL.ink}" stroke-width="1.5"/>`;
+}
+function cfOne(edgeX, y, toward){
+  const into = -toward, x1 = edgeX + 5*into, x2 = edgeX + 11*into;
+  return `<line x1="${x1}" y1="${y-8}" x2="${x1}" y2="${y+8}" stroke="${PAL.ink}" stroke-width="1.6"/>` +
+         `<line x1="${x2}" y1="${y-8}" x2="${x2}" y2="${y+8}" stroke="${PAL.ink}" stroke-width="1.6"/>`;
+}
+function cfBar(x, y){
+  return `<line x1="${x}" y1="${y-8}" x2="${x}" y2="${y+8}" stroke="${PAL.ink}" stroke-width="1.7"/>`;
+}
+function cfCircle(x, y){
+  return `<circle cx="${x}" cy="${y}" r="4.5" fill="${PAL.paperRaised}" stroke="${PAL.ink}" stroke-width="1.5"/>`;
+}
+function cfPanel(inner, caption){
+  return `<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${escXml(caption)}" font-family="IBM Plex Mono, monospace">${inner}</svg>`;
+}
+function cfDiagram(leftName, rightName, leftMany, leftMust, rightMany, rightMust, ratio){
+  const y = 88, eL = 98, eR = 202;
+  let s = entityBox(10, 64, 88, 48, leftName) + entityBox(202, 64, 88, 48, rightName);
+  s += `<line x1="${eL}" y1="${y}" x2="${eR}" y2="${y}" stroke="${PAL.ink}" stroke-width="1.5"/>`;
+  s += svgText(150, 32, ratio, { size: 15, weight: 700, fill: PAL.blue });
+  s += leftMany ? cfMany(eL, y, -1) : cfOne(eL, y, -1);
+  s += leftMust ? cfBar(eL + 24, y) : cfCircle(eL + 24, y);
+  s += rightMany ? cfMany(eR, y, 1) : cfOne(eR, y, 1);
+  s += rightMust ? cfBar(eR - 24, y) : cfCircle(eR - 24, y);
+  return s;
+}
+function diagCardinality(){
+  return `<figure class="diagram">
+    <div class="diagram-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div>${cfPanel(cfDiagram('Person','Passport', false,true, false,true, '1 : 1'),
+        'One-to-one. A Person has exactly one Passport and a Passport belongs to exactly one Person — two ticks and a bar at both ends.')}
+        <figcaption>1 : 1 — exactly one at both ends.</figcaption></div>
+      <div>${cfPanel(cfDiagram('Department','Employee', true,false, false,true, '1 : N'),
+        'One-to-many. A Department employs zero or many Employees (circle plus fork), while every Employee belongs to exactly one Department (bar plus two ticks).')}
+        <figcaption>1 : N — many at the Department end, one at the Employee end.</figcaption></div>
+      <div>${cfPanel(cfDiagram('Student','Course', true,false, true,false, 'M : N'),
+        'Many-to-many. A Student takes zero or many Courses and a Course has zero or many Students — a circle plus fork at both ends.')}
+        <figcaption>M : N — many at both ends.</figcaption></div>
+    </div>
+    <p style="font-size:11.5px;color:var(--ink-soft);margin:6px 0 0">Legend — <strong>&#8214;</strong> exactly one · <strong>crow's foot</strong> many · <strong>|</strong> must participate (total) · <strong>&#9675;</strong> optional (partial). The fork/tick gives each end's <em>maximum</em>; the bar/circle gives its <em>minimum</em> — the two are chosen independently.</p>
+  </figure>`;
+}
+
 /* ===================== Diagram 5: e-commerce case study ===================== */
 function diagEcommerce(){
   const lines =
@@ -974,6 +1027,7 @@ const SECTIONS = [
   </div>
   <p><strong>Participation</strong> is a separate question: must an entity take part in the relationship at all? <strong>Total participation</strong> (a double line in Chen notation) means every instance must be involved. <strong>Partial participation</strong> (single line) means it's optional. Every Book must be written by an Author (total), but an Author might exist in the system without a Book currently listed (partial).</p>
   <div class="callout blue"><strong>Common confusion:</strong> cardinality (how many) and participation (whether it's required) are independent. A relationship can be 1:1 with both sides optional, or M:N with one side mandatory — the four questions in the Cardinality Interview tool further down keep these two questions properly separated.</div>
+  ${diagCardinality()}
   <p>Eight business rules below. Each is phrased directionally — read carefully which entity comes first.</p>
   ${choiceQuizHtml('cardq', 'Cardinality Predictor', 'Pick the cardinality that matches each business rule, read in the stated direction.', CARDINALITY_QUESTIONS.length)}`
 },
@@ -1087,23 +1141,6 @@ const SECTIONS = [
 },
 
 {
-  id: 'interview', title: 'In the Interview', kicker: 'Apply It',
-  html: `
-  <p>ER modeling is the fluency test for schema design in every system-design round. The archetypal question: "design the data model for Twitter in the next 20 minutes." Interviewers watch three specific things:</p>
-  <div class="interview-box">
-    <h3>Speed at identifying entities</h3>
-    <p>For Twitter: User, Tweet, Follow, Like, Retweet. Taking more than three minutes to name these leaves no time for the interesting parts.</p>
-    <h3>Confidence with cardinality</h3>
-    <p>User ↔ Follow is M:N. Tweet ↔ Like is M:N. User ↔ Tweet (authorship) is 1:N. Hesitating on any of these invites a probe.</p>
-    <h3>Handling the tricky entities</h3>
-    <p>Is Follow a relationship or an entity? Since it can be timestamped and has its own delete lifecycle, model it as an associative entity, not just an M:N link — recognizing this unprompted is a strong signal.</p>
-  </div>
-  <p>Follow-up questions to expect: <em>How do you model retweets so a retweet-of-a-retweet still points at the original?</em> (Self-referencing FK on Tweet.) <em>How do you enforce a user can only follow another once?</em> (<code class="inline">UNIQUE</code> constraint on <code class="inline">(follower_id, followee_id)</code> in the Follow entity.)</p>
-  <p>The senior twist is about scale: "This model looks correct, but Twitter has 500M users." The answer isn't a different ER model — it's "normalize for writes, denormalize for reads." The normalized model stays the source of truth; read-heavy paths (home timelines) get fed by denormalized projections, often maintained by streaming pipelines.</p>
-  <p><strong>Practice pattern:</strong> take five apps you use daily and sketch the core ER model of each in ten minutes — six entities, all cardinalities, weak entities where they apply, at least one associative entity. Ten reps of this is worth more than any interview book.</p>`
-},
-
-{
   id: 'attribute-quiz', title: 'Try It Yourself: Attribute Classifier', kicker: 'Apply It',
   html: `
   <p>Classify each attribute of a <code class="inline">Book</code> entity in a bookstore system. This is Practice Problem 3 below, played one attribute at a time.</p>
@@ -1160,6 +1197,23 @@ const SECTIONS = [
     </div></details>
   </div>`
 },
+{
+  id: 'interview', title: 'In the Interview', kicker: 'Apply It',
+  html: `
+  <p>ER modeling is the fluency test for schema design in every system-design round. The archetypal question: "design the data model for Twitter in the next 20 minutes." Interviewers watch three specific things:</p>
+  <div class="interview-box">
+    <h3>Speed at identifying entities</h3>
+    <p>For Twitter: User, Tweet, Follow, Like, Retweet. Taking more than three minutes to name these leaves no time for the interesting parts.</p>
+    <h3>Confidence with cardinality</h3>
+    <p>User ↔ Follow is M:N. Tweet ↔ Like is M:N. User ↔ Tweet (authorship) is 1:N. Hesitating on any of these invites a probe.</p>
+    <h3>Handling the tricky entities</h3>
+    <p>Is Follow a relationship or an entity? Since it can be timestamped and has its own delete lifecycle, model it as an associative entity, not just an M:N link — recognizing this unprompted is a strong signal.</p>
+  </div>
+  <p>Follow-up questions to expect: <em>How do you model retweets so a retweet-of-a-retweet still points at the original?</em> (Self-referencing FK on Tweet.) <em>How do you enforce a user can only follow another once?</em> (<code class="inline">UNIQUE</code> constraint on <code class="inline">(follower_id, followee_id)</code> in the Follow entity.)</p>
+  <p>The senior twist is about scale: "This model looks correct, but Twitter has 500M users." The answer isn't a different ER model — it's "normalize for writes, denormalize for reads." The normalized model stays the source of truth; read-heavy paths (home timelines) get fed by denormalized projections, often maintained by streaming pipelines.</p>
+  <p><strong>Practice pattern:</strong> take five apps you use daily and sketch the core ER model of each in ten minutes — six entities, all cardinalities, weak entities where they apply, at least one associative entity. Ten reps of this is worth more than any interview book.</p>`
+},
+
   {
     id: 'in-2026', title: "In 2026: What Has Changed", kicker: '2026 Status',
     html: `

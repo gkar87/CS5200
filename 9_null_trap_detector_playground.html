@@ -1250,7 +1250,7 @@ INSERT INTO B VALUES (1),(4);`,
     feedback: "Plain EXCEPT is set-based: it removes EVERY occurrence of any value that appears in B at all — both of A's 1s disappear, not just one. (EXCEPT ALL, where supported, would remove only one 1 per matching 1 in B.)"
   },
   {
-    q: "Two identical queries are run against a big table: SELECT DISTINCT city FROM users and SELECT city FROM users GROUP BY city. Which one is faster, and why?",
+    q: "In the engine running on this page (SQLite), two identical queries are run against a big table: SELECT DISTINCT city FROM users and SELECT city FROM users GROUP BY city. Which one is faster, and why?",
     ddl: ``,
     verifySetup: `CREATE TABLE users2 (id INT PRIMARY KEY, city TEXT);
 INSERT INTO users2 VALUES (1,'NYC'),(2,'LA'),(3,'NYC'),(4,'SF');`,
@@ -1260,9 +1260,9 @@ SELECT city FROM users2 GROUP BY city;`,
       { label: "DISTINCT is faster", hint: "", correct: false },
       { label: "GROUP BY is faster", hint: "", correct: false },
       { label: "Identical performance", hint: "Optimizer treats them the same", correct: true },
-      { label: "Depends on the DBMS", hint: "", correct: false }
+      { label: "Depends on the DBMS", hint: "True in general — but the engine is pinned here", correct: false }
     ],
-    feedback: "DISTINCT and a GROUP BY with no aggregate function are logically the same operation — collapse rows to unique combinations of the listed columns. Every mainstream query optimizer recognizes this and generates the identical physical plan for both."
+    feedback: "DISTINCT and a GROUP BY with no aggregate function are logically the same operation — collapse the rows to the unique combinations of the listed columns. In SQLite, the engine running here, both plans come out the same: a scan of the table plus a temp B-tree, one labelled DISTINCT and one labelled GROUP BY. Run EXPLAIN QUERY PLAN on both above and compare. Other engines can genuinely choose differently, so \"depends on the DBMS\" is not a wrong instinct in general — it is just not the best answer once the engine is fixed."
   },
   {
     q: "You paginate a report: page 3 (size 20). You write ORDER BY created_at DESC LIMIT 20 OFFSET 40. Two rows share the exact same created_at timestamp. Later, page 3 is loaded again — but shows different rows this time. Why?",

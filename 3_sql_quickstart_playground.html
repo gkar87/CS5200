@@ -1211,6 +1211,51 @@ INSERT INTO customers VALUES (1, 'Acme');`,
 `DELETE FROM customers WHERE id = 999;
 SELECT * FROM customers;`
   },
+
+  cvp7_verify: {
+    setup:
+`CREATE TABLE students (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO students VALUES (1, 'Ada');`,
+    starter:
+`INSERT INTO students (id) VALUES (2);`
+  },
+
+  cvp8_verify: {
+    setup:
+`CREATE TABLE accounts (
+  id INTEGER PRIMARY KEY,
+  email TEXT UNIQUE
+);
+INSERT INTO accounts VALUES (1, 'ada@example.com');`,
+    starter:
+`INSERT INTO accounts VALUES (2, 'ada@example.com');`
+  },
+
+  cvp9_verify: {
+    setup:
+`CREATE TABLE tags (
+  id INTEGER PRIMARY KEY,
+  label TEXT
+);
+INSERT INTO tags VALUES (1, 'sql');`,
+    starter:
+`INSERT INTO tags VALUES (1, 'databases');`
+  },
+
+  cvp10_verify: {
+    setup:
+`CREATE TABLE students (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL
+);
+INSERT INTO students VALUES (1, 'Ada');`,
+    starter:
+`SELECT * FROM students;
+UPDATE students SET name = NULL WHERE id = 1;`
+  },
 };
 
 /* =========================================================================

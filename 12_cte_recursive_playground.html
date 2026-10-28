@@ -940,9 +940,9 @@ SELECT * FROM bom ORDER BY depth, part;</div>
               <tbody>
                 <tr><td>1</td><td>bike</td><td>frame</td></tr>
                 <tr><td>1</td><td>bike</td><td>wheel</td></tr>
-                <tr><td>2</td><td>frame</td><td>tube</td></tr>
                 <tr><td>2</td><td>wheel</td><td>rim</td></tr>
                 <tr><td>2</td><td>wheel</td><td>spoke</td></tr>
+                <tr><td>2</td><td>frame</td><td>tube</td></tr>
                 <tr><td>3</td><td>tube</td><td>metal</td></tr>
               </tbody>
             </table>
@@ -992,8 +992,9 @@ SELECT DISTINCT person_id FROM network ORDER BY person_id;</div>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
           <div class="answer-body">
-            <p>In every mainstream engine, <code>c</code> is simply never executed — a CTE is only materialized (or inlined) if something downstream actually references it. It costs nothing at runtime.</p>
-            <p>Verified against real SQLite in the <a href="#chained-ctes">Chained CTEs</a> section above: a CTE <code>c</code> that references a genuinely nonexistent column doesn't even throw a compile error, because the engine never binds or validates a CTE it has no reason to run. It's not a runtime bug — but it's very likely a <em>maintenance</em> bug: dead, unreferenced SQL that a future reader will assume matters and waste time trying to understand, or that silently goes stale as the schema changes underneath it. Delete unused CTEs the same way you'd delete unused variables.</p>
+            <p>In SQLite (and several other engines), <code>c</code> is simply never executed — a CTE is only materialized (or inlined) if something downstream actually references it, so it costs nothing at runtime.</p>
+            <p>Verified against real SQLite in the <a href="#chained-ctes">Chained CTEs</a> section above: a CTE <code>c</code> that references a genuinely nonexistent column doesn't even throw a compile error, because the engine never binds or validates a CTE it has no reason to run.</p>
+            <p>This is engine-specific, so don't generalize it: PostgreSQL parses and analyzes every CTE in the <code>WITH</code> list up front, whether or not it is used, so the same unused <code>c</code> with a bad column fails immediately with <code>column ... does not exist</code>. Either way it is not a runtime bug — but it is very likely a <em>maintenance</em> bug: dead, unreferenced SQL that a future reader will assume matters and waste time trying to understand, or that silently goes stale as the schema changes underneath it. Delete unused CTEs the same way you'd delete unused variables.</p>
           </div>
         </details>
       </div>
@@ -1055,7 +1056,7 @@ SELECT DISTINCT person_id FROM network ORDER BY person_id;</div>
 </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
 <script>
 /* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
 const CELLS = {
@@ -1493,7 +1494,9 @@ function rcvRenderResult(){
   const banner = document.getElementById('rcv-done-banner');
   const n = RCV_STEP_ROW_COUNT[rcvStep];
   if (!rcvRealRows || n === 0) {
-    wrap.innerHTML = `<p class="rcv-placeholder" id="rcv-result-placeholder">No rows yet.</p>`;
+    // the placeholder carries no id: the wrap is the anchor, and re-creating an id
+    // that the markup already declares is a duplicate-id hazard for validators
+    wrap.innerHTML = '<p class="rcv-placeholder">No rows yet.</p>';
     banner.style.display = 'none';
     return;
   }

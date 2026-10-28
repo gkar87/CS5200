@@ -797,7 +797,13 @@ code.inline{color:var(--ink);}
           <summary>▸ Reveal answer</summary>
           <div class="answer-body">
             <p>{A, C} is the only candidate key, and it's composite. Both <code>A → B</code> and <code>C → D</code> are partial dependencies — B depends on just A (part of the key), D depends on just C (part of the key). <strong>2NF already fails</strong>, so R is only in 1NF.</p>
-            <p>Decompose: <code>R1(A, B)</code> with key {A}, and <code>R2(C, D)</code> with key {C}. Each piece is independently verified BCNF. Losslessness: <code>R1 ∩ R2 = {}</code> — an empty intersection means this particular pair doesn't pass the intersection-is-key shortcut directly, but since the original key {A,C} splits cleanly with A determining R1 and C determining R2 with no attribute shared, the join of R1 × R2 on no common column reconstructs exactly the cross-product implied by the two independent FDs — lossless here because the two halves never overlapped in the first place.</p>
+            <p>Do not split into just <code>R1(A, B)</code> and <code>R2(C, D)</code>: both are BCNF, but the split is <strong>lossy</strong>. The two halves share no attribute, so joining them gives the cross-product — every A is paired with every C, and the original pairing of A-values to C-values is gone. That decomposition loses information even though each piece looks healthy.</p>
+            <p>Keep the key instead, and split off one dependency at a time:</p>
+            <ol>
+              <li><code>R1(A, B)</code> with FD <code>A → B</code>, key {A} — BCNF.</li>
+              <li>Remaining <code>R2(A, C, D)</code> with FDs <code>C → D</code>, key {A, C}. <code>C → D</code> is a partial dependency, so split again into <code>R3(C, D)</code> (key {C}) and <code>R4(A, C)</code> (key {A, C}, no non-trivial FDs).</li>
+            </ol>
+            <p>Final BCNF schema: <code>R1(A, B)</code>, <code>R3(C, D)</code>, <code>R4(A, C)</code>. <strong>Losslessness</strong> by the intersection-is-key test on each step: <code>R1 ∩ R4 = {A}</code>, and A is a key of R1; <code>R4 ∩ R3 = {C}</code>, and C is a key of R3. Both joins are lossless, so the whole chain is. <strong>Dependency preservation</strong> holds too — <code>A → B</code> lives in R1 and <code>C → D</code> lives in R3, each checkable without a join. <code>R4</code> exists precisely to preserve the connection between the two halves that the naive split threw away.</p>
           </div>
         </details>
       </div>
@@ -1346,7 +1352,7 @@ function nfdRenderQuiz() {
 document.addEventListener('DOMContentLoaded', nfdRenderQuiz);
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
 <script>
 /* ===== Canonical runnable-cell engine (shared by every playground) ===== */
 const CELLS = {

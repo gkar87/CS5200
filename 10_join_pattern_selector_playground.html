@@ -858,7 +858,8 @@ FROM customers c
 JOIN latest l ON l.cust_id = c.cust_id
 JOIN orders o ON o.cust_id = l.cust_id AND o.order_date = l.max_date
 WHERE o.total &gt; 500;</div>
-            <p>Version (b) is usually faster on large tables — it scans <code>orders</code> once to compute <code>latest</code>, then joins. The correlated subquery in (a) effectively re-evaluates per customer. On a million customers with millions of orders, the difference can be minutes versus milliseconds. The optimizer <em>sometimes</em> rewrites (a) into something like (b), but you can't rely on that — write the cleaner shape yourself.</p>
+            <p>Version (b) is usually faster on large tables — it scans <code>orders</code> once to compute <code>latest</code>, then joins. The correlated subquery in (a) effectively re-evaluates per customer. On a million customers with millions of orders, the difference can be seconds versus milliseconds. The optimizer <em>sometimes</em> rewrites (a) into something like (b), but you can't rely on that — write the cleaner shape yourself.</p>
+            <p><strong>Tie caveat:</strong> (b) assumes at most one order per customer per date. If a customer placed two orders on their latest date, the join returns that customer twice — (a) would return once. When same-day ties are possible, break them explicitly, e.g. <code>ROW_NUMBER() OVER (PARTITION BY cust_id ORDER BY order_date DESC, order_id DESC) = 1</code> inside the CTE, then join to that. Note also that (a) picks an arbitrary row among same-date orders, so state which tie-break you mean either way.</p>
           </div>
         </details>
       </div>
@@ -936,7 +937,7 @@ WHERE s.plan_tier = 'pro';</div>
 </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
 <script>
 /* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
 const CELLS = {

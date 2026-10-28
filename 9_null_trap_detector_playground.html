@@ -771,7 +771,7 @@ LIMIT 5;</div>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
           <div class="answer-body">
-            <p>None of the three returns exactly what <code>WHERE status != 'shipped'</code> does, because <code>!=</code> silently drops NULL-status rows.</p>
+            <p>Two of the three return exactly what <code>WHERE status != 'shipped'</code> does; the third differs, because <code>!=</code> silently drops NULL-status rows.</p>
             <p>(a) matches the non-null non-shipped rows only — same result as <code>!=</code>. (b) is equivalent to <code>!=</code> (NOT of UNKNOWN is UNKNOWN, dropped) — same result. (c) explicitly includes NULLs — this is a <em>superset</em> of the <code>!=</code> result.</p>
             <p>So (a) and (b) are equivalent to <code>!=</code>, and (c) is what you probably <em>wanted</em> (<code>!= 'shipped'</code> including NULL status). The universal lesson: <code>!=</code> and <code>NOT (=)</code> drop NULLs; if you want them included, add <code>OR ... IS NULL</code> explicitly.</p>
           </div>
@@ -885,7 +885,7 @@ LIMIT 20 OFFSET 20;</div>
 </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
 <script>
 /* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
 const CELLS = {

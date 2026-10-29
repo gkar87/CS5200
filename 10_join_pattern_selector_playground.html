@@ -1884,7 +1884,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const PROJ = [['P1', 'Alpha', 10], ['P2', 'Beta', 20], ['P3', 'Gamma', 40]];
 
   /* Result rows below are exactly what the sqlite3 CLI produces for this data
-     (row counts 3 / 4 / 4 / 5 / 12) — the widget transcribes them, never guesses. */
+     (row counts 3 / 4 / 4 / 5 / 12) — the widget transcribes them, never guesses.
+     The result set is the whole joined row, so every query projects all six
+     columns: emp_id, name, dept_id, proj_id, title, dept_id. */
   const M1 = { left: EMP[0], right: PROJ[0], kind: 'match' };
   const M2 = { left: EMP[1], right: PROJ[1], kind: 'match' };
   const M3 = { left: EMP[3], right: PROJ[0], kind: 'match' };
@@ -1895,35 +1897,35 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 'inner', label: 'Inner join', venn: 'inner',
       note: '<strong>INNER JOIN</strong> returns only rows where the join condition is met in <em>both</em> tables. Unmatched rows from either side are discarded entirely.',
-      sql: 'SELECT e.name, p.title\nFROM   employees e\nINNER JOIN projects p\n  ON e.dept_id = p.dept_id;',
+      sql: 'SELECT e.emp_id, e.name, e.dept_id,\n       p.proj_id, p.title, p.dept_id\nFROM   employees e\nINNER JOIN projects p\n  ON e.dept_id = p.dept_id;',
       empMark: [], projMark: [],
       rows: [M1, M2, M3]
     },
     {
       id: 'left', label: 'Left outer join', venn: 'left',
       note: '<strong>LEFT JOIN</strong> keeps <em>all</em> rows from the left table. Where no match exists in the right table, right-side columns are filled with <strong>NULL</strong>. Classic pattern for "find employees with no project."',
-      sql: 'SELECT e.name, p.title\nFROM   employees e\nLEFT JOIN projects p\n  ON e.dept_id = p.dept_id;\n-- NULLs appear where no project matches',
+      sql: 'SELECT e.emp_id, e.name, e.dept_id,\n       p.proj_id, p.title, p.dept_id\nFROM   employees e\nLEFT JOIN projects p\n  ON e.dept_id = p.dept_id;\n-- NULLs appear where no project matches',
       empMark: ['', '', 'r-left', ''], projMark: [],
       rows: [M1, M2, CAROL, M3]
     },
     {
       id: 'right', label: 'Right outer join', venn: 'right',
       note: '<strong>RIGHT JOIN</strong> keeps <em>all</em> rows from the right table. Unmatched left-side columns become <strong>NULL</strong>. Projects without any employee show up here.',
-      sql: 'SELECT e.name, p.title\nFROM   employees e\nRIGHT JOIN projects p\n  ON e.dept_id = p.dept_id;\n-- NULLs appear where no employee matches',
+      sql: 'SELECT e.emp_id, e.name, e.dept_id,\n       p.proj_id, p.title, p.dept_id\nFROM   employees e\nRIGHT JOIN projects p\n  ON e.dept_id = p.dept_id;\n-- NULLs appear where no employee matches',
       empMark: [], projMark: ['', '', 'r-right'],
       rows: [M1, M2, M3, GAMMA]
     },
     {
       id: 'full', label: 'Full outer join', venn: 'full',
       note: '<strong>FULL OUTER JOIN</strong> keeps every row from both tables. Unmatched rows on either side get NULLs for the missing columns.',
-      sql: 'SELECT e.name, p.title\nFROM   employees e\nFULL OUTER JOIN projects p\n  ON e.dept_id = p.dept_id;\n-- NULLs on both sides for unmatched rows',
+      sql: 'SELECT e.emp_id, e.name, e.dept_id,\n       p.proj_id, p.title, p.dept_id\nFROM   employees e\nFULL OUTER JOIN projects p\n  ON e.dept_id = p.dept_id;\n-- NULLs on both sides for unmatched rows',
       empMark: ['', '', 'r-left', ''], projMark: ['', '', 'r-right'],
       rows: [M1, M2, CAROL, M3, GAMMA]
     },
     {
       id: 'cross', label: 'Cross join', venn: 'cross',
       note: '<strong>CROSS JOIN</strong> produces the Cartesian product — every row in Employees paired with every row in Projects. No condition needed; row count = left &times; right.',
-      sql: 'SELECT e.name, p.title\nFROM   employees e\nCROSS JOIN projects p;\n-- No ON clause — every combination returned',
+      sql: 'SELECT e.emp_id, e.name, e.dept_id,\n       p.proj_id, p.title, p.dept_id\nFROM   employees e\nCROSS JOIN projects p;\n-- No ON clause — every combination returned',
       empMark: [], projMark: [],
       rows: EMP.reduce((acc, e) => acc.concat(PROJ.map(p => ({ left: e, right: p, kind: 'match' }))), [])
     }
@@ -1977,7 +1979,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function resultHtml(rows) {
-    const head = ['emp_id', 'name', 'e.dept_id', 'proj_id', 'title', 'p.dept_id'];
+    const head = ['emp_id', 'name', 'dept_id (e)', 'proj_id', 'title', 'dept_id (p)'];
     return '<table class="jts-tbl"><thead><tr>' + head.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead><tbody>' +
       rows.map(r => {
         const l = r.left, p = r.right;

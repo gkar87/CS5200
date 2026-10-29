@@ -1539,14 +1539,13 @@ document.addEventListener('DOMContentLoaded', wfvRenderQuiz);
       const tied = ranks[i] === prev || ranks[i] === next;
       const w = Math.round(40 + (r[1] - 10.5) * 100);
       return '<tr>' +
-        '<td class="rfe-idx">' + (i + 1) + '</td>' +
         '<td>' + esc(r[0]) + (tied ? '<span class="rfe-tie">tie</span>' : '') + '</td>' +
         '<td><span class="rfe-bar" style="width:' + w + 'px"></span>' + r[1].toFixed(2) + 's</td>' +
         '<td class="rfe-rkcol"><span class="rfe-rk ' + mode.cls + '">' + ranks[i] + '</span></td>' +
       '</tr>';
     }).join('');
     return '<table class="rfe-tbl"><thead><tr>' +
-      '<th>#</th><th>Athlete</th><th>Time (s)</th><th class="rfe-rkcol">' + esc(mode.col) + '</th>' +
+      '<th>Athlete</th><th>Time (s)</th><th class="rfe-rkcol">' + esc(mode.col) + '</th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table>';
   }
 

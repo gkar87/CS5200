@@ -1067,17 +1067,17 @@ const SECTIONS = [
     <div class="widget-sub">add an entity · click it · add its attributes · connect two entities with a cardinality</div>
 
     <div class="erb-controls">
-      <input class="erb-input" id="erb-entity-name" placeholder="New entity name (e.g. Customer)" />
+      <input class="erb-input" id="erb-entity-name" aria-label="New entity name" placeholder="New entity name (e.g. Customer)" />
       <button class="erb-btn" id="erb-add-entity">＋ Add entity</button>
     </div>
     <div class="erb-controls">
-      <input class="erb-input" id="erb-attr-name" placeholder="New attribute (click an entity first)" />
+      <input class="erb-input" id="erb-attr-name" aria-label="New attribute name" placeholder="New attribute (click an entity first)" />
       <button class="erb-btn sec" id="erb-add-attr">＋ Add attribute</button>
     </div>
     <div class="erb-controls">
-      <select class="erb-select" id="erb-rel-from"></select>
-      <select class="erb-select" id="erb-rel-card"><option>1 : 1</option><option selected>1 : N</option><option>M : N</option></select>
-      <select class="erb-select" id="erb-rel-to"></select>
+      <select class="erb-select" id="erb-rel-from" aria-label="Relationship: from entity"></select>
+      <select class="erb-select" id="erb-rel-card" aria-label="Relationship: cardinality"><option>1 : 1</option><option selected>1 : N</option><option>M : N</option></select>
+      <select class="erb-select" id="erb-rel-to" aria-label="Relationship: to entity"></select>
       <button class="erb-btn" id="erb-add-rel">＋ Connect</button>
     </div>
 

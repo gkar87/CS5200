@@ -92,6 +92,7 @@ li{margin-bottom:6px;}
 .btn:hover{opacity:.9;}
 .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell textarea:focus{ outline: 2px solid var(--blue); outline-offset: -2px; }
 .cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
 .cell .cell-output.show{display:block;}
 .cell .cell-output.err{color:#F0A38A;}
@@ -100,7 +101,7 @@ table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-
 table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text);}
 
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -484,7 +485,7 @@ code.inline{color:var(--ink);}
         <p class="small" id="explorer-explain">Selection σ keeps only the rows that satisfy a predicate, returning all columns. Adjust the predicate above and watch which rows survive.</p>
         <div class="widget-tables">
           <div class="widget-table-col">
-            <h4>Input — Students</h4>
+            <h3>Input — Students</h3>
             <div id="explorer-input-table"></div>
           </div>
           <div class="widget-table-col">
@@ -496,10 +497,10 @@ code.inline{color:var(--ink);}
 
       <p>Run it yourself against real SQLite:</p>
       <div class="cell" data-cell="sel_proj_compose">
-        <div class="cell-head"><span class="cell-title">selection_then_projection.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">selection_then_projection.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -519,19 +520,19 @@ code.inline{color:var(--ink);}
       <h3>Cartesian Product (×)</h3>
       <p>The most basic way to combine tables is the Cartesian Product. This is a "dumb" operation — it takes every row of table A and pairs it with every single row of table B. If A has 10 rows and B has 10 rows, the product has 100 rows. Most of these pairings are nonsense.</p>
       <div class="cell" data-cell="cartesian_product">
-        <div class="cell-head"><span class="cell-title">cartesian_product.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">cartesian_product.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
       <h3>Natural Join (⋈)</h3>
       <p>To make pairings meaningful, we use the Join. The <strong>Natural Join</strong> is the most common version — it looks for columns with the same name in both tables and pairs rows only when those values match.</p>
       <div class="cell" data-cell="natural_join">
-        <div class="cell-head"><span class="cell-title">natural_join.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-3">natural_join.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-3"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Compare the row counts: the Cartesian product above has rows × rows; the join has only the rows where <code>dept_id</code> actually matches.</p>
 
@@ -656,10 +657,10 @@ code.inline{color:var(--ink);}
       <p>Sometimes you need to join on a condition other than "names match." This is a <strong>Theta Join</strong> — you might join Orders with Promotions where the order date falls between the promotion's start and end dates:</p>
       <div class="schema-line">Orders ⋈<sub>start &lt; order_date &lt; end</sub> Promotions</div>
       <div class="cell" data-cell="theta_join">
-        <div class="cell-head"><span class="cell-title">theta_join.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-4">theta_join.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-4"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -674,10 +675,10 @@ code.inline{color:var(--ink);}
         <tr><td><strong>Set Difference (−)</strong></td><td>Rows in the first table that are not in the second</td><td>Customers who bought in January but stayed away in February</td></tr>
       </table>
       <div class="cell" data-cell="set_operations">
-        <div class="cell-head"><span class="cell-title">set_operations.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-5">set_operations.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-5"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -688,10 +689,10 @@ code.inline{color:var(--ink);}
         <p>Sometimes you need to compare a table to itself. Imagine a <code>Staff</code> table where one column is <code>employee_id</code> and another is <code>manager_id</code>. To find out who reports to whom, you have to join the table to itself — and without an alias, the database can't tell which copy of <code>Staff</code> a column reference means. The <strong>Rename operator (ρ)</strong> gives a table (or column) a temporary alias so the two copies stay distinguishable:</p>
         <div class="schema-line">ρ<sub>Managers</sub>(Staff) ⋈<sub>Staff.manager_id = Managers.employee_id</sub> Staff</div>
         <div class="cell" data-cell="rename_selfjoin">
-          <div class="cell-head"><span class="cell-title">rename_self_join.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-6">rename_self_join.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-6"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
         <p class="small">In SQL, <code>ρ</code> is just a table alias (<code>AS m</code>). It's not optional here — <code>Staff JOIN Staff ON ...</code> with no aliases is ambiguous and won't parse.</p>
       </div>
@@ -731,10 +732,10 @@ code.inline{color:var(--ink);}
       <h3>When Operator Order Matters</h3>
       <p>Consider <code>π<sub>name</sub>(σ<sub>dept='Sales'</sub>(Employees))</code>. Would projecting first and filtering after give the same answer?</p>
       <div class="cell" data-cell="order_matters">
-        <div class="cell-head"><span class="cell-title">order_matters.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-7">order_matters.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-7"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <div class="callout rust">
         <strong>No — these are not equivalent.</strong> If we project only <code>name</code> first, the <code>dept</code> column disappears. The selection can't then find "Sales" because that data is already gone. Swapping projection and selection is only safe when the selection's condition references attributes that survive the projection.
@@ -744,10 +745,10 @@ code.inline{color:var(--ink);}
       <p>Other rewrites are always safe. Two selections in a row are provably the same as one selection with an AND condition:</p>
       <div class="schema-line">σ<sub>price&gt;100</sub>(σ<sub>color='Red'</sub>(Products)) &nbsp;=&nbsp; σ<sub>price&gt;100 ∧ color='Red'</sub>(Products)</div>
       <div class="cell" data-cell="combine_selections">
-        <div class="cell-head"><span class="cell-title">combine_selections.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-8">combine_selections.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-8"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">The equals sign here is a mathematical identity — for any <code>Products</code> table, both expressions produce the same set of tuples. This distinction between safe and answer-changing rewrites is exactly what the query optimizer relies on: it only applies rewrites from a proven catalog of equivalence laws, never guesses.</p>
 
@@ -779,10 +780,10 @@ code.inline{color:var(--ink);}
       <div class="schema-line">π<sub>sname</sub>(Student ⋈ (σ<sub>grade='A'</sub>(Enroll) ⋈ σ<sub>prof='Chen'</sub>(Course)))</div>
       <p>The SQL — same logic, imperative shape:</p>
       <div class="cell" data-cell="worked_translate">
-        <div class="cell-head"><span class="cell-title">worked_english_algebra_sql.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-9">worked_english_algebra_sql.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-9"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Every <code>⋈</code> in the algebra corresponds to a <code>JOIN</code> in SQL. Every <code>σ</code> corresponds to a <code>WHERE</code> conjunct. The final <code>π</code> is the <code>SELECT</code> list. <code>DISTINCT</code> mirrors the algebra's set semantics — algebra returns sets, SQL returns bags by default.</p>
     </section>
@@ -796,10 +797,10 @@ code.inline{color:var(--ink);}
       <div class="schema-line">π<sub>sname</sub>(Student ⋈ σ<sub>grade='A'</sub>(Enroll))</div>
       <p>Now the join happens on the hundred A-grade rows instead of a million. Same answer, dramatically less work — run both below and check the result sets match:</p>
       <div class="cell" data-cell="worked_rewrite">
-        <div class="cell-head"><span class="cell-title">worked_query_rewrite.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-10">worked_query_rewrite.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-10"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -815,10 +816,10 @@ code.inline{color:var(--ink);}
       </table>
       <p>Read the nested <code>NOT EXISTS</code> carefully: <em>"for each student e1, there is no required course r for which the student has not enrolled."</em> That's the definition of "the student has taken every required course."</p>
       <div class="cell" data-cell="worked_division_trace">
-        <div class="cell-head"><span class="cell-title">worked_division_trace.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-11">worked_division_trace.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-11"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">The <code>COUNT(DISTINCT ...) = (SELECT COUNT(*) FROM Required)</code> version (also in the cell above) is easier to read; the double <code>NOT EXISTS</code> version is what SQL query generators typically produce, because it handles NULLs and generalizes cleanly to other for-all questions.</p>
     </section>
@@ -854,7 +855,7 @@ code.inline{color:var(--ink);}
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. Employees in high-budget departments</h4>
+        <h3>1. Employees in high-budget departments</h3>
         <p>Given <code>Employee(eid, name, dept, salary)</code> and <code>Department(did, dname, budget)</code>, write a relational algebra expression returning the names of employees who work in departments with a budget over $1M.</p>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
@@ -959,7 +960,21 @@ code.inline{color:var(--ink);}
 </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
 const CELLS = {
@@ -1164,7 +1179,7 @@ function commonErrorHint(msg){
 let SQL = null;
 async function getSqlJsModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 
@@ -1190,12 +1205,12 @@ async function runSqlAgainstFreshDb(setupSql, mainSql, outputEl){
   outputEl.innerHTML = '';
   outputEl.classList.remove('err');
   outputEl.classList.add('show');
+  let out = '';
   try {
     const SQLmod = await getSqlJsModule();
     const db = new SQLmod.Database();
     db.run('PRAGMA foreign_keys = ON;');
     if (setupSql && setupSql.trim()) db.run(setupSql);
-    let out = '';
     let hadOutput = false;
     let stmtIter;
     try {
@@ -1230,7 +1245,8 @@ async function runSqlAgainstFreshDb(setupSql, mainSql, outputEl){
     db.close();
   } catch (e) {
     const hint = commonErrorHint(e.message);
-    outputEl.innerHTML = `<div style="color:#F0A38A;">✖ Error: ${escapeHtml(e.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
+    // Keep the results of statements that already ran (F-08).
+    outputEl.innerHTML = out + `<div style="color:#F0A38A;">✖ Error: ${escapeHtml(e.message)}${hint ? `<br><span style="opacity:.85">${escapeHtml(hint)}</span>` : ''}</div>`;
     outputEl.classList.add('err');
   }
 }
@@ -1248,6 +1264,9 @@ function wireCell(cellEl){
   textarea.value = spec.starter;
   pgGrow(textarea);
   textarea.addEventListener('input', () => pgGrow(textarea));
+  textarea.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runBtn.click(); }
+  });
   runBtn.addEventListener('click', () => {
     runSqlAgainstFreshDb(spec.setup, textarea.value, output);
   });
@@ -1319,17 +1338,17 @@ function explorerRenderControls(){
     el.innerHTML = `
       <div class="control-row">
         <label>Column
-          <select id="explorer-col">
+          <select id="explorer-col" aria-label="Column to filter">
             ${EXPLORER_COLUMNS.map(c => `<option value="${c}" ${c===explorerState.selColumn?'selected':''}>${c}</option>`).join('')}
           </select>
         </label>
         <label>Operator
-          <select id="explorer-op">
+          <select id="explorer-op" aria-label="Comparison operator">
             ${Object.keys(EXPLORER_OP_SYMBOLS).map(o => `<option value="${o}" ${o===explorerState.selOp?'selected':''}>${EXPLORER_OP_SYMBOLS[o]} (${o})</option>`).join('')}
           </select>
         </label>
         <label>Value
-          <input type="text" id="explorer-val" value="${escapeHtml(explorerState.selValue)}" placeholder="Type a value to filter rows">
+          <input type="text" id="explorer-val" aria-label="Value to filter on" value="${escapeHtml(explorerState.selValue)}" placeholder="Type a value to filter rows">
         </label>
       </div>`;
     document.getElementById('explorer-col').addEventListener('change', e => { explorerState.selColumn = e.target.value; explorerRecompute(); });
@@ -1524,7 +1543,7 @@ function divisionRenderGrid(){
     html += `<tr><td class="student-id">${s.id}</td>`;
     sc.courses.forEach(c => {
       const checked = divisionState.checks[s.id][c];
-      html += `<td><input type="checkbox" data-student="${s.id}" data-course="${c}" ${checked ? 'checked' : ''}></td>`;
+      html += `<td><input type="checkbox" aria-label="Enrol ${s.id} in ${c}" data-student="${s.id}" data-course="${c}" ${checked ? 'checked' : ''}></td>`;
     });
     html += '</tr>';
   });
@@ -1580,10 +1599,10 @@ async function divisionCompute(){
   const holder = document.getElementById('division-sql');
   holder.innerHTML =
     `<div class="cell" data-cell="division_sql" style="margin-top:4px;">` +
-      `<div class="cell-head"><span class="cell-title">division.sql — edit it and run it yourself</span></div>` +
-      `<textarea spellcheck="false"></textarea>` +
+      `<div class="cell-head"><span class="cell-title" id="ct-12">division.sql — edit it and run it yourself</span></div>` +
+      `<textarea spellcheck="false" aria-labelledby="ct-12"></textarea>` +
       `<div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>` +
-      `<div class="cell-output"></div>` +
+      `<div class="cell-output" role="status" aria-live="polite"></div>` +
     `</div>`;
   wireCell(holder.querySelector('.cell[data-cell]'));
 }

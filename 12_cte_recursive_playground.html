@@ -113,6 +113,7 @@ li{margin-bottom:6px;}
 .btn:hover{opacity:.9;}
 .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell textarea:focus{ outline: 2px solid var(--blue); outline-offset: -2px; }
 .cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
 .cell .cell-output.show{display:block;}
 .cell .cell-output.err{color:#F0A38A;}
@@ -121,7 +122,7 @@ table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-
 table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text); background:var(--code-bg);}
 
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -475,10 +476,10 @@ WHERE category = 'X';</div>
       </table>
       <p>Same result, drastically better readability and debuggability. Below, both versions run for real against a live SQLite engine and return identical rows — confirming the refactor changes nothing except how easy the query is to read.</p>
       <div class="cell" data-cell="refactor_top_customers_enriched">
-        <div class="cell-head"><span class="cell-title">nested_vs_chained_ctes.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">nested_vs_chained_ctes.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -516,10 +517,10 @@ WHERE s.total_sales > a.avg_total;</div>
         <strong>SQLite quirk — the original "scattered" query above has a real bug.</strong> Run the cell below and its first statement fails with <code>no such column: category</code>. The outer <code>SELECT category, total_sales</code> assumes a column named <code>category</code> exists, but the subquery only produces <code>category_id</code>, and the joined <code>categories</code> table has a column called <code>name</code>, not <code>category</code> — there's no column anywhere actually called <code>category</code>. It has to be written as <code>categories.name AS category</code> (or similar) to run at all. This is a good reminder that nested subqueries hide these mistakes in the middle of the query where they're easy to miss; the corrected nested version and the CTE version below both run cleanly and return identical rows once the alias is fixed.
       </div>
       <div class="cell" data-cell="cte_basics">
-        <div class="cell-head"><span class="cell-title">cte_basics.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">cte_basics.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -532,10 +533,10 @@ WHERE s.total_sales > a.avg_total;</div>
       <h3>A quirk worth knowing: an unreferenced CTE is dead code</h3>
       <p>If you define a CTE with <code>WITH</code> but never reference it anywhere in the rest of the query, what happens? In SQLite, nothing — it's simply never evaluated. It isn't even checked for a bad column reference, because the engine never has a reason to compile it. Run the cell below: CTE <code>c</code> references a column that doesn't exist anywhere, yet the query succeeds, because <code>d</code> — the only CTE actually used by the final <code>SELECT</code> — never touches <code>c</code>.</p>
       <div class="cell" data-cell="unused_cte_check">
-        <div class="cell-head"><span class="cell-title">unused_cte_is_dead_code.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-3">unused_cte_is_dead_code.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-3"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Don't rely on this to "hide" broken SQL on purpose — it's a sign the CTE is dead code and should probably be deleted, not a technique. But it explains why a leftover, half-finished CTE sometimes doesn't throw an error the way you'd expect.</p>
     </section>
@@ -711,10 +712,10 @@ PAR     ROM</div>
 SELECT DISTINCT city FROM reachable;</div>
       <p>The recursive step keeps generating NYC → LON → NYC → LON → ..., producing infinite rows. Most DBMSes will error out after hitting an internal recursion limit (PostgreSQL: <code>max_stack_depth</code>; SQL Server: 32,767 by default) — or, worse, just hang. <strong>The cell below caps the naive version with <code>LIMIT 12</code> so it's safe to run in your browser</strong> — without that cap, this query does not terminate on its own.</p>
       <div class="cell" data-cell="cycle_naive_capped">
-        <div class="cell-head"><span class="cell-title">cycle_naive_CAPPED_for_safety.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-4">cycle_naive_CAPPED_for_safety.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-4"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p>Notice the repeating LON / NYC / PAR pattern — that's the cycle bouncing forever, exactly as the article warns.</p>
 
@@ -736,10 +737,10 @@ SELECT DISTINCT city FROM reachable;</div>
 SELECT DISTINCT city FROM reachable;</div>
       <p>The <code>NOT (f.destination = ANY(r.path))</code> condition rejects any hop that would revisit a city already on the path. Different DBMSes have different array syntax (PostgreSQL uses <code>ARRAY[]</code> and <code>||</code>; SQL Server uses string-based paths; MySQL 8+ supports JSON arrays; SQLite has no array type at all, so the cell below tracks the path as a delimited text string and uses <code>instr()</code> as the guard). The concept is identical everywhere: recursion over a cyclic graph requires explicit path tracking.</p>
       <div class="cell" data-cell="cycle_fixed_path_guard">
-        <div class="cell-head"><span class="cell-title">cycle_fixed_path_guard.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-5">cycle_fixed_path_guard.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-5"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
       <div class="callout blue">
@@ -750,10 +751,10 @@ SELECT DISTINCT city FROM reachable;</div>
       <p><code>UNION</code> (as opposed to <code>UNION ALL</code>) deduplicates rows. In a recursive CTE with no path-tracking column, that can look like it "fixes" the cycle — SQLite's engine only keeps recursing on genuinely new rows, and once every reachable city has appeared once, the next iteration produces nothing new. Run the first query below: plain <code>UNION</code>, no path column, terminates cleanly and returns 4 cities — including NYC itself, since the cycle legitimately produces it once before dedup kicks in on further repeats. That's a different (also defensible) answer than the path-guarded version's 3 cities: it's "everywhere reachable, including a cycle back to the start" versus "everywhere reachable without revisiting the start."</p>
       <p>But this "fix" is fragile. The moment you add a column that changes every iteration — like a hop counter — every row becomes unique again, so <code>UNION</code>'s dedup can never kick in and the cycle runs forever exactly like <code>UNION ALL</code> would. The second query below adds a <code>depth</code> column and is capped with <code>LIMIT 12</code> for safety; notice it keeps bouncing and growing <code>depth</code> forever, just like the naive <code>UNION ALL</code> version above.</p>
       <div class="cell" data-cell="union_vs_union_all">
-        <div class="cell-head"><span class="cell-title">union_dedup_vs_union_all.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-6">union_dedup_vs_union_all.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-6"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Moral: don't rely on <code>UNION</code>'s dedup as your cycle-termination strategy. It happens to work for the narrowest case (no extra columns) and breaks the instant you add one — use explicit path tracking instead, every time.</p>
     </section>
@@ -795,10 +796,10 @@ SELECT * FROM org ORDER BY depth, id;</div>
       </ul>
       <p>The termination condition — the recursive step returning zero new rows — is what stops the loop. In a cyclic graph, that never happens naturally, which is exactly why you must add explicit cycle detection (next section).</p>
       <div class="cell" data-cell="worked_recursive_trace">
-        <div class="cell-head"><span class="cell-title">worked_recursive_trace.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-7">worked_recursive_trace.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-7"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -839,10 +840,10 @@ ORDER BY tc.revenue DESC;</div>
       </ul>
       <p>You could inline every CTE as a nested subquery, but the resulting query would be 5+ levels deep and much harder to review. CTEs are the SQL equivalent of extract-method refactoring.</p>
       <div class="cell" data-cell="worked_chained_report">
-        <div class="cell-head"><span class="cell-title">worked_chained_report.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-8">worked_chained_report.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-8"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -877,7 +878,7 @@ ORDER BY tc.revenue DESC;</div>
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. Refactor a nested query into two CTEs</h4>
+        <h3>1. Refactor a nested query into two CTEs</h3>
         <p>Take this deeply-nested query and refactor it using two CTEs:</p>
         <div class="schema-line">SELECT dept, avg_salary
 FROM (
@@ -1056,7 +1057,21 @@ SELECT DISTINCT person_id FROM network ORDER BY person_id;</div>
 </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
 const CELLS = {
@@ -1304,7 +1319,7 @@ function commonErrorHint(msg){
 let SQL = null;
 async function getSqlJsModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 
@@ -1388,6 +1403,9 @@ function wireCell(cellEl){
   textarea.value = spec.starter;
   pgGrow(textarea);
   textarea.addEventListener('input', () => pgGrow(textarea));
+  textarea.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runBtn.click(); }
+  });
   runBtn.addEventListener('click', () => {
     runSqlAgainstFreshDb(spec.setup, textarea.value, output);
   });
@@ -1607,11 +1625,11 @@ const CTE_QUESTIONS = [
     scenario: "You write WITH big_orders AS (SELECT ... FROM orders WHERE total > 1000) then reference it in three separate JOINs in the outer query. Under what circumstances is this WORSE than pasting the subquery three times?",
     options: [
       { title: "Never — CTEs are always as good or better", correct: false },
-      { title: "Older Postgres (≤11) that treated CTEs as optimization fences", correct: true },
+      { title: "When it is materialized and outer filters cannot be pushed into it (always before Postgres 12; in 12+ when referenced more than once)", correct: true },
       { title: "Always — CTEs force materialization", correct: false },
       { title: "CTEs are never faster", correct: false },
     ],
-    feedback: "Before PostgreSQL 12, a CTE was an 'optimization fence' — the planner materialized it once as a black box and couldn't push predicates through it, which sometimes made the CTE version slower than three copy-pasted subqueries the planner could optimize freely. PostgreSQL 12+ and every other major engine inline CTEs by default unless you explicitly mark MATERIALIZED, so this is now mostly a legacy concern — but a real one to mention in an interview.",
+    feedback: "Before PostgreSQL 12, every CTE was an 'optimization fence': it was always materialized as a black box, and the planner could not push predicates into it. PostgreSQL 12+ inlines a non-recursive CTE only when the query references it once. Referenced three times, as here, it is still materialized by default unless you write NOT MATERIALIZED. The outer filters cannot reach inside it, so it can be slower than three copy-pasted subqueries that the planner can each filter. Mention this trade-off in an interview.",
     verifySetup: `CREATE TABLE orders(id INTEGER PRIMARY KEY, total REAL); INSERT INTO orders VALUES (1,1500),(2,500),(3,2000);`,
     verifyMain: `WITH big_orders AS (SELECT id, total FROM orders WHERE total > 1000) SELECT COUNT(*) AS n FROM big_orders;`,
   },

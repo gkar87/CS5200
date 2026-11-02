@@ -107,7 +107,7 @@ li{margin-bottom:6px;}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
 
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -438,10 +438,10 @@ code.inline{color:var(--ink);}
 
       <p>Don't take the diagram's word for it. Run the same story against a real database: first as a flat file with the office copied into every row, then with the office stored once and pointed at.</p>
       <div class="cell" data-cell="flat_vs_relational">
-        <div class="cell-head"><span class="cell-title">flat_vs_relational.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">flat_vs_relational.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">The flat version needed three coordinated writes to record one fact, and a single missed row left the database contradicting itself. The normalised version needed one. This is the difference the rest of the course is about.</p>
     </section>
@@ -687,10 +687,10 @@ code.inline{color:var(--ink);}
       <p>Six months later, the marketing team wants to record how each customer heard about the company. An engineer adds a column:</p>
       <div class="schema-line">ALTER TABLE Customer ADD COLUMN source VARCHAR NOT NULL;</div>
       <div class="cell" data-cell="schema_change">
-        <div class="cell-head"><span class="cell-title">schema_change.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">schema_change.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
       <p>The migration fails on every existing row. Why? Because those rows already exist in the instance — they have no value for the new <code>source</code> column — and the schema is now forbidding NULL there. The schema change contradicts the current instance.</p>
@@ -755,7 +755,7 @@ code.inline{color:var(--ink);}
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. Match each scenario to the ACID property being violated</h4>
+        <h3>1. Match each scenario to the ACID property being violated</h3>
         <p>(a) A power outage during a transfer leaves $500 debited from Account A but never credited to Account B.<br>
         (b) Two ATMs read the same account balance simultaneously and both withdraw the full amount, resulting in a negative balance the bank never intended.<br>
         (c) A committed order confirmation vanishes after the server reboots the next morning.<br>
@@ -960,8 +960,8 @@ function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&l
     const el = document.getElementById('sib-col-list');
     el.innerHTML = columns.map((c, i) => `
       <div class="sib-col-row">
-        <input type="text" value="${escapeHtml(c.name)}" data-idx="${i}" class="sib-col-name">
-        <select data-idx="${i}" class="sib-col-type">
+        <input type="text" aria-label="Column name" value="${escapeHtml(c.name)}" data-idx="${i}" class="sib-col-name">
+        <select aria-label="Column type" data-idx="${i}" class="sib-col-type">
           <option value="Text" ${c.type === 'Text' ? 'selected' : ''}>Text</option>
           <option value="Number" ${c.type === 'Number' ? 'selected' : ''}>Number</option>
           <option value="Date" ${c.type === 'Date' ? 'selected' : ''}>Date</option>
@@ -991,7 +991,7 @@ function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&l
 
   function renderRowInputs() {
     const el = document.getElementById('sib-row-inputs');
-    el.innerHTML = columns.map((c, i) => `<input type="text" placeholder="${escapeHtml(c.name)} (${c.type})" data-idx="${i}">`).join('');
+    el.innerHTML = columns.map((c, i) => `<input type="text" aria-label="Value for ${escapeHtml(c.name)}" placeholder="${escapeHtml(c.name)} (${c.type})" data-idx="${i}">`).join('');
     document.getElementById('sib-row-error').classList.remove('show');
     renderRowList();
   }
@@ -1239,7 +1239,21 @@ function adtRenderQuiz() {
 document.addEventListener('DOMContentLoaded', adtRenderQuiz);
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ===== Canonical runnable-cell engine (shared by every playground) ===== */
 const CELLS = { schema_change: {
@@ -1291,7 +1305,7 @@ FROM Courses c JOIN Instructors i ON i.instructor = c.instructor;
 let SQL = null;
 async function pgModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 function pgEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

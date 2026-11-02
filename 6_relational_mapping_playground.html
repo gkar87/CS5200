@@ -97,6 +97,7 @@ li{margin-bottom:6px;}
 .btn:hover{opacity:.9;}
 .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell textarea:focus{ outline: 2px solid var(--blue); outline-offset: -2px; }
 .cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
 .cell .cell-output.show{display:block;}
 .cell .cell-output.err{color:#F0A38A;}
@@ -106,7 +107,7 @@ table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(
 
 /* practice problems */
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -435,13 +436,13 @@ code.inline{color:var(--ink);}
 
       <p>Run this cell to see a table with <em>two</em> independent candidate keys — a common source of confusion, since people assume a table can only have one:</p>
       <div class="cell" data-cell="keys_candidates">
-        <div class="cell-head"><span class="cell-title">candidate-keys.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">candidate-keys.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions">
           <button class="btn run-btn">▶ Run</button>
           <button class="btn secondary reset-btn">Reset</button>
         </div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Both <code>emp_id</code> and <code>ssn</code> are declared <code>UNIQUE NOT NULL</code>, so either one alone can serve as the row's identity. SQLite happily enforces both — but only one, here <code>emp_id</code>, is the actual <code>PRIMARY KEY</code>. <code>ssn</code> remains a candidate key that lost the vote.</p>
     </section>
@@ -468,10 +469,10 @@ code.inline{color:var(--ink);}
         <h3><span class="step-num">1</span> Strong Entities</h3>
         <p>For every regular entity, create a relation. Include all simple attributes. Choose one candidate key as the primary key. A composite attribute (like <code>Address</code> made of <code>Street</code>, <code>City</code>, <code>Zip</code>) gets flattened — you keep the components, not the parent attribute.</p>
         <div class="cell" data-cell="step1_strong">
-          <div class="cell-head"><span class="cell-title">step1_strong_entities.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-2">step1_strong_entities.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
       </div>
     </section>
@@ -483,10 +484,10 @@ code.inline{color:var(--ink);}
         <p>Weak entities have no primary key of their own — they depend on an owner. Add the owner's PK as an FK in the new table, and set the weak entity's PK to <em>owner's PK + partial key</em>. Because the weak entity can't exist without its owner, the FK is usually declared <code>ON DELETE CASCADE</code>.</p>
         <p>Example: a <code>Dependent</code> is owned by a <code>Professor</code>; <code>name</code> is unique only within a given professor.</p>
         <div class="cell" data-cell="step2_weak">
-          <div class="cell-head"><span class="cell-title">step2_weak_entities.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-3">step2_weak_entities.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-3"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
         <p class="small">Delete the professor and watch the dependents disappear with them — that's the cascade matching the existence dependency.</p>
       </div>
@@ -507,36 +508,36 @@ code.inline{color:var(--ink);}
 
         <p><strong>Case A</strong> — the common case:</p>
         <div class="cell" data-cell="step3_case_a">
-          <div class="cell-head"><span class="cell-title">step3_case_a.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-4">step3_case_a.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-4"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
 
         <p><strong>Case B</strong> — both partial, modeled as a standalone assignment table:</p>
         <div class="cell" data-cell="step3_case_b">
-          <div class="cell-head"><span class="cell-title">step3_case_b.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-5">step3_case_b.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-5"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
 
         <p><strong>Case C</strong> — both total. Try running this cell as-is: the very first insert fails, because <code>ParkingSpot</code> doesn't exist yet and <code>Employee.spot_id</code> is <code>NOT NULL</code>:</p>
         <div class="cell" data-cell="step3_case_c_broken">
-          <div class="cell-head"><span class="cell-title">step3_case_c_chicken_egg.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-6">step3_case_c_chicken_egg.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-6"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
         <div class="callout amber">
           <strong>This is expected to fail.</strong> Neither insert order works alone: Employee needs a spot that doesn't exist yet, and if you flip the FK, ParkingSpot needs an employee that doesn't exist yet. Real engines solve this with <em>deferred</em> constraint checking — the constraint is checked at <code>COMMIT</code> instead of at each statement, so both rows can go in in the same transaction.
         </div>
         <p>The fix, using SQLite's <code>PRAGMA defer_foreign_keys</code> (PostgreSQL uses <code>DEFERRABLE INITIALLY DEFERRED</code> constraints for the same purpose):</p>
         <div class="cell" data-cell="step3_case_c_fixed">
-          <div class="cell-head"><span class="cell-title">step3_case_c_deferred_fix.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-7">step3_case_c_deferred_fix.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-7"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
       </div>
     </section>
@@ -562,17 +563,17 @@ code.inline{color:var(--ink);}
           <figcaption>The FK always lands on the "many" side — never create a separate table for a plain 1:N relationship.</figcaption>
         </figure>
         <div class="cell" data-cell="step4_oneton">
-          <div class="cell-head"><span class="cell-title">step4_one_to_many.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-8">step4_one_to_many.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-8"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
         <p class="small">A recursive 1:N relationship works the same way — the FK just points back at the same table. An <code>Employee</code> "manages" other employees:</p>
         <div class="cell" data-cell="step4_recursive">
-          <div class="cell-head"><span class="cell-title">step4_recursive_manages.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-9">step4_recursive_manages.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-9"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
       </div>
     </section>
@@ -583,10 +584,10 @@ code.inline{color:var(--ink);}
         <h3><span class="step-num">5</span> M:N Relationships</h3>
         <p>For many-to-many relationships you <em>do</em> create a new relation — often called a junction or cross-reference table. It has two foreign keys, one to each participating entity, and their combination forms the primary key.</p>
         <div class="cell" data-cell="step5_manyton">
-          <div class="cell-head"><span class="cell-title">step5_many_to_many.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-10">step5_many_to_many.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-10"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
         <p class="small">Try re-running the last <code>INSERT</code> a second time — the composite primary key on <code>(prof_id, student_id)</code> is exactly what stops a professor from advising the same student twice.</p>
       </div>
@@ -598,10 +599,10 @@ code.inline{color:var(--ink);}
         <h3><span class="step-num">6</span> Multivalued Attributes</h3>
         <p>If an entity has an attribute that can take multiple values — a person with three phone numbers — you can't put them all in one cell. Create a new relation holding the attribute value plus the parent's primary key.</p>
         <div class="cell" data-cell="step6_multivalued">
-          <div class="cell-head"><span class="cell-title">step6_multivalued.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-11">step6_multivalued.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-11"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
         <h3>Getting it wrong: Product tags</h3>
         <p>A common real-world version of this mistake: a <code>Product</code> needs multiple <code>tags</code>. Two ways to map it —</p>
@@ -612,10 +613,10 @@ code.inline{color:var(--ink);}
           <tr><td>Problems</td><td>No index can make the <code>LIKE</code> fast; <code>'camping'</code> matches inside unrelated words too (e.g. a tag literally named <code>decamping</code>); no controlled vocabulary — <code>"Outdoor"</code> and <code>"outdoor"</code> silently diverge; can't cleanly remove one tag without string surgery.</td><td>Indexable, exact-match, trivially add/remove a single tag, and you can add a <code>Tag(tag PRIMARY KEY)</code> lookup table to enforce a controlled vocabulary.</td></tr>
         </table>
         <div class="cell" data-cell="step6_tags">
-          <div class="cell-head"><span class="cell-title">step6_tags_wrong_vs_right.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-12">step6_tags_wrong_vs_right.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-12"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
       </div>
     </section>
@@ -626,10 +627,10 @@ code.inline{color:var(--ink);}
         <h3><span class="step-num">7</span> N-ary Relationships</h3>
         <p>If a relationship involves three or more entities at once, create a new relation with the primary keys of all participants as foreign keys. A <code>Sale</code> that ties together <code>Customer</code>, <code>Product</code>, and <code>Store</code> is a three-way relationship — it cannot be decomposed into three separate binary relationships without losing information about which combinations actually happened.</p>
         <div class="cell" data-cell="step7_nary">
-          <div class="cell-head"><span class="cell-title">step7_nary.sql</span></div>
-          <textarea spellcheck="false"></textarea>
+          <div class="cell-head"><span class="cell-title" id="ct-13">step7_nary.sql</span></div>
+          <textarea spellcheck="false" aria-labelledby="ct-13"></textarea>
           <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-          <div class="cell-output"></div>
+          <div class="cell-output" role="status" aria-live="polite"></div>
         </div>
       </div>
     </section>
@@ -651,10 +652,10 @@ code.inline{color:var(--ink);}
 
       <p>Run the full mapping — six tables from one moderately-complex ER diagram:</p>
       <div class="cell" data-cell="worked_university_full">
-        <div class="cell-head"><span class="cell-title">worked_university_full_mapping.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-14">worked_university_full_mapping.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-14"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <div class="callout">
         <strong>Notice the mechanical nature of this.</strong> Six tables, and every single one traces back to exactly one step of the algorithm. There's no judgment call left except "which candidate key becomes the primary key" and "which mapping strategy for the specialization" — and the next section covers that second choice in depth.
@@ -675,26 +676,26 @@ code.inline{color:var(--ink);}
 
       <p><strong>Strategy 1</strong> — table-per-subclass:</p>
       <div class="cell" data-cell="inherit_strategy1">
-        <div class="cell-head"><span class="cell-title">strategy1_multiple_tables.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-15">strategy1_multiple_tables.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-15"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
       <p><strong>Strategy 2</strong> — single table with a discriminator. The <code>CHECK</code> constraint is the closest plain SQL gets to "an engineer must have a stack and no typing speed, a secretary the reverse" — try changing the last row's <code>job_type</code> to see the constraint fire:</p>
       <div class="cell" data-cell="inherit_strategy2">
-        <div class="cell-head"><span class="cell-title">strategy2_single_table.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-16">strategy2_single_table.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-16"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
       <p><strong>Strategy 3</strong> — concrete tables only:</p>
       <div class="cell" data-cell="inherit_strategy3">
-        <div class="cell-head"><span class="cell-title">strategy3_concrete_tables.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-17">strategy3_concrete_tables.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-17"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
       <div class="callout purple">
@@ -704,10 +705,10 @@ code.inline{color:var(--ink);}
       <h3>The Professor tenure/adjunct discriminator, mapped fully</h3>
       <p>This is Step 6 of the university worked example above, isolated so you can see just the discriminator's <code>CHECK</code> logic:</p>
       <div class="cell" data-cell="inherit_professor_kind">
-        <div class="cell-head"><span class="cell-title">professor_kind_discriminator.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-18">professor_kind_discriminator.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-18"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -716,10 +717,10 @@ code.inline{color:var(--ink);}
       <h2>Worked Example: Detecting a Broken Mapping</h2>
       <p>Here's a schema someone actually shipped. Run it, look at what it lets you insert, and see if you can spot the ER structure it was trying to represent — and why the mapping is wrong.</p>
       <div class="cell" data-cell="broken_enrollment">
-        <div class="cell-head"><span class="cell-title">broken_enrollment.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-19">broken_enrollment.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-19"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <details class="answer">
         <summary>▸ Reveal the three problems</summary>
@@ -731,10 +732,10 @@ code.inline{color:var(--ink);}
       </details>
       <p>The corrected decomposition — run it and notice that two different people named "Alice Kim" can now coexist without conflict:</p>
       <div class="cell" data-cell="corrected_enrollment">
-        <div class="cell-head"><span class="cell-title">corrected_3table_decomposition.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-20">corrected_3table_decomposition.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-20"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Rule of thumb: any time a table's non-key attributes describe more than one "kind of thing," you've found a mapping mistake worth undoing before you write data into it.</p>
     </section>
@@ -814,7 +815,7 @@ code.inline{color:var(--ink);}
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. Author / Book / Wrote / Chapter</h4>
+        <h3>1. Author / Book / Wrote / Chapter</h3>
         <p>An <code>Author</code> writes many <code>Book</code>s (M:N, via <code>Wrote</code>, which carries a <code>royalty_pct</code>). Each <code>Book</code> has many <code>Chapter</code>s (weak entity, partial key <code>chapter_number</code>). Map this ER fragment to relations.</p>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
@@ -921,7 +922,21 @@ code.inline{color:var(--ink);}
 </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
 const CELLS = {
@@ -1380,7 +1395,7 @@ function commonErrorHint(msg){
 let SQL = null;
 async function getSqlJsModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 
@@ -1464,6 +1479,9 @@ function wireCell(cellEl){
   textarea.value = spec.starter;
   pgGrow(textarea);
   textarea.addEventListener('input', () => pgGrow(textarea));
+  textarea.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runBtn.click(); }
+  });
   runBtn.addEventListener('click', () => {
     runSqlAgainstFreshDb(spec.setup, textarea.value, output);
   });

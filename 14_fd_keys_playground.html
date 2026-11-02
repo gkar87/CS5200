@@ -107,7 +107,7 @@ li{margin-bottom:6px;}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
 
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -419,10 +419,10 @@ code.inline{color:var(--ink);}
 
       <p>The left panel above obeys <code>StudentID → Name</code>: S101 always maps to Alice, no matter how many rows reference S101. The right panel breaks it — S101 maps to both "Alice" and "Charlie" in different rows, which is a contradiction, not just messy data. Enforcing FDs (through primary keys, unique constraints, and correct table design) is precisely what makes that right-hand scenario structurally impossible rather than just unlikely.</p>
           <div class="cell" data-cell="fd_violation">
-        <div class="cell-head"><span class="cell-title">fd_violation.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">fd_violation.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
     </section>
@@ -496,10 +496,10 @@ code.inline{color:var(--ink);}
       <p>If you find that <code>{A, B}⁺</code> covers the whole table, but <code>{A}⁺</code> and <code>{B}⁺</code> do not, then <code>{A, B}</code> is a candidate key. If you could remove B and still get everything, <code>{A, B}</code> would be a superkey, but not a candidate key. Candidate keys must be lean.</p>
           <p>The point isn't that <code>email</code> happens to be unique in your sample — it's that nothing in the schema said so. A candidate key you have <em>discovered</em> is worth nothing until the engine enforces it.</p>
           <div class="cell" data-cell="key_enforcement">
-        <div class="cell-head"><span class="cell-title">key_enforcement.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">key_enforcement.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
     </section>
@@ -680,7 +680,7 @@ code.inline{color:var(--ink);}
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. Compute B⁺ and test candidacy</h4>
+        <h3>1. Compute B⁺ and test candidacy</h3>
         <p>Given <code>R(A, B, C, D)</code> with FDs <code>{ A → B, B → C, C → D, D → A }</code>, compute <code>B⁺</code> and determine whether B is a candidate key.</p>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
@@ -1189,7 +1189,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ===== Canonical runnable-cell engine (shared by every playground) ===== */
 const CELLS = {
@@ -1237,7 +1251,7 @@ HAVING COUNT(DISTINCT student_name) > 1;
 let SQL = null;
 async function pgModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 function pgEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

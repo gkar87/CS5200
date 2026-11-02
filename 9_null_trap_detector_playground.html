@@ -116,6 +116,7 @@ li{margin-bottom:6px;}
 .btn:hover{opacity:.9;}
 .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell textarea:focus{ outline: 2px solid var(--blue); outline-offset: -2px; }
 .cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
 .cell .cell-output.show{display:block;}
 .cell .cell-output.err{color:#F0A38A;}
@@ -124,7 +125,7 @@ table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-
 table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text);}
 
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -476,18 +477,18 @@ code.inline{color:var(--ink);}
         <strong>The single most common SQL bug:</strong> <code>WHERE column = NULL</code> will never match anything, ever — not even other <code>NULL</code>s. Because <code>NULL</code> means "unknown," comparing anything to it (even another <code>NULL</code>) can only produce <em>Unknown</em>, never True. To find missing values you must use <code>IS NULL</code> or <code>IS NOT NULL</code>, which are special-cased operators, not ordinary comparisons.
       </div>
       <div class="cell" data-cell="null_equals_trap">
-        <div class="cell-head"><span class="cell-title">null_equals_never_matches.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">null_equals_never_matches.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <h3>NULL Inside AND / OR</h3>
       <p>When you combine conditions, NULL propagates predictably but requires care. <code>TRUE AND UNKNOWN</code> is <code>UNKNOWN</code>; <code>UNKNOWN OR UNKNOWN</code> is still <code>UNKNOWN</code>. If you want rows with an unknown value included, you must say so explicitly:</p>
       <div class="cell" data-cell="and_or_null">
-        <div class="cell-head"><span class="cell-title">and_or_with_null.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">and_or_with_null.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -522,10 +523,10 @@ code.inline{color:var(--ink);}
         <strong>The wildcard-in-your-data gotcha:</strong> if the value you're searching for itself contains a literal <code>_</code> or <code>%</code>, a plain <code>LIKE '%_%'</code> will match far more than you intend, because SQL reads that <code>_</code> as "any one character," not literally. The fix is an <code>ESCAPE</code> clause that designates a character to neutralize the wildcard.
       </div>
       <div class="cell" data-cell="like_escape">
-        <div class="cell-head"><span class="cell-title">like_wildcard_escape.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-3">like_wildcard_escape.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-3"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -577,26 +578,26 @@ code.inline{color:var(--ink);}
       </table>
       <p>Removing duplicates is expensive — the engine has to sort or hash the entire combined result to find matches. <code>UNION ALL</code> skips that step entirely, which is why it's almost always faster than plain <code>UNION</code> when you don't actually need deduplication.</p>
       <div class="cell" data-cell="union_vs_all_basic">
-        <div class="cell-head"><span class="cell-title">union_set_vs_bag.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-4">union_set_vs_bag.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-4"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <div class="callout amber">
         <strong>Dialect gap worth knowing:</strong> standard SQL also defines <code>INTERSECT ALL</code> and <code>EXCEPT ALL</code> — bag versions of intersection and difference, useful when duplicate counts matter (e.g. "how many extra signups did campaign A have over campaign B, per email"). PostgreSQL supports both. SQLite does not support either <code>ALL</code> variant — try it below and watch it fail with a plain syntax error.
       </div>
       <div class="cell" data-cell="except_all_gap">
-        <div class="cell-head"><span class="cell-title">except_all_unsupported.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-5">except_all_unsupported.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-5"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">When you're stuck on an engine without <code>EXCEPT ALL</code>, you can simulate bag difference with a window function — number each duplicate on the left side, count matches on the right, and keep only the "extra" copies:</p>
       <div class="cell" data-cell="except_all_simulated">
-        <div class="cell-head"><span class="cell-title">except_all_simulated_with_window_fn.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-6">except_all_simulated_with_window_fn.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-6"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -663,10 +664,10 @@ code.inline{color:var(--ink);}
       </div>
       <p>Below, the same 25 rows (with heavy ties on <code>created_at</code>) are paginated three ways. All three satisfy <code>ORDER BY created_at DESC</code> — but look at which five rows land on "page 3" (<code>OFFSET 20</code>) each time:</p>
       <div class="cell" data-cell="pagination_tiebreak">
-        <div class="cell-head"><span class="cell-title">pagination_tiebreaker.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-7">pagination_tiebreaker.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-7"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -683,10 +684,10 @@ code.inline{color:var(--ink);}
       </table>
       <p>Predict each query's result before running it — this is where three-valued logic bites:</p>
       <div class="cell" data-cell="worked_null_where">
-        <div class="cell-head"><span class="cell-title">worked_null_through_where.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-8">worked_null_through_where.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-8"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small"><strong>Query 3 is the one that surprises people:</strong> <code>dept = 'Eng' OR dept != 'Eng'</code> looks tautologically true — "either it is or it isn't" — but Dave's <code>NULL = 'Eng'</code> is Unknown, and so is <code>NULL != 'Eng'</code>. <code>UNKNOWN OR UNKNOWN</code> is still Unknown, so Dave is silently dropped. The universal fix: any predicate that must include NULL-valued rows has to call it out explicitly with <code>OR column IS NULL</code> — or drop the <code>WHERE</code> entirely if "any value including missing" is really what you want.</p>
     </section>
@@ -698,10 +699,10 @@ code.inline{color:var(--ink);}
       <div class="schema-line">campaign_a: alice@x.com, bob@y.com, alice@x.com
 campaign_b: alice@x.com, carol@z.com</div>
       <div class="cell" data-cell="worked_union_campaigns">
-        <div class="cell-head"><span class="cell-title">worked_union_vs_union_all.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-9">worked_union_vs_union_all.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-9"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small"><strong>Rule of thumb:</strong> use <code>UNION ALL</code> by default when you know there are no duplicates, or you actively want to keep them (e.g. counting total signups per campaign). Reach for plain <code>UNION</code> only when deduplication is the actual goal — "list all unique customers."</p>
     </section>
@@ -717,20 +718,20 @@ ORDER BY new_salary DESC
 LIMIT 5;</div>
       <p>By the standard execution order, the database evaluates it: <code>FROM</code> (source relation) → <code>WHERE</code> (filter — at this point <code>new_salary</code> doesn't exist yet) → <code>SELECT</code> (now the expression is computed and the alias introduced) → <code>ORDER BY</code> (the alias exists now, so this is legal) → <code>LIMIT</code>. Reasoning from that order, <code>WHERE new_salary &gt; 100000</code> should be illegal — the alias hasn't been created yet.</p>
       <div class="cell" data-cell="worked_execution_order">
-        <div class="cell-head"><span class="cell-title">worked_execution_order_alias_trap.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-10">worked_execution_order_alias_trap.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-10"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <div class="callout amber">
         <strong>SQLite quirk — it doesn't actually enforce this rule.</strong> Run the cell above and the second statement <em>succeeds</em>: SQLite falls back to resolving an unrecognized identifier in <code>WHERE</code> against a matching <code>SELECT</code>-list alias, as a non-standard convenience. Standard SQL, and strict engines like PostgreSQL, reject <code>WHERE new_salary &gt; 100000</code> exactly as the execution-order model predicts — that's the portable behavior to design around. The fallback only kicks in when there's no real column of that name; add a genuine <code>new_salary</code> column to the table and SQLite prefers the real column over the alias, silently changing what your query means. Treat "alias in <code>WHERE</code>" as a bug to avoid even on SQLite, not a feature to rely on.
       </div>
       <p class="small">This ordering is also why <code>SELECT COUNT(*) FROM t WHERE x IS NULL</code> counts NULLs but <code>SELECT COUNT(x) FROM t</code> does not — <code>COUNT(x)</code> runs during the <code>SELECT</code> projection step, which is exactly where NULLs get skipped by definition of the aggregate. <code>COUNT(*)</code> counts rows, full stop, regardless of what's NULL inside them.</p>
       <div class="cell" data-cell="count_star_vs_col">
-        <div class="cell-head"><span class="cell-title">count_star_vs_count_column.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-11">count_star_vs_count_column.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-11"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -765,7 +766,7 @@ LIMIT 5;</div>
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. Which queries match <code>!= 'shipped'</code>?</h4>
+        <h3>1. Which queries match <code>!= 'shipped'</code>?</h3>
         <p>Table <code>orders(id, customer_id, status)</code> has rows with status values <code>'shipped'</code>, <code>'pending'</code>, <code>'cancelled'</code>, and some rows with <code>status IS NULL</code>. Which of these queries returns the same set of rows as <code>WHERE status != 'shipped'</code>?</p>
         <p>(a) <code>WHERE status IN ('pending', 'cancelled')</code> &nbsp; (b) <code>WHERE NOT (status = 'shipped')</code> &nbsp; (c) <code>WHERE status &lt;&gt; 'shipped' OR status IS NULL</code></p>
         <details class="answer">
@@ -885,7 +886,21 @@ LIMIT 20 OFFSET 20;</div>
 </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
 const CELLS = {
@@ -1087,7 +1102,7 @@ function commonErrorHint(msg){
 let SQL = null;
 async function getSqlJsModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 
@@ -1171,6 +1186,9 @@ function wireCell(cellEl){
   textarea.value = spec.starter;
   pgGrow(textarea);
   textarea.addEventListener('input', () => pgGrow(textarea));
+  textarea.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runBtn.click(); }
+  });
   runBtn.addEventListener('click', () => {
     runSqlAgainstFreshDb(spec.setup, textarea.value, output);
   });
@@ -1359,7 +1377,7 @@ function ntdQuestionHtml(idx, total, question){
     <button class="btn secondary quiz-verify-btn" style="display:none;">▶ Verify against real SQLite</button>
     <button class="btn next-btn" style="display:none;">Next →</button>
   </div>`;
-  html += `<div class="cell-output quiz-verify-output" style="background:var(--code-bg); border-radius:8px; padding:12px 14px;"></div>`;
+  html += `<div class="cell-output quiz-verify-output" role="status" aria-live="polite" style="background:var(--code-bg); border-radius:8px; padding:12px 14px;"></div>`;
   html += `<div class="quiz-score">Score: <span class="score-val">0</span> / ${total}</div>`;
   return html;
 }

@@ -116,6 +116,7 @@ li{margin-bottom:6px;}
 .btn:hover{opacity:.9;}
 .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell textarea:focus{ outline: 2px solid var(--blue); outline-offset: -2px; }
 .cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
 .cell .cell-output.show{display:block;}
 .cell .cell-output.err{color:#F0A38A;}
@@ -124,7 +125,7 @@ table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-
 table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text);}
 
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -418,10 +419,10 @@ code.inline{color:var(--ink);}
       <h2>Primary Key</h2>
       <p>A <code>PRIMARY KEY</code> is the constraint that says "this column (or set of columns) is the row's identity — no two rows may share a value, and the value must always be present." It combines uniqueness with a mandatory presence requirement, and a table may have exactly one.</p>
       <div class="cell" data-cell="pk_basic">
-        <div class="cell-head"><span class="cell-title">primary_key_basic.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">primary_key_basic.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <div class="callout amber">
         <strong>SQLite quirk worth knowing:</strong> in standard SQL (and in PostgreSQL, MySQL, SQL Server), <code>PRIMARY KEY</code> automatically implies <code>NOT NULL</code> — you never need to write both. SQLite is the exception: unless the column is declared with the <em>exact</em> spelling <code>INTEGER PRIMARY KEY</code> (which makes it an alias for the internal row id, where <code>NULL</code> means "auto-assign the next id" rather than "no value"), SQLite will silently accept <code>NULL</code> as a primary key value. This playground's cells spell out <code>PRIMARY KEY NOT NULL</code> explicitly wherever it matters, which is also the safest habit to carry into any engine.
@@ -433,10 +434,10 @@ code.inline{color:var(--ink);}
       <h2>NOT NULL &amp; UNIQUE</h2>
       <p><code>NOT NULL</code> and <code>UNIQUE</code> are independent constraints that are easy to conflate with <code>PRIMARY KEY</code> — and with each other. <code>NOT NULL</code> only says "this column can't be empty." <code>UNIQUE</code> only says "no two rows can share this value" — but unlike <code>PRIMARY KEY</code>, a <code>UNIQUE</code> column is still allowed to be <code>NULL</code>, and most engines (SQLite and PostgreSQL included) allow <em>multiple</em> rows to all be <code>NULL</code> at once, since <code>NULL</code> is never considered equal to another <code>NULL</code>.</p>
       <div class="cell" data-cell="unique_nulls">
-        <div class="cell-head"><span class="cell-title">unique_allows_multiple_nulls.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">unique_allows_multiple_nulls.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">A table can have many <code>UNIQUE</code> columns but exactly one <code>PRIMARY KEY</code>. Think of <code>PRIMARY KEY</code> as "the row's identity" and <code>UNIQUE</code> as "no duplicates allowed, but this isn't necessarily the identity."</p>
     </section>
@@ -446,10 +447,10 @@ code.inline{color:var(--ink);}
       <h2>CHECK Constraints</h2>
       <p>A <code>CHECK</code> constraint enforces a domain rule — any boolean expression the engine evaluates on every insert or update. It's how you encode business rules like "age can't be negative" or "price must be positive" directly into the schema, so they can never be violated no matter which code path writes the row.</p>
       <div class="cell" data-cell="check_basic">
-        <div class="cell-head"><span class="cell-title">check_constraints.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-3">check_constraints.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-3"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <div class="callout">
         <strong>CHECK constraint or application check?</strong> Push validation into the database with a <code>CHECK</code> constraint whenever the rule is invariant across the whole domain — "age between 0 and 150" doesn't change based on which part of the app is writing. Application-level checks are bypassed by admin scripts, bulk imports, and eventually direct database access; database-level constraints are not. This is a defense-in-depth argument, not an either/or — validate early in the application for a good user experience, and enforce again in the schema so the rule can never be silently skipped.
@@ -518,10 +519,10 @@ code.inline{color:var(--ink);}
       </figure>
 
       <div class="cell" data-cell="fk_basic">
-        <div class="cell-head"><span class="cell-title">foreign_key_basic.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-4">foreign_key_basic.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-4"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -537,22 +538,22 @@ code.inline{color:var(--ink);}
       </table>
       <p>All three, run live against the same shape of data:</p>
       <div class="cell" data-cell="ref_action_restrict">
-        <div class="cell-head"><span class="cell-title">restrict_default.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-5">restrict_default.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-5"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <div class="cell" data-cell="ref_action_cascade">
-        <div class="cell-head"><span class="cell-title">cascade.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-6">cascade.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-6"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <div class="cell" data-cell="ref_action_setnull">
-        <div class="cell-head"><span class="cell-title">set_null.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-7">set_null.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-7"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Notice that <code>RESTRICT</code> is what you get by default the moment foreign keys are enforced at all — you have to opt <em>in</em> to <code>CASCADE</code> or <code>SET NULL</code> explicitly, which is exactly the safety net you want: silently losing or orphaning data should never be the default behavior.</p>
     </section>
@@ -562,10 +563,10 @@ code.inline{color:var(--ink);}
       <h2>Aside: Storing Money Correctly</h2>
       <p>This isn't a constraint type, but it's the question every schema-design conversation eventually hits: how do you store a currency amount? The wrong answer is <code>FLOAT</code> or <code>DOUBLE</code> — floating-point cannot exactly represent decimals like 0.10, so arithmetic on money silently drifts.</p>
       <div class="cell" data-cell="money_float_error">
-        <div class="cell-head"><span class="cell-title">float_money_error.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-8">float_money_error.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-8"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">The correct answers are <code>DECIMAL(precision, scale)</code> (a true fixed-point type in most production engines — PostgreSQL, MySQL, SQL Server) or storing an integer number of cents (or millicents for crypto amounts), so ordinary integer arithmetic is exact by construction. Bonus points for storing the currency code in its own column — $100 USD and €100 are not the same number even when they print the same.</p>
     </section>
@@ -576,10 +577,10 @@ code.inline{color:var(--ink);}
       <p>When a single statement breaks more than one rule, a database does not hand you a list of everything wrong. It stops at the first constraint it evaluates and reports only that one. The practical consequence is easy to miss: fixing the error you were shown can reveal a <em>second</em> violation you never saw.</p>
       <p>The table below declares a foreign key, a <code>CHECK</code>, and a <code>UNIQUE</code> pair on the same row. Insert a row that breaks both the foreign key and the range check, and read which message comes back.</p>
       <div class="cell" data-cell="worked_first_failure">
-        <div class="cell-head"><span class="cell-title">which_constraint_fires.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-9">which_constraint_fires.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-9"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p>SQLite answers with the <code>CHECK</code> failure — even though student <code>99</code> does not exist and the foreign key is broken too. Uncomment the second insert (with a legal grade) and the foreign-key error appears at last. Neither row was ever stored, so the outcome is the same either way; what changed is only which rule the engine happened to name first.</p>
       <p class="small">The lesson for debugging: an error message names one constraint, not all of them. When a fix does not clear the failure, the statement was probably breaking more than one rule — reading the constraint names in the schema is more reliable than trusting the single message.</p>
@@ -658,7 +659,7 @@ code.inline{color:var(--ink);}
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. DDL for a movies table</h4>
+        <h3>1. DDL for a movies table</h3>
         <p>Write DDL for a <code>movies</code> table with these rules: 4-digit ID, non-empty title (≤ 200 chars), release year between 1888 and 2100, an optional director name, and a duration in minutes that must be positive.</p>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
@@ -805,7 +806,21 @@ code.inline{color:var(--ink);}
 </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
 const CELLS = {
@@ -983,7 +998,7 @@ function commonErrorHint(msg){
 let SQL = null;
 async function getSqlJsModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 
@@ -1067,6 +1082,9 @@ function wireCell(cellEl){
   textarea.value = spec.starter;
   pgGrow(textarea);
   textarea.addEventListener('input', () => pgGrow(textarea));
+  textarea.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runBtn.click(); }
+  });
   runBtn.addEventListener('click', () => {
     runSqlAgainstFreshDb(spec.setup, textarea.value, output);
   });
@@ -1331,7 +1349,7 @@ function cvpQuestionHtml(idx, total, question){
     <button class="btn secondary quiz-verify-btn" style="display:none;">▶ Verify against real SQLite</button>
     <button class="btn next-btn" style="display:none;">Next →</button>
   </div>`;
-  html += `<div class="cell-output quiz-verify-output" style="background:var(--code-bg); border-radius:8px; padding:12px 14px;"></div>`;
+  html += `<div class="cell-output quiz-verify-output" role="status" aria-live="polite" style="background:var(--code-bg); border-radius:8px; padding:12px 14px;"></div>`;
   html += `<div class="quiz-score">Score: <span class="score-val">0</span> / ${total}</div>`;
   return html;
 }

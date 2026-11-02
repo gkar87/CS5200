@@ -107,7 +107,7 @@ li{margin-bottom:6px;}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
 
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -605,10 +605,10 @@ code.inline{color:var(--ink);}
       <h3>Example: Watch the optimizer choose a plan</h3>
       <p>The planner's output is not a black box — every SQLite-family engine can show it. Run the cell below and read the plan text. With no index the engine must <strong>SCAN</strong> every row; after a single <code>CREATE INDEX</code> the very same SQL becomes a <strong>SEARCH</strong> that touches only the qualifying rows. The <code>CREATE INDEX</code> is a purely internal-schema change, and the answer set is identical before and after.</p>
       <div class="cell" data-cell="explain_plan">
-        <div class="cell-head"><span class="cell-title">explain_plan.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">explain_plan.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -668,10 +668,10 @@ FROM Student s
 LEFT JOIN AcademicRecord ar ON ar.student_id = s.id
 WHERE ar.term = current_term();</div>
       <div class="cell" data-cell="view_shield">
-        <div class="cell-head"><span class="cell-title">view_shield.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">view_shield.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
       <p>Now the underlying conceptual schema can change (add columns, split tables, denormalize for performance) and as long as the view definition is updated to preserve the same external contract, the portal keeps working. <strong>Logical independence is a design discipline enforced through views, not a free property of the DBMS.</strong></p>
@@ -711,10 +711,10 @@ WHERE tc.constraint_type = 'FOREIGN KEY'
       <h3>Example: query the catalog yourself</h3>
       <p>You don't need PostgreSQL to see this. SQLite keeps its entire data dictionary in one place — <code>sqlite_master</code> — and exposes column metadata through <code>pragma_table_info()</code>. Run the cell below: you are reading the DBMS's own description of its internal schema, using nothing but SQL.</p>
       <div class="cell" data-cell="catalog_query">
-        <div class="cell-head"><span class="cell-title">catalog_query.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-3">catalog_query.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-3"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -766,7 +766,7 @@ WHERE tc.constraint_type = 'FOREIGN KEY'
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. Storage tier migration + index change</h4>
+        <h3>1. Storage tier migration + index change</h3>
         <p>A company migrates its user database from a local SSD to a cloud-managed storage tier and changes the primary index on the <code>users</code> table from a B-tree to a hash index. No application code changes. What kind of independence is this, and which layers were touched?</p>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
@@ -1287,7 +1287,21 @@ function ditRenderQuiz() {
 document.addEventListener('DOMContentLoaded', ditRenderQuiz);
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ===== Canonical runnable-cell engine (shared by every playground) ===== */
 const CELLS = {
@@ -1347,7 +1361,7 @@ SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'Students';
 let SQL = null;
 async function pgModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 function pgEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

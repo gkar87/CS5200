@@ -107,7 +107,7 @@ li{margin-bottom:6px;}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
 
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -478,10 +478,10 @@ code.inline{color:var(--ink);}
       </table>
       <p class="small">Each level is strictly stronger than the last: every relation in BCNF is in 3NF, every relation in 3NF is in 2NF, every relation in 2NF is in 1NF. The reverse doesn't hold.</p>
           <div class="cell" data-cell="two_nf">
-        <div class="cell-head"><span class="cell-title">two_nf.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">two_nf.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
     </section>
@@ -496,10 +496,10 @@ code.inline{color:var(--ink);}
       </div>
           <p>Which brings us to the honest ending. Production systems normalise to 3NF or BCNF and then denormalise on purpose — and the only thing that separates engineering from accident is a written reason and a refresh strategy. The cell below makes the trade-off cost visible.</p>
           <div class="cell" data-cell="denormalize_on_purpose">
-        <div class="cell-head"><span class="cell-title">denormalize_on_purpose.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">denormalize_on_purpose.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
 
     </section>
@@ -604,7 +604,7 @@ code.inline{color:var(--ink);}
 
         <div class="dst-panel active" data-panel="overview">
           <div class="dst-box">
-            <h4>Starting Relation: ENROLL</h4>
+            <h3>Starting Relation: ENROLL</h3>
             <p class="small">This relation stores student course-enrollment data. It contains <strong>BCNF violations</strong> due to a non-trivial FD where the determinant is not a superkey.</p>
             <table class="dbtable">
               <thead><tr><th>StudentID</th><th>CourseID</th><th>Instructor</th><th>Department</th><th>Grade</th></tr></thead>
@@ -718,9 +718,9 @@ code.inline{color:var(--ink);}
         <p class="small" style="margin-top:-6px;">Attributes: A, B, C, D · Enter LHS → RHS (comma-separated, e.g. "A" → "C")</p>
         <div id="nfi-fd-list"></div>
         <div class="nfi-add-row">
-          <input type="text" id="nfi-lhs-input" placeholder='LHS e.g. A'>
+          <input type="text" id="nfi-lhs-input" aria-label="Left-hand side attributes" placeholder='LHS e.g. A'>
           <span class="arrow">→</span>
-          <input type="text" id="nfi-rhs-input" placeholder='RHS e.g. C, D'>
+          <input type="text" id="nfi-rhs-input" aria-label="Right-hand side attributes" placeholder='RHS e.g. C, D'>
           <button class="btn" id="nfi-add-btn">Add FD</button>
         </div>
         <button class="nfi-analyze-btn" id="nfi-analyze-btn">Analyze Normal Form</button>
@@ -767,7 +767,7 @@ code.inline{color:var(--ink);}
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. Classify R(A, B, C, D)</h4>
+        <h3>1. Classify R(A, B, C, D)</h3>
         <p>Given <code>R(A, B, C, D)</code> with FDs <code>{ AB → C, A → D, D → B }</code>, find all candidate keys and the highest normal form satisfied.</p>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
@@ -1352,7 +1352,21 @@ function nfdRenderQuiz() {
 document.addEventListener('DOMContentLoaded', nfdRenderQuiz);
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ===== Canonical runnable-cell engine (shared by every playground) ===== */
 const CELLS = {
@@ -1416,7 +1430,7 @@ ORDER BY e.student_id, e.course_id;` } };
 let SQL = null;
 async function pgModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 function pgEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

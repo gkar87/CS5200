@@ -107,7 +107,7 @@ li{margin-bottom:6px;}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
 
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -525,10 +525,10 @@ code.inline{color:var(--ink);}
 
       <p>Read the two queries below side by side. The first returns two rows (one per region). The second returns four — every sale — with the region total repeated beside it.</p>
       <div class="cell" data-cell="collapse_vs_preserve">
-        <div class="cell-head"><span class="cell-title">collapse_vs_preserve.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">collapse_vs_preserve.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Four rows in, four rows out. Keep that sentence in mind: it is the entire difference between a window function and a grouped aggregate.</p>
     </section>
@@ -613,10 +613,10 @@ code.inline{color:var(--ink);}
       </figure>
 
       <div class="cell" data-cell="running_total">
-        <div class="cell-head"><span class="cell-title">running_total.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">running_total.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Now add <code>PARTITION BY department</code> inside the <code>OVER</code>. The running total resets at the first row of each department and starts climbing again — because a partition is an independent window, not a continued one.</p>
     </section>
@@ -631,10 +631,10 @@ code.inline{color:var(--ink);}
         <li><code>DENSE_RANK()</code> gives tied rows the same rank and does <em>not</em> skip — the next distinct value gets the very next rank.</li>
       </ul>
       <div class="cell" data-cell="rank_functions">
-        <div class="cell-head"><span class="cell-title">rank_functions.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-3">rank_functions.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-3"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p>With scores <code>100, 100, 90, 80, 80</code> the three columns read: <code>ROW_NUMBER</code> gives <code>1,2,3,4,5</code>; <code>RANK</code> gives <code>1,1,3,4,4</code>; <code>DENSE_RANK</code> gives <code>1,1,2,3,3</code>. "Same rank, skip" versus "same rank, do not skip" is the whole specification.</p>
     </section>
@@ -660,10 +660,10 @@ code.inline{color:var(--ink);}
       <h2>Top-N Per Group</h2>
       <p>"The two most expensive products in each category" is awkward in plain SQL because you cannot filter on a window function directly — the window is computed after <code>WHERE</code> runs. The standard solution is a two-step pattern: compute the rank in a common table expression, then filter the CTE in the outer query.</p>
       <div class="cell" data-cell="top_n_per_group">
-        <div class="cell-head"><span class="cell-title">top_n_per_group.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-4">top_n_per_group.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-4"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Which function you choose here is a business decision: <code>ROW_NUMBER</code> returns exactly N rows even when there are ties at the cut-off, while <code>DENSE_RANK</code> or <code>RANK</code> can return more, choosing to keep every tied row rather than drop one arbitrarily.</p>
     </section>
@@ -673,10 +673,10 @@ code.inline{color:var(--ink);}
       <h2>ROWS vs. RANGE: What a Frame Includes</h2>
       <p>When you add <code>ORDER BY</code> to a window, the frame no longer means "all preceding rows" in a simple positional sense — it becomes a choice between counting <em>physical rows</em> and counting <em>peers</em>. <code>ROWS</code> walks row by row. <code>RANGE</code> treats every row with the same <code>ORDER BY</code> value as one unit, and includes all of them together.</p>
       <div class="cell" data-cell="rows_vs_range">
-        <div class="cell-head"><span class="cell-title">rows_vs_range.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-5">rows_vs_range.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-5"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p>Both columns end at the same total (<code>455</code>), but they disagree in the middle: on a day with two rows, <code>ROWS</code> adds only the first of them, while <code>RANGE</code> has already absorbed the whole tied day. The default when you write <code>ORDER BY</code> alone is <code>RANGE UNBOUNDED PRECEDING</code>, which is why running totals on tied dates surprise people.</p>
     </section>
@@ -686,10 +686,10 @@ code.inline{color:var(--ink);}
       <h2>LAG and LEAD: Comparing to Neighbours</h2>
       <p>Not every window function is an aggregate. <code>LAG</code> and <code>LEAD</code> reach into the window and return the value from the previous or next row. They turn "compare each day to the day before" from a self-join into a single clause — and the first row's <code>LAG</code> is simply <code>NULL</code>, because there is no row before it.</p>
       <div class="cell" data-cell="lag_lead">
-        <div class="cell-head"><span class="cell-title">lag_lead.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-6">lag_lead.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-6"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Both accept an optional offset and default: <code>LAG(price, 1, 0)</code> would replace that leading <code>NULL</code> with <code>0</code>. Choosing an explicit default is often clearer than letting the first row come back empty.</p>
     </section>
@@ -723,16 +723,16 @@ code.inline{color:var(--ink);}
         <li><strong>Filter</strong> — wrap the result in a CTE or subquery and keep only the rows you actually want.</li>
       </ol>
       <div class="cell" data-cell="analytics_pipeline">
-        <div class="cell-head"><span class="cell-title">analytics_pipeline.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-7">analytics_pipeline.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-7"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <div class="cell" data-cell="window_in_where">
-        <div class="cell-head"><span class="cell-title">window_in_where.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-8">window_in_where.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-8"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">The second cell starts with the mistake on purpose: filtering on a window function in the same query is a parse error, because the window is not computed until after <code>WHERE</code>. The fix — a subquery — is the same "compute, then filter" beat the pipeline uses.</p>
     </section>
@@ -742,10 +742,10 @@ code.inline{color:var(--ink);}
       <p>A <strong>view</strong> is a named, stored query. You write <code>CREATE VIEW name AS SELECT ...</code> once, and from then on every caller can treat <code>name</code> like a table: <code>SELECT * FROM name</code>. The view stores no rows of its own — when you query it, the database runs its definition and hands you the result.</p>
       <p>The reason views matter is not convenience, it is <em>consistency of access</em>. If five reports each hand-write the same complicated filter, a change to the rule has to be applied in five places, and someone will miss one. Put the rule in a view, and every report reads the same definition. Restrict which columns a role can see, and the view becomes a permission boundary as well as a convenience.</p>
       <div class="cell" data-cell="view_interface">
-        <div class="cell-head"><span class="cell-title">view_interface.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-9">view_interface.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-9"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p>There is a second reason views appear in real schemas: compatibility. When a table is restructured, a view with the <em>old</em> shape can sit in front of the new tables, and applications that only ever read the view keep working. The view absorbs the change.</p>
     </section>
@@ -755,10 +755,10 @@ code.inline{color:var(--ink);}
       <h2>The View Boundary: When a Row Vanishes</h2>
       <p>Because a view is defined by a <code>WHERE</code> clause, a row can be visible through the view at one moment and gone from it the next — even though nothing was deleted. If the underlying row stops satisfying the view's predicate, it simply drops out of the view's result. Watch it happen.</p>
       <div class="cell" data-cell="view_boundary">
-        <div class="cell-head"><span class="cell-title">view_boundary.sql — edit and run</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-10">view_boundary.sql — edit and run</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-10"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">↺ Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p>The view's <code>WHERE</code> clause is a <em>filter</em>, not a boundary. Standard SQL gives you a way to make it a boundary: <code>WITH CHECK OPTION</code>. When a view is updatable and declared with <code>WITH CHECK OPTION</code>, the database refuses any write that would push a row out of the view's predicate. The rule becomes an integrity constraint in its own right.</p>
       <div class="callout amber"><strong>Engine note.</strong> SQLite (and therefore the in-browser engine here) does not implement auto-updatable views or <code>WITH CHECK OPTION</code>; a SQLite view is read-only unless you attach an <code>INSTEAD OF</code> trigger. PostgreSQL, MySQL, and Oracle do support both, and this is where the feature is normally taught:</div>
@@ -843,7 +843,7 @@ FROM Sales;</div>
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. Rank without collapsing</h4>
+        <h3>1. Rank without collapsing</h3>
         <p>Given <code>Employee(eid, name, dept, salary)</code>, write one query that returns every employee together with their salary rank inside their own department (highest salary = rank 1), keeping all employees in the output.</p>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
@@ -957,7 +957,21 @@ FROM Sales;</div>
     </footer>
   </main>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ===== Canonical runnable-cell engine (shared by every playground) ===== */
 const CELLS = {
@@ -1116,7 +1130,7 @@ SELECT * FROM Products;        -- but it still exists in the table
 let SQL = null;
 async function pgModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 function pgEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1539,7 +1553,7 @@ document.addEventListener('DOMContentLoaded', wfvRenderQuiz);
       const tied = ranks[i] === prev || ranks[i] === next;
       const w = Math.round(40 + (r[1] - 10.5) * 100);
       return '<tr>' +
-        '<td>' + esc(r[0]) + (tied ? '<span class="rfe-tie">tie</span>' : '') + '</td>' +
+        '<td>' + esc(r[0]) + (tied ? '<span class="rfe-tie" aria-hidden="true">tie</span>' : '') + '</td>' +
         '<td><span class="rfe-bar" style="width:' + w + 'px"></span>' + r[1].toFixed(2) + 's</td>' +
         '<td class="rfe-rkcol"><span class="rfe-rk ' + mode.cls + '">' + ranks[i] + '</span></td>' +
       '</tr>';
@@ -1555,7 +1569,7 @@ document.addEventListener('DOMContentLoaded', wfvRenderQuiz);
     byId('rfe-sql').innerHTML = sqlHtml(mode.sql);
     byId('rfe-table').innerHTML = tableHtml(mode, rankList(mode.id));
     byId('rfe-how').innerHTML =
-      '<h4>How ' + esc(mode.fn) + ' works</h4>' +
+      '<h3>How ' + esc(mode.fn) + ' works</h3>' +
       '<p>' + mode.note + '</p>' +
       '<div class="rfe-cards">' + MODES.map(m =>
         '<div class="rfe-card' + (m.id === mode.id ? ' active' : '') + '">' +

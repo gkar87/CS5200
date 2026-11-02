@@ -113,6 +113,7 @@ li{margin-bottom:6px;}
 .btn:hover{opacity:.9;}
 .btn.secondary{background:transparent; color:var(--code-text); border:1px solid var(--code-rule);}
 .btn:disabled{opacity:.4; cursor:not-allowed;}
+.cell textarea:focus{ outline: 2px solid var(--blue); outline-offset: -2px; }
 .cell .cell-output{padding:12px 14px; font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--code-text); white-space:pre-wrap; border-top:1px solid var(--code-rule); display:none;}
 .cell .cell-output.show{display:block;}
 .cell .cell-output.err{color:#F0A38A;}
@@ -121,7 +122,7 @@ table.dbtable th{background:var(--code-bg-raised); color:var(--code-text); text-
 table.dbtable td{padding:5px 10px; border:1px solid var(--code-rule); color:var(--code-text); background:var(--code-bg);}
 
 .problem{border:1px solid var(--rule); border-radius:10px; padding:18px 20px; margin:18px 0; background:var(--paper-raised);}
-.problem h4{margin:0 0 8px; font-size:1.05em;}
+.problem h3{margin:0 0 8px; font-size:1.05em;}
 details.answer{margin-top:12px;}
 details.answer summary{cursor:pointer; color:var(--blue); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; padding:6px 0;}
 details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--rule); margin-top:8px;}
@@ -433,17 +434,17 @@ code.inline{color:var(--ink);}
       <h2>The NULL Trap</h2>
       <p><code>NULL</code> means "unknown or missing," and aggregate functions generally ignore it. If a <code>users</code> table has some rows with no <code>age</code> entered, <code>AVG(age)</code> does not treat the missing ages as zero — it removes those rows from the calculation entirely: <code>AVG = SUM(non-NULL values) / COUNT(non-NULL values)</code>.</p>
       <div class="cell" data-cell="avg_ignores_null">
-        <div class="cell-head"><span class="cell-title">avg_ignores_null.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-1">avg_ignores_null.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p>The single most common point of confusion: <code>COUNT(*)</code> counts every row that matches your criteria, full stop. <code>COUNT(email)</code> only counts rows where <code>email</code> is not NULL. With 100 users and 90 emails on file, <code>COUNT(*)</code> returns 100; <code>COUNT(email)</code> returns 90. Want the size of the group? Use the asterisk. Want to know how many people actually filled in a field? Use the column name.</p>
       <div class="cell" data-cell="count_star_vs_col">
-        <div class="cell-head"><span class="cell-title">count_star_vs_count_column.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">count_star_vs_count_column.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -454,27 +455,27 @@ code.inline{color:var(--ink);}
       <div class="schema-line">SELECT region, SUM(amount) FROM sales GROUP BY region;</div>
       <p>A critical rule: every column in your <code>SELECT</code> list must either be inside an aggregate function or listed in <code>GROUP BY</code>. <code>SELECT region, salesperson, SUM(amount) ... GROUP BY region</code> is a contradiction — SQL knows how to squash <code>amount</code> and how to group by <code>region</code>, but there might be fifty salespeople in the North bucket, and nothing tells it which one to show you.</p>
       <div class="callout amber">
-        <strong>SQLite quirk — it doesn't actually enforce that rule.</strong> Standard SQL (and PostgreSQL, and MySQL in strict mode) reject a bare, non-aggregated, non-grouped column with an error. SQLite instead applies a documented extension: for a bare column paired with <code>MIN()</code> or <code>MAX()</code>, it deterministically returns the value from the same row that produced that extreme — genuinely useful. Paired with <code>SUM()</code>, <code>COUNT()</code>, or <code>AVG()</code>, though, the bare column's value is picked from an <em>arbitrary</em> row in the group — not an error, not necessarily the first or last row, just unspecified. Run the cell below twice and compare the two bare-column queries.
+        <strong>SQLite quirk — it doesn't actually enforce that rule.</strong> Standard SQL (and PostgreSQL, and MySQL in strict mode) reject a bare, non-aggregated, non-grouped column with an error. SQLite instead applies a documented extension: for a bare column paired with <code>MIN()</code> or <code>MAX()</code>, it returns the value from a row that produced that extreme — genuinely useful. If two rows tie for the extreme, the row is arbitrary. Paired with <code>SUM()</code>, <code>COUNT()</code>, or <code>AVG()</code>, though, the bare column's value is picked from an <em>arbitrary</em> row in the group — not an error, not necessarily the first or last row, just unspecified. Run the cell below twice and compare the two bare-column queries.
       </div>
       <div class="cell" data-cell="groupby_bare_column">
-        <div class="cell-head"><span class="cell-title">groupby_bare_column_quirk.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-3">groupby_bare_column_quirk.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-3"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">Code that "works" against SQLite this way can break the moment it's deployed against PostgreSQL or a strict MySQL — a real portability trap, not a hypothetical one. Two honest fixes below: aggregate the extra column away, or attach it per-row with a window function instead of collapsing rows at all.</p>
       <div class="cell" data-cell="groupby_correct_rewrites">
-        <div class="cell-head"><span class="cell-title">groupby_correct_rewrites.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-4">groupby_correct_rewrites.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-4"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p>You can also group by multiple columns — <code>GROUP BY region, year</code> creates one bucket per unique combination ("North 2025," "North 2026," ...). And NULL isn't special-cased away here the way it is in aggregates: every NULL in the grouped column lands in the <em>same single bucket</em>, not one bucket per row.</p>
       <div class="cell" data-cell="groupby_null_bucket">
-        <div class="cell-head"><span class="cell-title">groupby_groups_nulls_together.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-5">groupby_groups_nulls_together.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-5"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -538,17 +539,17 @@ code.inline{color:var(--ink);}
         <figcaption>WHERE vs. HAVING: two filters that run at very different stages of the pipeline.</figcaption>
       </figure>
       <div class="cell" data-cell="where_having_demo">
-        <div class="cell-head"><span class="cell-title">where_cannot_see_aggregates.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-6">where_cannot_see_aggregates.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-6"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small"><strong>WHERE</strong> filters the input (raw rows). <strong>HAVING</strong> filters the output (bucketed summaries). One nuance: standard SQL evaluates <code>HAVING</code> before <code>SELECT</code>, so relying on a <code>SELECT</code>-list alias inside <code>HAVING</code> is dialect-dependent — SQLite happens to allow it, but PostgreSQL and others may not in every context. Safer to repeat the aggregate expression.</p>
       <div class="cell" data-cell="having_alias_check">
-        <div class="cell-head"><span class="cell-title">having_alias_sqlite_allows_it.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-7">having_alias_sqlite_allows_it.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-7"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -563,7 +564,7 @@ code.inline{color:var(--ink);}
         <div class="gbv-row" style="margin-top:14px;">
           <div>
             <div class="widget-label" style="margin:0 0 6px;">Group by column</div>
-            <select class="gbv-select" id="gbv-groupcol">
+            <select class="gbv-select" id="gbv-groupcol" aria-label="Group by column">
               <option value="category">category</option>
               <option value="region">region</option>
               <option value="salesperson">salesperson</option>
@@ -585,7 +586,7 @@ code.inline{color:var(--ink);}
 
         <div class="widget-label">Having</div>
         <div class="gbv-having-row">
-          <select class="gbv-select" id="gbv-having-expr">
+          <select class="gbv-select" id="gbv-having-expr" aria-label="HAVING expression">
             <option value="">— none —</option>
             <option value="COUNT(*)">COUNT(*)</option>
             <option value="COUNT(amount)">COUNT(amount)</option>
@@ -594,7 +595,7 @@ code.inline{color:var(--ink);}
             <option value="MIN(amount)">MIN(amount)</option>
             <option value="MAX(amount)">MAX(amount)</option>
           </select>
-          <select class="gbv-select" id="gbv-having-op">
+          <select class="gbv-select" id="gbv-having-op" aria-label="HAVING comparison">
             <option value=">">&gt;</option>
             <option value=">=">&gt;=</option>
             <option value="<">&lt;</option>
@@ -602,7 +603,7 @@ code.inline{color:var(--ink);}
             <option value="=">=</option>
             <option value="!=">!=</option>
           </select>
-          <input class="gbv-input" id="gbv-having-value" type="number" value="200">
+          <input class="gbv-input" id="gbv-having-value" type="number" value="200" aria-label="HAVING value">
         </div>
 
         <div class="widget-label">Raw rows <span class="row-count">10 rows</span></div>
@@ -639,10 +640,10 @@ HAVING SUM(amount) > 100
 ORDER BY total DESC;</div>
       <p>Trace it: <code>FROM</code> starts with all 6 rows. <code>WHERE year = 2026</code> drops East's 2025 row — 5 remain. <code>GROUP BY region</code> buckets North into {100, 100, 200} and South into {80, NULL}. <code>HAVING SUM(amount) &gt; 100</code> computes each bucket's sum — North totals 400 and passes; South totals 80 (the NULL is silently ignored, not treated as zero) and fails. Only North survives to <code>SELECT</code>.</p>
       <div class="cell" data-cell="worked_execution_trace">
-        <div class="cell-head"><span class="cell-title">worked_execution_trace.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-8">worked_execution_trace.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-8"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">If you needed South's NULL to count as zero, you'd write <code>SUM(COALESCE(amount, 0))</code> instead — that changes South's total to 80, still failing here, but the distinction matters when a NULL-heavy group is close to the threshold.</p>
     </section>
@@ -660,10 +661,10 @@ ORDER BY total DESC;</div>
         <tr><td>5</td><td>U3</td><td>3</td></tr>
       </table>
       <div class="cell" data-cell="worked_count_variants">
-        <div class="cell-head"><span class="cell-title">count_variants_all_different.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-9">count_variants_all_different.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-9"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p>Each variant answers a genuinely different question: <code>COUNT(*)</code> — how many feedback events happened? <code>COUNT(score)</code> — how many people actually gave a score? <code>COUNT(DISTINCT user_id)</code> — how many unique users gave feedback? <code>COUNT(DISTINCT score)</code> — how many distinct score values appeared? Picking the wrong one is a semantic bug: you'll get a number, it may look plausible, and it will answer the wrong question.</p>
     </section>
@@ -673,10 +674,10 @@ ORDER BY total DESC;</div>
       <h2>Worked Example: A HAVING Clause You Cannot Write with WHERE</h2>
       <p>Find products where the average sale price is below $10 across at least a handful of sales. Both conditions are about aggregate values, so both belong in <code>HAVING</code>:</p>
       <div class="cell" data-cell="worked_having_only">
-        <div class="cell-head"><span class="cell-title">having_only_avg_and_count.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-10">having_only_avg_and_count.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-10"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <p class="small">You cannot express this with <code>WHERE</code> alone: <code>AVG(sale_price)</code> doesn't exist until after grouping, and <code>COUNT(*)</code> isn't a value on any individual row — it's a per-group cardinality. Attempting <code>WHERE AVG(sale_price) &lt; 10</code> throws exactly the error the <code>where_cannot_see_aggregates.sql</code> cell above demonstrated. <code>WHERE</code> and <code>HAVING</code> combine freely — a row-level date filter in <code>WHERE</code>, followed by a group-level threshold in <code>HAVING</code>, is one of the most common shapes in real reporting SQL.</p>
     </section>
@@ -689,10 +690,10 @@ ORDER BY total DESC;</div>
 events(user_id, event_ts, event_type)</div>
       <p>The reference article's version uses PostgreSQL's <code>DATE_TRUNC('week', ...)</code> and <code>DATEDIFF('week', ...)</code> — both are non-standard, Postgres-flavored functions. SQLite has no <code>DATE_TRUNC</code> or <code>DATEDIFF</code> at all; the cell below rebuilds the exact same four-step logic with SQLite's own date functions (<code>date(..., 'weekday 0', '-6 days')</code> for a Monday-anchored week, <code>julianday(...)</code> for the day-difference math) so it can actually run.</p>
       <div class="cell" data-cell="cohort_retention">
-        <div class="cell-head"><span class="cell-title">cohort_retention_sqlite.sql</span></div>
-        <textarea spellcheck="false"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-11">cohort_retention_sqlite.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-11"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
-        <div class="cell-output"></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
       <div class="callout">
         <strong>Where this pattern breaks new practitioners:</strong>
@@ -745,7 +746,7 @@ events(user_id, event_ts, event_type)</div>
       <h2>Practice Problems</h2>
 
       <div class="problem">
-        <h4>1. COUNT(*), COUNT(status), and GROUP BY, with NULLs in the mix</h4>
+        <h3>1. COUNT(*), COUNT(status), and GROUP BY, with NULLs in the mix</h3>
         <p>Given <code>orders(order_id, customer_id, total, status)</code> with 100 rows total, 20 of which have <code>status = NULL</code> and 20 of which have <code>total = NULL</code>, what do these return?</p>
         <p>(a) <code>SELECT COUNT(*) FROM orders</code> &nbsp; (b) <code>SELECT COUNT(status) FROM orders</code> &nbsp; (c) <code>SELECT status, COUNT(*) FROM orders GROUP BY status</code> &nbsp; (d) <code>SELECT AVG(total) FROM orders</code></p>
         <details class="answer">
@@ -896,7 +897,21 @@ ORDER BY s.country, revenue DESC;</div>
 </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
 const CELLS = {
@@ -937,8 +952,8 @@ INSERT INTO employees VALUES
   ('Alice','Eng',90000), ('Bob','Eng',120000),
   ('Carol','Sales',70000), ('Dave','Sales',95000);
 
--- Bare column paired with MAX(): SQLite deterministically returns the name
--- from the SAME ROW that produced the max salary in each department.
+-- Bare column paired with MAX(): SQLite returns the name from a row that
+-- produced the max salary in each department (arbitrary if two rows tie).
 SELECT dept, name, MAX(salary) FROM employees GROUP BY dept;
 
 -- Bare column paired with SUM(): no such row exists to borrow from, so
@@ -1105,7 +1120,7 @@ function commonErrorHint(msg){
 let SQL = null;
 async function getSqlJsModule(){
   if (SQL) return SQL;
-  SQL = await window.initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${f}` });
+  SQL = await sqlJsInit();
   return SQL;
 }
 
@@ -1189,6 +1204,9 @@ function wireCell(cellEl){
   textarea.value = spec.starter;
   pgGrow(textarea);
   textarea.addEventListener('input', () => pgGrow(textarea));
+  textarea.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runBtn.click(); }
+  });
   runBtn.addEventListener('click', () => {
     runSqlAgainstFreshDb(spec.setup, textarea.value, output);
   });
@@ -1424,7 +1442,7 @@ INSERT INTO employees2 VALUES ('Alice','Eng',90000),('Bob','Eng',120000),('Carol
       { title: "Works but name is an arbitrary row from each group", hint: "MySQL-specific", correct: false },
       { title: "Depends on the DBMS", hint: "", correct: false }
     ],
-    feedback: "Standard SQL (and PostgreSQL, and strict-mode MySQL) reject this outright -- that's the textbook-correct, portable answer. Click Verify, though: SQLite specifically does NOT error here. It applies a documented extension where a bare column paired with MAX() deterministically borrows its value from the row that produced that max -- in this exact case it happens to give the right answer, but only because the aggregate is MAX(). Swap in SUM() or AVG() and SQLite picks an arbitrary row instead. Never rely on this."
+    feedback: "Standard SQL (and PostgreSQL, and strict-mode MySQL) reject this outright -- that's the textbook-correct, portable answer. Click Verify, though: SQLite specifically does NOT error here. It applies a documented extension where a bare column paired with MAX() borrows its value from a row that produced that max (arbitrary if two rows tie for it) -- in this exact case it happens to give the right answer, but only because the aggregate is MAX(). Swap in SUM() or AVG() and SQLite picks an arbitrary row instead. Never rely on this."
   },
   {
     scenario: "For a rolling 7-day active-user count, you need one row PER day with the DAU for that day AND the running 7-day average. GROUP BY alone can produce the daily count. What produces the rolling average?",

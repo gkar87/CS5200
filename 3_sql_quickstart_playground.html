@@ -585,7 +585,21 @@ code.inline{color:var(--ink);}
   </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js" integrity="sha384-7Zym2PlgXfg8ap8cqJUwlZrLl+VEwt0NVbzYfhH28IWLnSpAgQOnSCY2+EXo5MtM" crossorigin="anonymous"></script>
+<!-- sql.js 1.14.2 (vendored; sha384 matches the former cdnjs SRI). No integrity attribute: Chrome blocks SRI on file:// scripts. -->
+<script src="vendor/sql.js/1.14.2/sql-wasm.js"></script>
+<script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
+<script>
+/* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
+   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+function sqlJsInit(){
+  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
+    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
+  const bin = atob(window.SQLJS_WASM_B64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return window.initSqlJs({ wasmBinary: bytes });
+}
+</script>
 <script>
 /* =========================================================================
    CELL DEFINITIONS
@@ -1284,13 +1298,13 @@ function cell(id, label){
   return `
   <div class="cell" data-cell="${id}">
     <div class="cell-head"><span class="cell-title">${hint}</span></div>
-    <textarea spellcheck="false"></textarea>
+    <textarea spellcheck="false" aria-label="SQL editor: ${label ? label : id.replace(/_/g, ' ')}"></textarea>
     <div class="cell-actions">
       <button class="btn run-btn">▶ Run</button>
       <button class="btn secondary reset-btn">↺ Reset</button>
       <span class="hint">Ctrl/Cmd + Enter also runs it</span>
     </div>
-    <div class="output"></div>
+    <div class="output" role="status" aria-live="polite"></div>
   </div>`;
 }
 
@@ -2596,7 +2610,7 @@ async function boot(){
   runButtons.forEach(b => b.disabled = true);
 
   try{
-    SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/${file}` });
+    SQL = await sqlJsInit();
     dot.classList.add('ready');
     status.textContent = 'SQLite engine ready';
     runButtons.forEach(b => b.disabled = false);
@@ -2604,7 +2618,7 @@ async function boot(){
     refsimInit();
     cvpInit();
   } catch(e){
-    status.textContent = 'engine failed to load — check your connection and reload';
+    status.textContent = e.message;
     console.error(e);
   }
 }

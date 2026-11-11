@@ -72,7 +72,7 @@ li{margin-bottom:6px;}
 .badge.green{background:var(--green-soft); color:var(--green);}
 .badge.purple{background:var(--purple-soft); color:var(--purple);}
 
-.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre;}
+.schema-line{font-family:"IBM Plex Mono", monospace; background:var(--code-bg); color:var(--code-text); padding:10px 14px; border-radius:6px; font-size:14px; overflow-x:auto; margin:10px 0; white-space:pre-wrap; overflow-wrap:anywhere;}
 
 .diagram{border:1px solid var(--rule); border-radius:12px; background:var(--paper-raised); padding:18px; margin:20px 0; text-align:center;}
 .diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
@@ -236,7 +236,7 @@ details.answer .answer-body{padding:10px 0 0 4px; border-top:1px dashed var(--ru
 .qstep-node:hover{border-color:var(--blue);}
 .qstep-node.done{border-color:var(--green); background:var(--green-soft); color:var(--green);}
 .qstep-node.active{border-color:var(--blue); background:var(--blue-soft); color:var(--blue); font-weight:700;}
-.qstep-node .qstep-idx{display:block; font-size:9.5px; opacity:.7; margin-bottom:3px;}
+.qstep-node .qstep-idx{display:block; font-size:9.5px; margin-bottom:3px;}
 .qstep-body{border:1.5px solid var(--rule-strong); border-radius:10px; background:#fff; padding:16px 18px;}
 .qstep-head{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
 .qstep-name{font-weight:700; font-size:1.05em;}

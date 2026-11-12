@@ -351,18 +351,20 @@ code.inline{color:var(--ink);}
   <aside class="sidebar">
     <div class="course">CS5200 · Database Theory<br>and Applications<br>Prepared by Dr. Gorkem Kar</div>
         <nav>
+      <div class="grp">Start Here</div>
+      <a href="#warmup">One Table, One Step</a>
       <div class="grp">Foundations</div>
       <a href="#overview">Refactoring for Clarity</a>
       <a href="#cte-basics">The WITH Clause</a>
       <a href="#chained-ctes">Chained CTEs</a>
       <div class="grp">Recursion</div>
-      <a href="#recursive-basics">Anchor, Recursive, Union</a>
+      <a href="#recursive-basics">Anchor, Recursive, Stop</a>
       <a href="#recursive-visualizer">Recursive CTE Visualizer</a>
       <div class="grp">Graphs &amp; Cycles</div>
       <a href="#cycles">Reachability and Cycles</a>
       <div class="grp">Worked Examples</div>
       <a href="#worked-recursive-trace">Trace: Row-by-Row</a>
-      <a href="#worked-chained-report">Chained CTEs for a Report</a>
+      <a href="#worked-chained-report">Chained CTEs for Product Totals</a>
       <div class="grp">Apply It</div>
       <a href="#cte-pattern-picker">CTE Pattern Picker</a>
       <a href="#recursion-failure">When a Recursive CTE Never Stops</a>
@@ -377,13 +379,50 @@ code.inline{color:var(--ink);}
       <div class="eyebrow">CS5200 · Database Theory and Applications</div>
       <h1>CTEs and Recursive Queries</h1>
       <div class="byline">Prepared by Dr. Gorkem Kar</div>
-      <p class="lede">Complex SQL usually starts as a simple query and then grows — a filter here, a join there, a subquery inside another subquery. Six months later it's 200 lines of nested parentheses that no one can safely change. Common Table Expressions are how you keep queries from rotting: instead of nesting logic inside logic, you name each step at the top and use those names below. The same syntax also unlocks something SQL used to be famously bad at — traversing hierarchies and graphs.</p>
+      <p class="lede">The registrar asks: “Which students beat the class average?” You can answer that with one subquery. Then she adds: “Show the average next to each name,” then “Do it for each section,” then “Let me run each part separately.” The query did not get harder because SQL changed; it got harder because the logic became a pipeline. CTEs name each step so you can test it, and recursive CTEs extend the same idea to hierarchies and graphs.</p>
     </header>
+
+    <section id="warmup">
+      <div class="kicker">Start Here</div>
+      <h2>One Table, One Step</h2>
+      <p>The registrar starts with one table and one question: <strong>which students beat the class average?</strong> Five students are enough to see the whole idea.</p>
+      <table class="compare" aria-label="Student scores">
+        <thead><tr><th scope="col">name</th><th scope="col">score</th></tr></thead>
+        <tbody>
+          <tr><td>Ada</td><td>92</td></tr>
+          <tr><td>Ben</td><td>78</td></tr>
+          <tr><td>Cy</td><td>64</td></tr>
+          <tr><td>Dee</td><td>88</td></tr>
+          <tr><td>Eli</td><td>71</td></tr>
+        </tbody>
+      </table>
+      <p>The average is <code>78.6</code>. A subquery can compare each row with it:</p>
+      <div class="schema-line">SELECT name, score
+FROM students
+WHERE score > (SELECT AVG(score) FROM students)
+ORDER BY score DESC;</div>
+      <p>That works. But the moment the registrar wants to reuse the average — show it beside every name, then group by section — the nested version starts repeating itself. Name the average once instead:</p>
+      <div class="schema-line">WITH class_avg AS (
+    SELECT AVG(score) AS avg_score
+    FROM students
+)
+SELECT s.name, s.score
+FROM students s
+WHERE s.score > (SELECT avg_score FROM class_avg)
+ORDER BY s.score DESC;</div>
+      <p><code>class_avg</code> is a one-row result set with a name. The final <code>SELECT</code> reads like a sentence: students whose score is above the named average. The CTE exists only for this statement, and each piece can be run alone.</p>
+      <div class="cell" data-cell="warmup_class_average">
+        <div class="cell-head"><span class="cell-title" id="ct-1">first_cte.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
+      </div>
+    </section>
 
     <section id="overview">
       <div class="kicker">Foundations</div>
       <h2>Refactoring for Clarity</h2>
-      <p>Common Table Expressions, or CTEs, change the way you build queries. Instead of nesting logic inside other logic, you define your building blocks at the top of the script and use them later. It turns a dense thicket of code into a linear story. Once you master this top-down approach, you can move into recursion, which lets SQL do something it usually struggles with: traversing hierarchies like org charts, file systems, and social networks.</p>
+      <p>That was the small version. The same shape scales to a business report: instead of a class average, name a customer total, then build the next step on top of it. Common Table Expressions, or CTEs, change the way you build queries. Instead of nesting logic inside other logic, you define your building blocks at the top of the script and use them later. It turns a dense thicket of code into a linear story. Once you master this top-down approach, you can move into recursion, which lets SQL do something it usually struggles with: traversing hierarchies like org charts, file systems, and social networks.</p>
 
       <figure class="diagram">
         <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nested subqueries drawn as a tangled funnel beside a common table expression drawn as a clean linear chain." font-family="IBM Plex Mono, monospace">
@@ -465,19 +504,19 @@ enriched AS (
 SELECT * FROM enriched
 WHERE category = 'X';</div>
 
-      <table class="compare">
-        <thead><tr><th></th><th>Nested subqueries</th><th>Chained CTEs</th></tr></thead>
+      <table class="compare" aria-label="Nested subqueries compared with chained CTEs">
+        <thead><tr><th scope="col" aria-label="Aspect"></th><th scope="col">Nested subqueries</th><th scope="col">Chained CTEs</th></tr></thead>
         <tbody>
-          <tr><td><strong>Reading order</strong></td><td>Inside out (deep first)</td><td>Top to bottom (natural)</td></tr>
-          <tr><td><strong>Debugging</strong></td><td>Dig through parentheses</td><td>Run any CTE alone</td></tr>
-          <tr><td><strong>Reuse</strong></td><td>Can't reference an inner subquery elsewhere</td><td>Any earlier CTE is available to every later step</td></tr>
-          <tr><td><strong>Naming</strong></td><td>Alias only</td><td>Named step per logical operation</td></tr>
+          <tr><td role="rowheader"><strong>Reading order</strong></td><td>Inside out (deep first)</td><td>Top to bottom (natural)</td></tr>
+          <tr><td role="rowheader"><strong>Debugging</strong></td><td>Dig through parentheses</td><td>Run any CTE alone</td></tr>
+          <tr><td role="rowheader"><strong>Reuse</strong></td><td>Can't reference an inner subquery elsewhere</td><td>Any earlier CTE is available to every later step</td></tr>
+          <tr><td role="rowheader"><strong>Naming</strong></td><td>Alias only</td><td>Named step per logical operation</td></tr>
         </tbody>
       </table>
       <p>Same result, drastically better readability and debuggability. Below, both versions run for real against a live SQLite engine and return identical rows — confirming the refactor changes nothing except how easy the query is to read.</p>
       <div class="cell" data-cell="refactor_top_customers_enriched">
-        <div class="cell-head"><span class="cell-title" id="ct-1">nested_vs_chained_ctes.sql</span></div>
-        <textarea spellcheck="false" aria-labelledby="ct-1"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-2">nested_vs_chained_ctes.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
         <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
@@ -509,16 +548,15 @@ AverageSale AS (
 SELECT c.name, s.total_sales
 FROM CategorySales s
 JOIN categories c ON s.category_id = c.id
-CROSS JOIN AverageSale a
-WHERE s.total_sales > a.avg_total;</div>
+WHERE s.total_sales > (SELECT avg_total FROM AverageSale);</div>
       <p>By pulling the logic to the top, you give it a name. Anyone reading this knows exactly what <code>CategorySales</code> represents without parsing the <code>SUM</code> and <code>GROUP BY</code> logic immediately. The final <code>SELECT</code> becomes a simple assembly of pre-built parts.</p>
 
       <div class="callout amber">
-        <strong>SQLite quirk — the original "scattered" query above has a real bug.</strong> Run the cell below and its first statement fails with <code>no such column: category</code>. The outer <code>SELECT category, total_sales</code> assumes a column named <code>category</code> exists, but the subquery only produces <code>category_id</code>, and the joined <code>categories</code> table has a column called <code>name</code>, not <code>category</code> — there's no column anywhere actually called <code>category</code>. It has to be written as <code>categories.name AS category</code> (or similar) to run at all. This is a good reminder that nested subqueries hide these mistakes in the middle of the query where they're easy to miss; the corrected nested version and the CTE version below both run cleanly and return identical rows once the alias is fixed.
+        <strong>SQLite quirk — the original "scattered" query above has a real bug.</strong> Run it as written and it fails with <code>no such column: category</code>. The outer <code>SELECT category, total_sales</code> assumes a column named <code>category</code> exists, but the subquery only produces <code>category_id</code>, and the joined <code>categories</code> table has a column called <code>name</code>, not <code>category</code> — there's no column anywhere actually called <code>category</code>. It has to be written as <code>categories.name AS category</code> (or similar) to run at all. This is a good reminder that nested subqueries hide these mistakes in the middle of the query where they're easy to miss; the cell below starts from the corrected query, and both the nested and CTE versions run cleanly and return identical rows.
       </div>
       <div class="cell" data-cell="cte_basics">
-        <div class="cell-head"><span class="cell-title" id="ct-2">cte_basics.sql</span></div>
-        <textarea spellcheck="false" aria-labelledby="ct-2"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-3">cte_basics.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-3"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
         <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
@@ -528,13 +566,25 @@ WHERE s.total_sales > a.avg_total;</div>
       <div class="kicker">Foundations</div>
       <h2>Chained CTEs</h2>
       <p>The real power of this approach appears when you chain multiple CTEs together. Each CTE can reference the ones defined above it, letting you break a complex business problem into small, testable steps.</p>
-      <p>Suppose you need to find the top 5% of customers by revenue, then find which products those specific customers bought most often. Doing this in nested subqueries is a nightmare. Using chained CTEs, you define a <code>TopCustomers</code> block, then a <code>CustomerProducts</code> block that pulls from the first one, and finally a summary block. It reads like a recipe — one step prepares the ingredients, and the next step cooks them. (The full worked version of this exact report — top 5 customers, plus each one's top product — is built step by step later in <a href="#worked-chained-report">Chained CTEs for a Real Report</a>.)</p>
+      <p>Suppose you need to find the top 5 customers by revenue, then list the products those customers bought and their total quantities. Doing this in nested subqueries is a nightmare. Using chained CTEs, you define a <code>TopCustomers</code> block, then a <code>CustomerProducts</code> block that pulls from the first one, and finally a summary block. It reads like a recipe — one step prepares the ingredients, and the next step cooks them. (The full worked version of this report — top 5 customers, plus each one's product totals — is built step by step later in <a href="#worked-chained-report">Chained CTEs for Product Totals</a>.)</p>
+
+      <h3>Warm-up: chain two tiny steps</h3>
+      <p>The student question chains the same way. Name the average, then name the students above it; each CTE can be run by itself.</p>
+      <div class="schema-line">WITH class_avg AS (
+    SELECT AVG(score) AS avg_score FROM students
+),
+above_avg AS (
+    SELECT name, score
+    FROM students
+    WHERE score > (SELECT avg_score FROM class_avg)
+)
+SELECT * FROM above_avg ORDER BY score DESC;</div>
 
       <h3>A quirk worth knowing: an unreferenced CTE is dead code</h3>
       <p>If you define a CTE with <code>WITH</code> but never reference it anywhere in the rest of the query, what happens? In SQLite, nothing — it's simply never evaluated. It isn't even checked for a bad column reference, because the engine never has a reason to compile it. Run the cell below: CTE <code>c</code> references a column that doesn't exist anywhere, yet the query succeeds, because <code>d</code> — the only CTE actually used by the final <code>SELECT</code> — never touches <code>c</code>.</p>
       <div class="cell" data-cell="unused_cte_check">
-        <div class="cell-head"><span class="cell-title" id="ct-3">unused_cte_is_dead_code.sql</span></div>
-        <textarea spellcheck="false" aria-labelledby="ct-3"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-4">unused_cte_is_dead_code.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-4"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
         <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
@@ -543,7 +593,7 @@ WHERE s.total_sales > a.avg_total;</div>
 
     <section id="recursive-basics">
       <div class="kicker">Recursion</div>
-      <h2>Anchor, Recursive, Union</h2>
+      <h2>Anchor, Recursive, Stop</h2>
       <p>Standard SQL is great at looking at rows side by side, but it's traditionally bad at looking at rows that relate to each other in a chain. If you have an <code>employees</code> table where each row has a <code>manager_id</code>, how do you find everyone who reports to the CEO, including the people who report to the people who report to the CEO?</p>
       <p>A recursive CTE is the tool for this. It has a specific three-part structure:</p>
       <ol>
@@ -552,6 +602,26 @@ WHERE s.total_sales > a.avg_total;</div>
         <li><strong>The Union.</strong> The <code>UNION ALL</code> command that stitches these layers together.</li>
       </ol>
       <p>When you run a recursive query, the database doesn't just loop blindly. It follows a specific procedure: it executes the anchor query and puts those rows into a temporary "working table." Then it runs the recursive query using the contents of that working table. If it finds new rows, it replaces the working table with those new rows and does it again. It stops only when the recursive step returns zero new rows.</p>
+
+      <h3>Start with a countdown</h3>
+      <p>Before the org chart, watch the loop with one number. The anchor produces <code>3</code>; each recursive pass subtracts one; the guard <code>WHERE n &gt; 1</code> eventually produces no rows, so the loop stops.</p>
+      <div class="schema-line">WITH RECURSIVE countdown(n) AS (
+    SELECT 3                 -- anchor
+
+    UNION ALL
+
+    SELECT n - 1             -- recursive member
+    FROM countdown
+    WHERE n > 1              -- stop when no row qualifies
+)
+SELECT n FROM countdown;</div>
+      <div class="cell" data-cell="recursion_countdown">
+        <div class="cell-head"><span class="cell-title" id="ct-5">countdown.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-5"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
+      </div>
+      <p>The result is <code>3, 2, 1</code>. The org chart changes the join, not the shape: an anchor picks the root, the recursive member follows one edge to the next row, and an empty working set stops the loop.</p>
 
       <figure class="diagram">
         <svg viewBox="0 0 420 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A parent-child hierarchy that a recursive CTE walks one level at a time, starting from the anchor row and expanding outward." font-family="IBM Plex Mono, monospace">
@@ -696,6 +766,32 @@ SELECT * FROM org_chart;</div>
       <h2>Graph Reachability and Cycles</h2>
       <p>Recursion isn't just for trees. It's also used for graphs, like a network of flights between cities. If you want to know whether you can get from New York to Singapore, a recursive CTE can explore every possible connection until it finds a path or runs out of options.</p>
       <p>However, graphs introduce a danger that trees usually don't: cycles. If a flight goes from New York to London, and another goes from London back to New York, a naive recursive query will bounce between them forever. The database keeps finding "new" paths that are just the same cities in a circle.</p>
+
+      <h3>Smallest cycle: two cities</h3>
+      <p>Strip the flight map down to two routes, <code>NYC → LON</code> and <code>LON → NYC</code>. The naive recursion never runs out of rows. The fix is to carry the path and reject a city already on it:</p>
+      <div class="schema-line">CREATE TABLE route(origin TEXT, destination TEXT);
+INSERT INTO route VALUES ('NYC','LON'),('LON','NYC');
+
+WITH RECURSIVE walk(city, path) AS (
+    SELECT destination, '|NYC|' || destination || '|'
+    FROM route WHERE origin = 'NYC'
+
+    UNION ALL
+
+    SELECT r.destination, w.path || r.destination || '|'
+    FROM route r
+    JOIN walk w ON r.origin = w.city
+    WHERE instr(w.path, '|' || r.destination || '|') = 0
+)
+SELECT city FROM walk;</div>
+      <div class="cell" data-cell="two_city_cycle">
+        <div class="cell-head"><span class="cell-title" id="ct-6">two_city_cycle.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-6"></textarea>
+        <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
+        <div class="cell-output" role="status" aria-live="polite"></div>
+      </div>
+      <p>The guarded query returns <code>LON</code> and stops. The path column is the memory; without it, the recursive member keeps finding the same edge.</p>
+      <p>The flight graph adds more edges, but the same guard applies:</p>
       <div class="schema-line">flights
 origin  destination
 NYC     LON
@@ -712,8 +808,8 @@ PAR     ROM</div>
 SELECT DISTINCT city FROM reachable;</div>
       <p>The recursive step keeps generating NYC → LON → NYC → LON → ..., producing infinite rows. Most DBMSes will error out after hitting an internal recursion limit (PostgreSQL: <code>max_stack_depth</code>; SQL Server: 32,767 by default) — or, worse, just hang. <strong>The cell below caps the naive version with <code>LIMIT 12</code> so it's safe to run in your browser</strong> — without that cap, this query does not terminate on its own.</p>
       <div class="cell" data-cell="cycle_naive_capped">
-        <div class="cell-head"><span class="cell-title" id="ct-4">cycle_naive_CAPPED_for_safety.sql</span></div>
-        <textarea spellcheck="false" aria-labelledby="ct-4"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-7">cycle_naive_CAPPED_for_safety.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-7"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
         <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
@@ -737,8 +833,8 @@ SELECT DISTINCT city FROM reachable;</div>
 SELECT DISTINCT city FROM reachable;</div>
       <p>The <code>NOT (f.destination = ANY(r.path))</code> condition rejects any hop that would revisit a city already on the path. Different DBMSes have different array syntax (PostgreSQL uses <code>ARRAY[]</code> and <code>||</code>; SQL Server uses string-based paths; MySQL 8+ supports JSON arrays; SQLite has no array type at all, so the cell below tracks the path as a delimited text string and uses <code>instr()</code> as the guard). The concept is identical everywhere: recursion over a cyclic graph requires explicit path tracking.</p>
       <div class="cell" data-cell="cycle_fixed_path_guard">
-        <div class="cell-head"><span class="cell-title" id="ct-5">cycle_fixed_path_guard.sql</span></div>
-        <textarea spellcheck="false" aria-labelledby="ct-5"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-8">cycle_fixed_path_guard.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-8"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
         <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
@@ -751,8 +847,8 @@ SELECT DISTINCT city FROM reachable;</div>
       <p><code>UNION</code> (as opposed to <code>UNION ALL</code>) deduplicates rows. In a recursive CTE with no path-tracking column, that can look like it "fixes" the cycle — SQLite's engine only keeps recursing on genuinely new rows, and once every reachable city has appeared once, the next iteration produces nothing new. Run the first query below: plain <code>UNION</code>, no path column, terminates cleanly and returns 4 cities — including NYC itself, since the cycle legitimately produces it once before dedup kicks in on further repeats. That's a different (also defensible) answer than the path-guarded version's 3 cities: it's "everywhere reachable, including a cycle back to the start" versus "everywhere reachable without revisiting the start."</p>
       <p>But this "fix" is fragile. The moment you add a column that changes every iteration — like a hop counter — every row becomes unique again, so <code>UNION</code>'s dedup can never kick in and the cycle runs forever exactly like <code>UNION ALL</code> would. The second query below adds a <code>depth</code> column and is capped with <code>LIMIT 12</code> for safety; notice it keeps bouncing and growing <code>depth</code> forever, just like the naive <code>UNION ALL</code> version above.</p>
       <div class="cell" data-cell="union_vs_union_all">
-        <div class="cell-head"><span class="cell-title" id="ct-6">union_dedup_vs_union_all.sql</span></div>
-        <textarea spellcheck="false" aria-labelledby="ct-6"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-9">union_dedup_vs_union_all.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-9"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
         <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
@@ -763,8 +859,8 @@ SELECT DISTINCT city FROM reachable;</div>
       <div class="kicker">Worked Examples</div>
       <h2>Worked Example: Trace a Recursive Query Row-by-Row</h2>
       <p>Given this <code>employees</code> table (a different, slightly deeper hierarchy than the visualizer's above — here Frank reports to Dave, not Carol):</p>
-      <table class="compare">
-        <thead><tr><th>id</th><th>name</th><th>manager_id</th></tr></thead>
+      <table class="compare" aria-label="Employees and managers">
+        <thead><tr><th scope="col">id</th><th scope="col">name</th><th scope="col">manager_id</th></tr></thead>
         <tbody>
           <tr><td>1</td><td>Alice</td><td>NULL</td></tr>
           <tr><td>2</td><td>Bob</td><td>1</td></tr>
@@ -796,8 +892,8 @@ SELECT * FROM org ORDER BY depth, id;</div>
       </ul>
       <p>The termination condition — the recursive step returning zero new rows — is what stops the loop. In a cyclic graph, that never happens naturally, which is exactly why you must add explicit cycle detection (next section).</p>
       <div class="cell" data-cell="worked_recursive_trace">
-        <div class="cell-head"><span class="cell-title" id="ct-7">worked_recursive_trace.sql</span></div>
-        <textarea spellcheck="false" aria-labelledby="ct-7"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-10">worked_recursive_trace.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-10"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
         <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
@@ -805,43 +901,40 @@ SELECT * FROM org ORDER BY depth, id;</div>
 
     <section id="worked-chained-report">
       <div class="kicker">Worked Examples</div>
-      <h2>Worked Example: Chained CTEs for a Real Report</h2>
-      <p>You want a business report: "top 5 customers by total revenue, and for each, list their most-purchased product." One giant nested query is unreadable; chained CTEs make it a pipeline:</p>
+      <h2>Worked Example: Chained CTEs for Product Totals</h2>
+      <p>You want a business report: "top 5 customers by total revenue, and for each, the product totals they bought." One giant nested query is unreadable; chained CTEs make it a pipeline:</p>
       <div class="schema-line">WITH
-top_customers AS (
-    SELECT customer_id, SUM(total) AS revenue
-    FROM orders
-    GROUP BY customer_id
-    ORDER BY revenue DESC
-    LIMIT 5
-),
-customer_product_totals AS (
-    SELECT o.customer_id, ol.product_id, SUM(ol.quantity) AS qty
-    FROM orders o
-    JOIN order_lines ol USING (order_id)
-    WHERE o.customer_id IN (SELECT customer_id FROM top_customers)
-    GROUP BY o.customer_id, ol.product_id
-),
-ranked AS (
-    SELECT customer_id, product_id, qty,
-           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY qty DESC) AS rn
-    FROM customer_product_totals
-)
-SELECT tc.customer_id, tc.revenue, r.product_id AS top_product, r.qty
-FROM top_customers tc
-JOIN ranked r ON r.customer_id = tc.customer_id AND r.rn = 1
-ORDER BY tc.revenue DESC;</div>
-      <p>Four named building blocks, each answering one small question:</p>
+	top_customers AS (
+	    SELECT customer_id, SUM(total) AS revenue
+	    FROM orders
+	    GROUP BY customer_id
+	    ORDER BY revenue DESC
+	    LIMIT 5
+	),
+	customer_product_totals AS (
+	    SELECT o.customer_id, ol.product_id, SUM(ol.quantity) AS qty
+	    FROM orders o
+	    JOIN order_lines ol USING (order_id)
+	    WHERE o.customer_id IN (SELECT customer_id FROM top_customers)
+	    GROUP BY o.customer_id, ol.product_id
+	)
+	SELECT tc.customer_id, tc.revenue,
+	       cpt.product_id, cpt.qty
+	FROM top_customers tc
+	JOIN customer_product_totals cpt
+	  ON cpt.customer_id = tc.customer_id
+	ORDER BY tc.revenue DESC, cpt.qty DESC;</div>
+      <p>Two CTEs, then the final <code>SELECT</code> — each answering one small question:</p>
       <ul>
         <li><code>top_customers</code> — who are the top 5 by revenue?</li>
         <li><code>customer_product_totals</code> — how many units did each of them buy of each product?</li>
-        <li><code>ranked</code> — order those products by quantity within each customer.</li>
-        <li>Main <code>SELECT</code> — glue the top product per customer to their revenue.</li>
+        <li>Final <code>SELECT</code> — join those totals back to the customer revenue and sort the report.</li>
       </ul>
-      <p>You could inline every CTE as a nested subquery, but the resulting query would be 5+ levels deep and much harder to review. CTEs are the SQL equivalent of extract-method refactoring.</p>
+      <p>The report stops at product totals. Choosing the single top product per customer needs a window function, which is Lecture 13; the CTE pipeline is already the hard part.</p>
+      <p>You could inline every CTE as a nested subquery, but the resulting query would be much harder to review. CTEs are the SQL equivalent of extract-method refactoring.</p>
       <div class="cell" data-cell="worked_chained_report">
-        <div class="cell-head"><span class="cell-title" id="ct-8">worked_chained_report.sql</span></div>
-        <textarea spellcheck="false" aria-labelledby="ct-8"></textarea>
+        <div class="cell-head"><span class="cell-title" id="ct-11">worked_chained_report.sql</span></div>
+        <textarea spellcheck="false" aria-labelledby="ct-11"></textarea>
         <div class="cell-actions"><button class="btn run-btn">▶ Run</button><button class="btn secondary reset-btn">Reset</button></div>
         <div class="cell-output" role="status" aria-live="polite"></div>
       </div>
@@ -903,15 +996,14 @@ overall_avg AS (
 )
 SELECT d.dept, d.avg_salary
 FROM dept_avg_recent d
-CROSS JOIN overall_avg o
-WHERE d.avg_salary > o.avg_salary;</div>
+WHERE d.avg_salary > (SELECT avg_salary FROM overall_avg);</div>
             <p>Verified against real SQLite: both the original nested version and this refactor return the identical row for a sample dataset (<code>Eng, 92500</code>). The CTE version just makes each half of the comparison a nameable, independently-runnable step.</p>
           </div>
         </details>
       </div>
 
       <div class="problem">
-        <h4>2. Trace a recursive CTE by hand</h4>
+        <h3>2. Trace a recursive CTE by hand</h3>
         <p>Trace this recursive CTE by hand for the given <code>parts</code> table. What is the final result?</p>
         <div class="schema-line">CREATE TABLE parts (assembly VARCHAR, part VARCHAR);
 INSERT INTO parts VALUES
@@ -936,8 +1028,8 @@ SELECT * FROM bom ORDER BY depth, part;</div>
           <summary>▸ Reveal answer</summary>
           <div class="answer-body">
             <p>The anchor starts at <code>bike</code> (depth 1: <code>frame</code>, <code>wheel</code>). Each iteration looks for parts whose <code>assembly</code> matches a <code>part</code> just found — <code>wheel</code> and <code>frame</code> are themselves assemblies of smaller parts, so the recursion continues one more level, then <code>tube</code> is itself an assembly of <code>metal</code> for a third level:</p>
-            <table class="compare">
-              <thead><tr><th>depth</th><th>assembly</th><th>part</th></tr></thead>
+            <table class="compare" aria-label="Bill of materials trace">
+              <thead><tr><th scope="col">depth</th><th scope="col">assembly</th><th scope="col">part</th></tr></thead>
               <tbody>
                 <tr><td>1</td><td>bike</td><td>frame</td></tr>
                 <tr><td>1</td><td>bike</td><td>wheel</td></tr>
@@ -953,7 +1045,7 @@ SELECT * FROM bom ORDER BY depth, part;</div>
       </div>
 
       <div class="problem">
-        <h4>3. UNION vs. UNION ALL in a recursive CTE</h4>
+        <h3>3. UNION vs. UNION ALL in a recursive CTE</h3>
         <p>Explain what happens when you replace <code>UNION ALL</code> with <code>UNION</code> in a recursive CTE. Give one case where it matters.</p>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
@@ -965,7 +1057,7 @@ SELECT * FROM bom ORDER BY depth, part;</div>
       </div>
 
       <div class="problem">
-        <h4>4. Friends within 3 hops, with cycles</h4>
+        <h3>4. Friends within 3 hops, with cycles</h3>
         <p>You have <code>friends(person_id, friend_id)</code> representing a social graph. Write a recursive CTE that returns everyone within 3 hops of person 1 (including person 1). Handle cycles.</p>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
@@ -988,7 +1080,7 @@ SELECT DISTINCT person_id FROM network ORDER BY person_id;</div>
       </div>
 
       <div class="problem">
-        <h4>5. An unused CTE among four</h4>
+        <h3>5. An unused CTE among four</h3>
         <p>A colleague writes a query with 4 separately-defined CTEs (<code>WITH a AS (...), b AS (...), c AS (...), d AS (...)</code>) where <code>d</code> references only <code>a</code> and <code>b</code>, and <code>c</code> isn't used anywhere. What happens at execution time? Is this a bug?</p>
         <details class="answer">
           <summary>▸ Reveal answer</summary>
@@ -1062,19 +1154,78 @@ SELECT DISTINCT person_id FROM network ORDER BY person_id;</div>
 <script src="vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js"></script>
 <script>
 /* SQLite engine: sql.js 1.14.2, vendored in vendor/sql.js/1.14.2/ (no network needed).
-   The .wasm is passed as bytes so the page also works when opened from disk (file://). */
+   The .wasm is passed as bytes so the page also works when opened from disk (file://).
+   If a copied page is missing the vendor folder, try the matching CDN build once;
+   the local files remain the primary path for offline use. */
+const SQLJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/';
+let sqlCdnPromise = null;
+
+function loadScript(src){
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('Could not load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+function sqlJsFromCdn(){
+  if (!sqlCdnPromise) {
+    const load = typeof window.initSqlJs === 'function'
+      ? Promise.resolve()
+      : loadScript(SQLJS_CDN + 'sql-wasm.js');
+    sqlCdnPromise = load.then(() => {
+      if (typeof window.initSqlJs !== 'function')
+        throw new Error('sql.js loader unavailable after fallback');
+      return window.initSqlJs({ locateFile: file => SQLJS_CDN + file });
+    });
+  }
+  return sqlCdnPromise;
+}
+
 function sqlJsInit(){
-  if (typeof window.initSqlJs !== 'function' || !window.SQLJS_WASM_B64)
-    return Promise.reject(new Error('The SQLite engine did not load. Reload the page. If it still fails, the vendor/sql.js folder is missing from the course files.'));
-  const bin = atob(window.SQLJS_WASM_B64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return window.initSqlJs({ wasmBinary: bytes });
+  if (typeof window.initSqlJs === 'function' && window.SQLJS_WASM_B64) {
+    const bin = atob(window.SQLJS_WASM_B64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return window.initSqlJs({ wasmBinary: bytes });
+  }
+  return sqlJsFromCdn().catch(err => {
+    throw new Error('The SQLite engine did not load. Local files: ' +
+      'vendor/sql.js/1.14.2/sql-wasm.js and ' +
+      'vendor/sql.js/1.14.2/sql-wasm.wasm.b64.js. ' +
+      'Online fallback failed: ' + (err && err.message ? err.message : err));
+  });
 }
 </script>
 <script>
 /* ============ SQL cell content — every setup/starter pair verified against real SQLite (node:sqlite) before shipping ============ */
 const CELLS = {
+  warmup_class_average: {
+    setup: ``,
+    starter:
+`CREATE TABLE students(name TEXT, score INTEGER);
+INSERT INTO students VALUES
+  ('Ada',92),('Ben',78),('Cy',64),('Dee',88),('Eli',71);
+
+-- nested subquery
+SELECT name, score
+FROM students
+WHERE score > (SELECT AVG(score) FROM students)
+ORDER BY score DESC;
+
+-- named average -- same rows, reusable step
+WITH class_avg AS (
+    SELECT AVG(score) AS avg_score
+    FROM students
+)
+SELECT s.name, s.score
+FROM students s
+WHERE s.score > (SELECT avg_score FROM class_avg)
+ORDER BY s.score DESC;`
+  },
   refactor_top_customers_enriched: {
     setup: ``,
     starter:
@@ -1126,15 +1277,7 @@ INSERT INTO orders VALUES
   (4,2,50),(5,2,60),
   (6,3,10),(7,3,12),(8,3,8);
 
--- (1) the "scattered" query exactly as first written -- this fails, see the callout above
-SELECT category, total_sales FROM (
-    SELECT category_id, SUM(price) as total_sales
-    FROM orders GROUP BY category_id
-) as sales_data
-JOIN categories ON sales_data.category_id = categories.id
-WHERE total_sales > (SELECT AVG(price) FROM orders);
-
--- (2) corrected nested version -- alias the real column
+-- (1) corrected nested version -- alias the real column
 SELECT categories.name AS category, total_sales FROM (
     SELECT category_id, SUM(price) as total_sales
     FROM orders GROUP BY category_id
@@ -1142,7 +1285,7 @@ SELECT categories.name AS category, total_sales FROM (
 JOIN categories ON sales_data.category_id = categories.id
 WHERE total_sales > (SELECT AVG(price) FROM orders);
 
--- (3) refactored into named CTEs -- identical rows, easier to read
+-- (2) refactored into named CTEs -- identical rows, easier to read
 WITH CategorySales AS (
     SELECT category_id, SUM(price) as total_sales
     FROM orders GROUP BY category_id
@@ -1153,8 +1296,7 @@ AverageSale AS (
 SELECT c.name, s.total_sales
 FROM CategorySales s
 JOIN categories c ON s.category_id = c.id
-CROSS JOIN AverageSale a
-WHERE s.total_sales > a.avg_total;`
+WHERE s.total_sales > (SELECT avg_total FROM AverageSale);`
   },
   unused_cte_check: {
     setup: ``,
@@ -1169,6 +1311,20 @@ WITH a AS (SELECT x FROM t WHERE x > 1),
      c AS (SELECT nonexistent_column FROM t),
      d AS (SELECT a.x FROM a JOIN b ON a.x = b.x)
 SELECT * FROM d;`
+  },
+  recursion_countdown: {
+    setup: ``,
+    starter:
+`WITH RECURSIVE countdown(n) AS (
+    SELECT 3
+
+    UNION ALL
+
+    SELECT n - 1
+    FROM countdown
+    WHERE n > 1
+)
+SELECT n FROM countdown;`
   },
   worked_recursive_trace: {
     setup: ``,
@@ -1194,6 +1350,25 @@ WITH RECURSIVE org AS (
     JOIN org o ON e.manager_id = o.id
 )
 SELECT * FROM org ORDER BY depth, id;`
+  },
+  two_city_cycle: {
+    setup: ``,
+    starter:
+`CREATE TABLE route(origin TEXT, destination TEXT);
+INSERT INTO route VALUES ('NYC','LON'),('LON','NYC');
+
+WITH RECURSIVE walk(city, path) AS (
+    SELECT destination, '|NYC|' || destination || '|'
+    FROM route WHERE origin = 'NYC'
+
+    UNION ALL
+
+    SELECT r.destination, w.path || r.destination || '|'
+    FROM route r
+    JOIN walk w ON r.origin = w.city
+    WHERE instr(w.path, '|' || r.destination || '|') = 0
+)
+SELECT city FROM walk;`
   },
   cycle_naive_capped: {
     setup: ``,
@@ -1288,16 +1463,13 @@ customer_product_totals AS (
     JOIN order_lines ol USING (order_id)
     WHERE o.customer_id IN (SELECT customer_id FROM top_customers)
     GROUP BY o.customer_id, ol.product_id
-),
-ranked AS (
-    SELECT customer_id, product_id, qty,
-           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY qty DESC) AS rn
-    FROM customer_product_totals
 )
-SELECT tc.customer_id, tc.revenue, r.product_id AS top_product, r.qty
+SELECT tc.customer_id, tc.revenue,
+       cpt.product_id, cpt.qty
 FROM top_customers tc
-JOIN ranked r ON r.customer_id = tc.customer_id AND r.rn = 1
-ORDER BY tc.revenue DESC;`
+JOIN customer_product_totals cpt
+  ON cpt.customer_id = tc.customer_id
+ORDER BY tc.revenue DESC, cpt.qty DESC;`
   }
 };
 
@@ -1330,7 +1502,7 @@ function escapeHtml(s){
 function renderResultTable(columns, rows){
   if (!columns.length) return '';
   let html = '<table class="dbtable"><thead><tr>';
-  for (const c of columns) html += `<th>${escapeHtml(c)}</th>`;
+  for (const c of columns) html += `<th scope="col">${escapeHtml(c)}</th>`;
   html += '</tr></thead><tbody>';
   for (const row of rows) {
     html += '<tr>';
@@ -1519,7 +1691,7 @@ function rcvRenderResult(){
     return;
   }
   const visible = rcvRealRows.slice(0, n);
-  let html = `<table class="rcv-result-table"><thead><tr><th>id</th><th>name</th><th>manager_id</th><th>lvl</th></tr></thead><tbody>`;
+  let html = `<table class="rcv-result-table"><thead><tr><th scope="col">id</th><th scope="col">name</th><th scope="col">manager_id</th><th scope="col">lvl</th></tr></thead><tbody>`;
   for (const row of visible) {
     const cls = row.lvl === 0 ? 'lvl0' : 'lvlN';
     html += `<tr class="${cls}"><td>${row.id}</td><td>${escapeHtml(row.name)}</td><td>${row.manager_id === null ? '<em>NULL</em>' : row.manager_id}</td><td>${row.lvl}</td></tr>`;
@@ -1651,7 +1823,7 @@ const CTE_QUESTIONS = [
       { title: "UNION", hint: "With deduplication", correct: false },
       { title: "UNION ALL", hint: "No deduplication", correct: true },
       { title: "JOIN", correct: false },
-      { title: "CROSS JOIN", correct: false },
+      { title: "SELECT DISTINCT", hint: "Deduplicates rows", correct: false },
     ],
     feedback: "UNION ALL is the standard choice for tree-shaped hierarchy data — rows are naturally unique (each employee has one manager chain), so there's nothing to deduplicate, and UNION ALL is cheaper since it skips the comparison. UNION would only matter if duplicate identical rows were actually possible.",
     verifySetup: `CREATE TABLE employees(id INTEGER PRIMARY KEY, manager_id INTEGER); INSERT INTO employees VALUES (1,NULL),(2,1);`,
